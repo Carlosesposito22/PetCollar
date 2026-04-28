@@ -1,0 +1,1440 @@
+Domain InteligenciaPetCollar {
+
+    Subdomain IdentidadeAcessoSubdomain {
+        type SUPPORTING_DOMAIN
+        domainVisionStatement = "Identidade unica do tutor (CPF) e governanca de acesso a plataforma."
+    }
+
+    Subdomain RelacaoTutorSubdomain {
+        type CORE_DOMAIN
+        domainVisionStatement = "Relacao contratual e de engajamento entre tutor e plataforma: assinatura com cobrancas e juros, beneficios com carencia e tickets digitais, e badges progressivas. Nucleo de monetizacao e fidelizacao."
+    }
+
+    Subdomain RecepcaoTriagemSubdomain {
+        type CORE_DOMAIN
+        domainVisionStatement = "Identifica o tutor por CPF, executa varredura epidemiologica preditiva e classifica risco assistencial via score determinístico, eliminando subjetividade na priorizacao."
+    }
+
+    Subdomain GestaoFluxoSubdomain {
+        type CORE_DOMAIN
+        domainVisionStatement = "Conduz o paciente da chegada ao consultorio: ordena fila por gravidade, calcula previsao de espera, monitora SLA e mantem o atendimento continuo via protocolo de contingencia para tutor inacessivel."
+    }
+
+    Subdomain SaudePreventivaSubdomain {
+        type CORE_DOMAIN
+        domainVisionStatement = "Jornada preventiva e de continuidade do pet: vincula consultas de retorno aos exames solicitados e centraliza a carteira digital de vacinacao com calculo preditivo de proximas doses."
+    }
+
+    Subdomain AtendimentoClinicoSubdomain {
+        type CORE_DOMAIN
+        domainVisionStatement = "Ato medico veterinario do inicio da consulta a emissao da prescricao: relatorio clinico evolutivo imutavel, plano nutricional baseado em NEM com modificadores e prescricao blindada por validacao de dose, interacao e contexto clinico."
+    }
+
+    Subdomain NotificacaoSubdomain {
+        type GENERIC_SUBDOMAIN
+        domainVisionStatement = "Sink transversal que recebe eventos de todos os contextos e entrega notificacoes priorizadas em multiplos canais."
+    }
+}
+
+
+BoundedContext ContextoIdentidadeAcesso implements IdentidadeAcessoSubdomain {
+    type = APPLICATION
+
+    Aggregate Tutor {
+
+        Entity Tutor {
+            aggregateRoot
+            - @TutorId          tutorId
+            - @CPF              cpf
+            String              nomeCompleto
+            String              telefone
+            String              email
+            - @Endereco         endereco
+            - List<@PacienteId> animaisVinculados
+        }
+
+        ValueObject TutorId  { String id }
+        ValueObject CPF      { String numero }
+        ValueObject Endereco {
+            String logradouro
+            String cidade
+            String estado
+            String cep
+        }
+
+        Service CadastroTutorService {
+            @Tutor cadastrarSemPerderContextoBusca(@CPF cpf, String nome, String telefone, String email, @Endereco endereco);
+        }
+
+        Repository TutorRepository {
+            @Tutor findByCpf(@CPF cpf);
+            Boolean existsByCpf(@CPF cpf);
+            @Tutor save(@Tutor tutor);
+        }
+    }
+
+    Aggregate ContaAcesso {
+
+        Entity ContaAcesso {
+            aggregateRoot
+            - @ContaAcessoId    contaId
+            - @TutorId          tutorId
+            String              hashSenha
+            - @StatusConta      status
+            DateTime            ativadaEm
+        }
+
+        enum StatusConta { PENDENTE, ATIVA, INADIMPLENTE, SUSPENSA, CANCELADA }
+        ValueObject ContaAcessoId { String id }
+
+        Service AutenticacaoService {
+            Boolean autenticar(@CPF cpf, String senha);
+            Boolean podeRealizarLogin(@TutorId tutorId);
+        }
+
+        Repository ContaAcessoRepository {
+            @ContaAcesso findByTutor(@TutorId tutorId);
+            List<@ContaAcesso> findByStatus(@StatusConta status);
+            @ContaAcesso save(@ContaAcesso conta);
+        }
+    }
+}
+
+
+BoundedContext ContextoAssinaturaFaturamento implements RelacaoTutorSubdomain {
+    type = FEATURE
+
+    Aggregate Plano {
+
+        Entity Plano {
+            aggregateRoot
+            - @PlanoId  planoId
+            String      nomeComercial
+            - @Dinheiro valorMensalidade
+            Boolean     ativoParaContratacao
+        }
+
+        ValueObject PlanoId  { String id }
+        ValueObject Dinheiro {
+            Double valor
+            String moeda
+        }
+
+        Repository PlanoRepository {
+            List<@Plano> findAtivosParaContratacao();
+            @Plano save(@Plano plano);
+        }
+    }
+
+    Aggregate Assinatura {
+
+        Entity Assinatura {
+            aggregateRoot
+            - @AssinaturaId     assinaturaId
+            - @TutorId          tutorId
+            - @PlanoId          planoContratado
+            DateTime            contratadaEm
+            DateTime            ativadaEm
+            - @StatusAssinatura status
+            Integer             mensalidadesConsecutivasEmAtraso
+            DateTime            proximoVencimento
+        }
+
+        enum StatusAssinatura    { PENDENTE, ATIVA, INADIMPLENTE, SUSPENSA, CANCELADA }
+        ValueObject AssinaturaId { String id }
+
+        Service ContratacaoPlanoService {
+            @Assinatura contratar(@TutorId tutorId, @PlanoId planoId);
+        }
+
+        Service GestaoInadimplenciaService {
+            @StatusAssinatura avaliarStatus(@AssinaturaId assinaturaId);
+            void reiniciarContagemAposQuitacao(@AssinaturaId assinaturaId);
+        }
+
+        DomainEvent AssinaturaAtivadaEvent {
+            - @AssinaturaId assinaturaId
+            - @TutorId tutorId
+            DateTime ativadaEm
+        }
+
+        DomainEvent ContaSuspensaEvent {
+            - @AssinaturaId assinaturaId
+            - @TutorId tutorId
+            Integer mensalidadesEmAtraso
+        }
+
+        Repository AssinaturaRepository {
+            @Assinatura findByTutor(@TutorId tutorId);
+            List<@Assinatura> findByStatus(@StatusAssinatura status);
+            @Assinatura save(@Assinatura assinatura);
+        }
+    }
+
+    Aggregate Cobranca {
+
+        Entity Cobranca {
+            aggregateRoot
+            - @CobrancaId       cobrancaId
+            - @AssinaturaId     assinaturaId
+            - @TutorId          tutorId
+            - @Dinheiro         valorOriginal
+            - @Dinheiro         valorJurosAcumulado
+            - @Dinheiro         valorAtualizado
+            DateTime            dataVencimento
+            DateTime            dataPagamento
+            - @StatusCobranca   status
+            Integer             diasEmAtraso
+        }
+
+        enum StatusCobranca    { ABERTA, PAGA, EM_ATRASO, CANCELADA }
+        ValueObject CobrancaId { String id }
+
+        Service CalculoJurosService {
+            @Dinheiro calcularValorAtualizado(@Cobranca cobranca, DateTime dataReferencia);
+            @Dinheiro consolidarTotalDevido(List<@Cobranca> cobrancasEmAtraso, DateTime dataReferencia);
+        }
+
+        Service GeracaoMensalidadeService {
+            @Cobranca gerarPrimeiraCobranca(@AssinaturaId assinaturaId);
+            List<@Cobranca> gerarCobrancasMensaisDoMes(DateTime dataReferencia);
+        }
+
+        Repository CobrancaRepository {
+            List<@Cobranca> findByAssinatura(@AssinaturaId assinaturaId);
+            List<@Cobranca> findEmAtrasoByTutor(@TutorId tutorId);
+            @Cobranca save(@Cobranca cobranca);
+        }
+    }
+
+    Aggregate Pagamento {
+
+        Entity Pagamento {
+            aggregateRoot
+            - @PagamentoId      pagamentoId
+            - List<@CobrancaId> cobrancasReferenciadas
+            - @QRCodePix        qrCode
+            - @Dinheiro         valorTotal
+            - @StatusPagamento  status
+            DateTime            geradoEm
+            DateTime            expiraEm
+        }
+
+        ValueObject QRCodePix {
+            String codigoCopiaECola
+            String txid
+        }
+        ValueObject PagamentoId  { String id }
+        enum StatusPagamento     { AGUARDANDO, CONFIRMADO, EXPIRADO, CANCELADO }
+
+        Service GeracaoQRCodeService {
+            @Pagamento gerarParaCobranca(@CobrancaId cobrancaId);
+            @Pagamento gerarConsolidadoParaSuspensao(@TutorId tutorId);
+        }
+
+        Service ConfirmacaoPagamentoService {
+            void confirmarViaWebhook(String identificadorGateway);
+        }
+
+        Repository PagamentoRepository {
+            List<@Pagamento> findAguardandoByTutor(@TutorId tutorId);
+            @Pagamento findByIdentificadorGateway(String identificadorGateway);
+            @Pagamento save(@Pagamento pagamento);
+        }
+    }
+}
+
+
+BoundedContext ContextoBeneficiosPlano implements RelacaoTutorSubdomain {
+    type = FEATURE
+
+    Aggregate CatalogoBeneficio {
+
+        Entity BeneficioCatalogo {
+            aggregateRoot
+            - @BeneficioCatalogoId beneficioId
+            String                 nome
+            String                 descricao
+            Integer                diasCarenciaPadrao
+            - @PeriodoRenovacao    periodoRenovacao
+            Integer                limiteUsosPorPeriodo
+        }
+
+        enum PeriodoRenovacao            { MENSAL, TRIMESTRAL, ANUAL }
+        ValueObject BeneficioCatalogoId  { String id }
+
+        Repository BeneficioCatalogoRepository {
+            List<@BeneficioCatalogo> findAllAtivos();
+            @BeneficioCatalogo save(@BeneficioCatalogo beneficio);
+        }
+    }
+
+    Aggregate BeneficioTutor {
+
+        Entity BeneficioTutor {
+            aggregateRoot
+            - @BeneficioTutorId    id
+            - @TutorId             tutorId
+            - @BeneficioCatalogoId beneficioCatalogoId
+            DateTime               inicioCarencia
+            DateTime               dataLiberacao
+            Integer                usosRestantesPeriodoAtual
+            DateTime               fimPeriodoVigente
+            - @StatusBeneficio     statusCalculado
+        }
+
+        enum StatusBeneficio         { EM_CARENCIA, DISPONIVEL, ESGOTADO }
+        ValueObject BeneficioTutorId { String id }
+
+        Service CalculoStatusBeneficioService {
+            @StatusBeneficio calcularStatus(@BeneficioTutor beneficio, DateTime agora);
+            void reiniciarContadorAoIniciarNovoPeriodo(@BeneficioTutorId id, DateTime agora);
+        }
+
+        Repository BeneficioTutorRepository {
+            List<@BeneficioTutor> findByTutor(@TutorId tutorId);
+            @BeneficioTutor findByTutorECatalogo(@TutorId tutorId, @BeneficioCatalogoId catalogoId);
+            @BeneficioTutor save(@BeneficioTutor beneficio);
+        }
+    }
+
+    Aggregate TicketBeneficio {
+
+        Entity TicketBeneficio {
+            aggregateRoot
+            - @TicketBeneficioId ticketId
+            - @CodigoGUID        codigoValidacao
+            - @TutorId           tutorId
+            - @BeneficioTutorId  beneficioTutorId
+            String               nomeBeneficio
+            String               nomeAnimalVinculado
+            DateTime             geradoEm
+            DateTime             expiraEm
+            - @StatusTicket      status
+        }
+
+        enum StatusTicket            { GERADO, APRESENTADO, UTILIZADO, EXPIRADO, CANCELADO }
+        ValueObject TicketBeneficioId { String id }
+        ValueObject CodigoGUID        { String valor }
+
+        Service GeracaoTicketService {
+            @TicketBeneficio gerarTicket(@TutorId tutorId, @BeneficioTutorId beneficioTutorId);
+            Boolean validarDisponibilidadeConcorrente(@BeneficioTutorId beneficioTutorId);
+        }
+
+        Service ExpiracaoTicketService {
+            void cancelarTicketsExpirados(DateTime agora);
+            void devolverUsoAoSaldo(@TicketBeneficioId ticketId);
+        }
+
+        DomainEvent TicketBeneficioGeradoEvent {
+            - @TicketBeneficioId ticketId
+            - @TutorId tutorId
+            - @BeneficioCatalogoId beneficioId
+        }
+
+        Repository TicketBeneficioRepository {
+            @TicketBeneficio findByCodigoGUID(@CodigoGUID codigo);
+            List<@TicketBeneficio> findExpiradosNaoCancelados(DateTime agora);
+            @TicketBeneficio save(@TicketBeneficio ticket);
+        }
+    }
+}
+
+BoundedContext ContextoGamificacao implements RelacaoTutorSubdomain {
+    type = APPLICATION
+
+    Aggregate CatalogoBadge {
+
+        Entity Badge {
+            aggregateRoot
+            - @BadgeId        badgeId
+            String            nome
+            String            descricao
+            - @CategoriaBadge categoria
+            - @RaridadeBadge  raridade
+            String            chaveEvento
+            Integer           metaQuantitativa
+            Boolean           eventoUnico
+        }
+
+        enum CategoriaBadge { FIDELIDADE, SAUDE_DO_PET, ENGAJAMENTO }
+        enum RaridadeBadge  { COMUM, INCOMUM, RARA, EPICA, LENDARIA }
+        ValueObject BadgeId { String id }
+
+        Repository BadgeRepository {
+            List<@Badge> findAssociadasAoEvento(String chaveEvento);
+            List<@Badge> findByCategoria(@CategoriaBadge categoria);
+            @Badge save(@Badge badge);
+        }
+    }
+
+    Aggregate ConquistaTutor {
+
+        Entity ConquistaTutor {
+            aggregateRoot
+            - @ConquistaId conquistaId
+            - @TutorId     tutorId
+            - @BadgeId     badgeId
+            DateTime       conquistadoEm
+            String         eventoDisparador
+        }
+
+        ValueObject ConquistaId { String id }
+
+        Service ConcessaoBadgeService {
+            @ConquistaTutor concederBadge(@TutorId tutorId, @BadgeId badgeId, String eventoDisparador);
+            List<@Badge> avaliarBadgesAfetadasPelo(String chaveEvento, @TutorId tutorId);
+        }
+
+        DomainEvent BadgeConquistadaEvent {
+            - @ConquistaId conquistaId
+            - @TutorId tutorId
+            - @BadgeId badgeId
+            - @RaridadeBadge raridade
+        }
+
+        Repository ConquistaTutorRepository {
+            List<@ConquistaTutor> findByTutor(@TutorId tutorId);
+            Boolean existsByTutorEBadge(@TutorId tutorId, @BadgeId badgeId);
+            @ConquistaTutor save(@ConquistaTutor conquista);
+        }
+    }
+
+    Aggregate ProgressoBadge {
+
+        Entity ProgressoBadge {
+            aggregateRoot
+            - @ProgressoBadgeId progressoId
+            - @TutorId          tutorId
+            - @BadgeId          badgeId
+            Integer             valorAtual
+            Integer             metaTotal
+            Double              percentualConclusao
+        }
+
+        ValueObject ProgressoBadgeId { String id }
+
+        Service CalculoProgressoService {
+            @ProgressoBadge atualizarProgresso(@TutorId tutorId, @BadgeId badgeId, Integer novoValor);
+            List<@ProgressoBadge> listarProximasConquistas(@TutorId tutorId, Integer limite);
+        }
+
+        Repository ProgressoBadgeRepository {
+            List<@ProgressoBadge> findByTutor(@TutorId tutorId);
+            @ProgressoBadge findByTutorEBadge(@TutorId tutorId, @BadgeId badgeId);
+            @ProgressoBadge save(@ProgressoBadge progresso);
+        }
+    }
+}
+
+BoundedContext ContextoRecepcaoTriagem implements RecepcaoTriagemSubdomain {
+    type = FEATURE
+
+    Aggregate PacienteKernel {
+
+        Entity PacienteReferencia {
+            aggregateRoot
+            - @PacienteId pacienteId
+            - @TutorId    tutorId
+            String        nomeAnimal
+            - @Especie    especie
+            - @CorDeRisco corDeRisco
+            Boolean       alertaEpidemiologico
+        }
+
+        enum CorDeRisco { VERMELHO, AMARELO, VERDE }
+        enum Especie    { CANINO, FELINO, EXOTICO, OUTRO }
+        ValueObject PacienteId { String id }
+
+        Repository PacienteReferenciaRepository {
+            List<@PacienteReferencia> findByTutor(@TutorId tutorId);
+            @PacienteReferencia save(@PacienteReferencia pacienteReferencia);
+        }
+    }
+
+    Aggregate Paciente {
+
+        Entity Paciente {
+            aggregateRoot
+            - @PacienteId          pacienteId
+            - @TutorId             tutorId
+            String                 nomeAnimal
+            - @Especie             especie
+            String                 raca
+            Date                   dataNascimento
+            Double                 pesoKg
+            - @IdadeCalculada      idadeCalculada
+            - List<@TagVisual>     tags
+            - @QueixaComportamento queixaComportamento
+            Boolean                prontuarioAtivo
+            - List<String>         alergiasConhecidas
+        }
+
+        ValueObject IdadeCalculada {
+            Integer anos
+            Integer meses
+            Boolean isFilhote
+            Boolean isGeriatrico
+        }
+
+        ValueObject TagVisual {
+            String      codigo
+            String      descricao
+            - @TipoTag  tipo
+            Boolean     altaVisibilidade
+        }
+
+        ValueObject QueixaComportamento {
+            String                          motivoConsulta
+            - List<@AlertaComportamental>   alertas
+        }
+
+        ValueObject AlertaComportamental {
+            String  descricao
+            Boolean alertaVisualAltaVisibilidade
+        }
+
+        ValueObject DiagnosticoInfectante {
+            String doenca
+            Date   dataDiagnostico
+        }
+        enum TipoTag { RACA, FAIXA_ETARIA, ESPECIE, COMPORTAMENTO, EPIDEMIOLOGICO, ALERGIA }
+
+        Service VarreduraEpidemiologicaService {
+            Boolean possuiHistoricoInfectanteRecente(@PacienteId pacienteId, Integer janelaDias);
+            void aplicarAlertaSeNecessario(@Paciente paciente);
+        }
+
+        Service TagueamentoAutomaticoService {
+            @IdadeCalculada calcularIdadeEmTempoReal(Date dataNascimento, @Especie especie);
+            List<@TagVisual> aplicarTagsAutomaticas(String raca, @IdadeCalculada idade, @Especie especie);
+        }
+
+        Repository PacienteRepository {
+            List<@Paciente> findByTutor(@TutorId tutorId);
+            List<@Paciente> findAtivos();
+            @Paciente save(@Paciente paciente);
+        }
+
+        Repository DiagnosticoRepository {
+            List<@DiagnosticoInfectante> findInfectantesUltimos(Integer dias, @PacienteId pacienteId);
+            @DiagnosticoInfectante save(@DiagnosticoInfectante diagnostico);
+        }
+    }
+
+    Aggregate ProntuarioBuscaTutor {
+
+        Entity ResultadoBusca {
+            aggregateRoot
+            - @ResultadoBuscaId         resultadoId
+            - @CPF                      cpfPesquisado
+            Boolean                     tutorEncontrado
+            - @TutorId                  tutorEncontradoId
+            - List<@PacienteReferencia> animaisVinculados
+            Boolean                     alertaEpidemiologicoGlobal
+        }
+
+        ValueObject ResultadoBuscaId { String id }
+
+        Service BuscaInteligenteTutorService {
+            @ResultadoBusca buscarPorCpfComConsolidacao(@CPF cpf);
+            @ResultadoBusca cadastrarTutorEContinuarBusca(@CPF cpf, String nome, String telefone, String email);
+        }
+
+        Repository ResultadoBuscaRepository {
+            List<@ResultadoBusca> findUltimosPorCpf(@CPF cpf, Integer limite);
+            @ResultadoBusca save(@ResultadoBusca resultado);
+        }
+    }
+
+    Aggregate Triagem {
+
+        Entity Triagem {
+            aggregateRoot
+            - @TriagemId             triagemId
+            - @PacienteId            pacienteId
+            - @MedicoId              profissionalResponsavel
+            - @AtendimentoId         atendimentoVinculado
+            DateTime                 dataHoraTriagem
+            String                   motivoConsulta
+            - List<@RespostaSintoma> sintomas
+            - @PesoTotal             pesoTotalCalculado
+            - @CorDeRisco            corDeRiscoResultante
+            - @StatusTriagem         status
+            Boolean                  bloqueadaParaAlteracao
+        }
+
+        ValueObject RespostaSintoma {
+            - @Sintoma  sintoma
+            Boolean     presente
+            Integer     pesoContribuido
+        }
+
+        ValueObject Sintoma {
+            String  codigo
+            String  descricao
+            Integer peso
+        }
+
+        ValueObject PesoTotal {
+            Integer valor
+            Integer limiteVermelho
+            Integer limiteAmarelo
+        }
+        enum StatusTriagem          { EM_ELABORACAO, FINALIZADA, BLOQUEADA }
+        ValueObject TriagemId       { String id }
+
+        Service ClassificacaoDeRiscoService {
+            @CorDeRisco calcularCorDeRisco(List<@RespostaSintoma> sintomas, @PesoTotal configuracao);
+            @PesoTotal calcularPesoTotal(List<@RespostaSintoma> sintomas);
+        }
+
+        Service FinalizacaoTriagemService {
+            @Triagem finalizar(@TriagemId triagemId);
+            @Triagem criarNovaTriagemAtualizando(@TriagemId triagemAnteriorId);
+        }
+
+        DomainEvent TriagemFinalizadaEvent {
+            - @TriagemId triagemId
+            - @PacienteId pacienteId
+            - @CorDeRisco corDeRisco
+            Integer scoreTotal
+        }
+
+        Repository TriagemRepository {
+            @Triagem findUltimaPorPaciente(@PacienteId pacienteId);
+            List<@Triagem> findByCorDeRisco(@CorDeRisco corDeRisco);
+            @Triagem save(@Triagem triagem);
+        }
+
+        Repository SintomaCatalogoRepository {
+            @Sintoma findByCodigo(String codigo);
+            List<@Sintoma> findTodosAtivos();
+        }
+    }
+}
+
+BoundedContext ContextoGestaoFluxo implements GestaoFluxoSubdomain {
+    type = FEATURE
+
+    Aggregate FilaDeEspera {
+
+        Entity FilaDeEspera {
+            aggregateRoot
+            - @FilaId            filaId
+            DateTime             dataReferencia
+            - List<@PosicaoFila> posicoes
+        }
+
+        Entity PosicaoFila {
+            - @PosicaoFilaId       posicaoId
+            - @PacienteId          pacienteId
+            String                 nomeAnimal
+            String                 queixaPrincipal
+            - @CorDeRisco          corDeRisco
+            DateTime               horaChegada
+            Integer                posicaoAtual
+            - @TempoEsperaEstimado tempoEstimado
+            - @StatusPosicao       status
+            Boolean                alertaEpidemiologico
+            Boolean                alertaComportamentalVisivel
+        }
+
+        ValueObject TempoEsperaEstimado {
+            Integer  minutosTotaisEstimados
+            Integer  posicaoNaFila
+            DateTime previsaoHorario
+        }
+        enum StatusPosicao { AGUARDANDO, EM_ALERTA_LARANJA, EM_ALERTA_VERMELHO, CHAMADO, EM_ATENDIMENTO, FINALIZADO }
+        ValueObject FilaId        { String id }
+        ValueObject PosicaoFilaId { String id }
+
+        Service OrdenacaoFilaService {
+            List<@PosicaoFila> ordenarPorGravidadeEChegada(List<@PosicaoFila> posicoes);
+            void reordenarAposNovaTriagem(@FilaId filaId, @PacienteId pacienteId, @CorDeRisco novaCor);
+        }
+
+        Service PrevisaoEsperaDinamicaService {
+            @TempoEsperaEstimado calcular(@PosicaoFila posicao, List<@PosicaoFila> fila, @TempoMedioConfig config);
+            @TempoEsperaEstimado recalcularParaPaciente(@PacienteId pacienteId);
+        }
+
+        DomainEvent PacienteChamadoEvent {
+            - @PacienteId pacienteId
+            - @FilaId filaId
+            - @CorDeRisco corDeRisco
+            DateTime ocorridoEm
+        }
+
+        Repository FilaDeEsperaRepository {
+            @FilaDeEspera findAtiva();
+            List<@PosicaoFila> findPosicoesByCorDeRisco(@CorDeRisco corDeRisco);
+            @FilaDeEspera save(@FilaDeEspera filaDeEspera);
+        }
+    }
+
+    Aggregate MonitoramentoSLA {
+
+        Entity MonitoramentoSLA {
+            aggregateRoot
+            - @SlaId      slaId
+            - @PacienteId pacienteId
+            - @CorDeRisco corDeRisco
+            Integer       tempoMaximoMinutos
+            DateTime      iniciouEsperaEm
+            Integer       percentualConsumido
+            - @StatusSLA  statusAtual
+        }
+
+        ValueObject TempoMedioConfig {
+            Integer minutosVermelhoMax
+            Integer minutosAmareloMax
+            Integer minutosVerdeMax
+        }
+        enum StatusSLA               { DENTRO_DO_PRAZO, ALERTA_LARANJA, ALERTA_VERMELHO_TOPO }
+        ValueObject SlaId            { String id }
+
+        Service GestaoSLAService {
+            @StatusSLA calcularStatusSLA(@MonitoramentoSLA sla, DateTime agora);
+            List<@MonitoramentoSLA> listarEmAlerta();
+        }
+
+        Repository MonitoramentoSLARepository {
+            @MonitoramentoSLA findByPaciente(@PacienteId pacienteId);
+            List<@MonitoramentoSLA> findEmAlerta();
+            @MonitoramentoSLA save(@MonitoramentoSLA monitoramentoSLA);
+        }
+    }
+}
+
+BoundedContext ContextoProtocoloContingencia implements GestaoFluxoSubdomain {
+    type = APPLICATION
+
+    Aggregate ResponsavelSecundario {
+
+        Entity ResponsavelSecundario {
+            aggregateRoot
+            - @ResponsavelSecId id
+            - @PacienteId       pacienteId
+            - @TutorId          tutorPrincipalId
+            String              nomeCompleto
+            String              telefone
+            String              email
+            Integer             ordemPrioridade
+        }
+
+        ValueObject ResponsavelSecId { String id }
+
+        Repository ResponsavelSecundarioRepository {
+            List<@ResponsavelSecundario> findByPacienteOrdenados(@PacienteId pacienteId);
+            @ResponsavelSecundario save(@ResponsavelSecundario responsavel);
+        }
+    }
+
+    Aggregate DiretivaConsentimento {
+
+        Entity DiretivaConsentimento {
+            aggregateRoot
+            - @DiretivaId diretivaId
+            - @PacienteId pacienteId
+            - @TutorId    tutorId
+            Boolean       autorizaProcedimentoEmergencial
+            Boolean       autorizaInternacao
+            Boolean       autorizaCirurgia
+            Double        limiteFinanceiroAutorizado
+            DateTime      assinadaEm
+            DateTime      expiraEm
+        }
+
+        ValueObject DiretivaId { String id }
+
+        Service ValidacaoDiretivaService {
+            Boolean autorizaConduta(@PacienteId pacienteId, String tipoConduta);
+            @DiretivaConsentimento obterAtual(@PacienteId pacienteId);
+        }
+
+        Repository DiretivaConsentimentoRepository {
+            @DiretivaConsentimento findAtualByPaciente(@PacienteId pacienteId);
+            @DiretivaConsentimento save(@DiretivaConsentimento diretiva);
+        }
+    }
+
+    Aggregate ProtocoloInacessibilidade {
+
+        Entity ProtocoloInacessibilidade {
+            aggregateRoot
+            - @ProtocoloId            protocoloId
+            - @PacienteId             pacienteId
+            - @TutorId                tutorPrincipalId
+            - @AtendimentoId          atendimentoVinculado
+            DateTime                  iniciadoEm
+            DateTime                  encerradoEm
+            - @StatusProtocolo        status
+            - @NivelEscalonamento     nivelAtual
+            - List<@TentativaContato> tentativas
+        }
+
+        ValueObject TentativaContato {
+            - @CanalContato     canal
+            - @AlvoContato      alvo
+            DateTime            executadaEm
+            - @StatusTentativa  status
+        }
+
+        enum CanalContato        { TELEFONE, SMS, EMAIL, WHATSAPP, APP_PUSH }
+        enum AlvoContato         { TUTOR_PRINCIPAL, RESPONSAVEL_SECUNDARIO }
+        enum StatusTentativa     { ENTREGUE_SEM_RESPOSTA, RESPONDIDA, FALHA_ENTREGA }
+        enum StatusProtocolo     { ATIVO, EM_ESCALONAMENTO, RESOLVIDO_TUTOR_RESPONDEU, RESOLVIDO_RESPONSAVEL_SECUNDARIO, FINALIZADO_POR_DIRETIVA }
+        enum NivelEscalonamento  { NIVEL_0_TUTOR, NIVEL_1_RESPONSAVEL_SECUNDARIO, NIVEL_2_DECISAO_CLINICA, NIVEL_3_DECISAO_ADMINISTRATIVA }
+        ValueObject ProtocoloId  { String id }
+
+        Service AtivacaoProtocoloService {
+            @ProtocoloInacessibilidade ativar(@AtendimentoId atendimentoId, @PacienteId pacienteId);
+            Boolean deveAtivarPorTimeout(@AtendimentoId atendimentoId, Integer timeoutMinutos);
+        }
+
+        Service TentativaContatoService {
+            @TentativaContato executarTentativa(@ProtocoloId protocoloId, @CanalContato canal, @AlvoContato alvo);
+            Boolean esgotouTentativasNivelAtual(@ProtocoloId protocoloId);
+        }
+
+        Service EscalonamentoProgressivoService {
+            void escalonarParaProximoNivel(@ProtocoloId protocoloId);
+        }
+
+        DomainEvent NivelEscalonadoEvent {
+            - @ProtocoloId protocoloId
+            - @TutorId tutorId
+            - @NivelEscalonamento nivelNovo
+            DateTime ocorridoEm
+        }
+
+        Repository ProtocoloInacessibilidadeRepository {
+            @ProtocoloInacessibilidade findAtivoPorAtendimento(@AtendimentoId atendimentoId);
+            List<@ProtocoloInacessibilidade> findAtivos();
+            @ProtocoloInacessibilidade save(@ProtocoloInacessibilidade protocolo);
+        }
+    }
+}
+
+BoundedContext ContextoImunizacao implements SaudePreventivaSubdomain {
+    type = FEATURE
+
+    Aggregate Vacina {
+
+        Entity Vacina {
+            aggregateRoot
+            - @VacinaId   vacinaId
+            String        nomeComercial
+            String        laboratorio
+            - @TipoVacina tipo
+            Integer       intervaloEntreDosesDias
+            Integer       intervaloMinimoSegurancaDias
+            Integer       intervaloRevacinacaoDias
+        }
+
+        enum TipoVacina      { POLIVALENTE_FILHOTE, ANTIRRABICA, GRIPE_CANINA, GIARDIA, FELINA_TRIPLICE, OUTRA }
+        ValueObject VacinaId { String id }
+
+        Repository VacinaRepository {
+            List<@Vacina> findByTipo(@TipoVacina tipo);
+            List<@Vacina> findAtivas();
+            @Vacina save(@Vacina vacina);
+        }
+    }
+
+    Aggregate ProtocoloVacinal {
+
+        Entity ProtocoloVacinal {
+            aggregateRoot
+            - @ProtocoloVacinalId   protocoloId
+            String                  nome
+            - @TipoProtocoloVacinal tipo
+            - @Especie              especieAlvo
+            - List<@DoseProtocolo>  doses
+        }
+
+        ValueObject DoseProtocolo {
+            - @VacinaId vacinaId
+            Integer     numeroDose
+            Integer     idadeMinimaDias
+            Integer     intervaloDaDoseAnteriorDias
+        }
+        enum TipoProtocoloVacinal { CICLO_FILHOTE, REFORCO_ANUAL, PROTOCOLO_VIAGEM, PROTOCOLO_PERSONALIZADO }
+        ValueObject ProtocoloVacinalId { String id }
+
+        Repository ProtocoloVacinalRepository {
+            List<@ProtocoloVacinal> findPorEspecie(@Especie especie);
+            @ProtocoloVacinal save(@ProtocoloVacinal protocolo);
+        }
+    }
+
+    Aggregate CarteiraVacinacao {
+
+        Entity CarteiraVacinacao {
+            aggregateRoot
+            - @CarteiraId               carteiraId
+            - @PacienteId               pacienteId
+            - @TutorId                  tutorId
+            - List<@RegistroVacinacao>  registros
+            - List<@PrevisaoDoseFutura> previsoes
+        }
+
+        Entity RegistroVacinacao {
+            - @RegistroVacinacaoId registroId
+            - @VacinaId            vacinaId
+            Integer                numeroDose
+            Date                   dataAplicacao
+            - @MedicoId            medicoResponsavel
+            String                 loteSeloDigital
+            Boolean                aplicadaForaDaClinica
+            Boolean                validadaPorMedicoClinica
+        }
+
+        ValueObject PrevisaoDoseFutura {
+            - @VacinaId      vacinaId
+            Integer          numeroProximaDose
+            Date             dataPrevistaProximaDose
+            - @StatusVacina  status
+            Integer          diasEmAtraso
+        }
+        enum StatusVacina               { APLICADA, PENDENTE_AGENDADA, EM_ATRASO }
+        ValueObject CarteiraId          { String id }
+        ValueObject RegistroVacinacaoId { String id }
+
+        Service CalculoProximaDoseService {
+            @PrevisaoDoseFutura calcularProximaDose(@VacinaId vacinaId, @RegistroVacinacao ultimaAplicacao);
+            List<@PrevisaoDoseFutura> recalcularTodasPrevisoes(@CarteiraId carteiraId);
+        }
+
+        Service RegistroAplicacaoService {
+            @RegistroVacinacao registrarAplicacaoOficial(@CarteiraId carteiraId, @VacinaId vacinaId, @MedicoId medicoId, String lote);
+            @RegistroVacinacao registrarAplicacaoExternaValidada(@CarteiraId carteiraId, @VacinaId vacinaId, @MedicoId medicoValidador);
+        }
+
+        Service GeracaoCertificadoService {
+            String gerarCertificadoPDF(@CarteiraId carteiraId);
+        }
+
+        DomainEvent VacinaAplicadaEvent {
+            - @CarteiraId carteiraId
+            - @PacienteId pacienteId
+            - @TutorId tutorId
+            - @VacinaId vacinaId
+            Integer numeroDose
+        }
+
+        DomainEvent VacinaEmAtrasoEvent {
+            - @CarteiraId carteiraId
+            - @PacienteId pacienteId
+            - @TutorId tutorId
+            - @VacinaId vacinaId
+            Integer diasEmAtraso
+        }
+
+        Repository CarteiraVacinacaoRepository {
+            @CarteiraVacinacao findByPaciente(@PacienteId pacienteId);
+            List<@CarteiraVacinacao> findComVacinasEmAtraso();
+            @CarteiraVacinacao save(@CarteiraVacinacao carteira);
+        }
+    }
+}
+
+BoundedContext ContextoAgendamentoRetorno implements SaudePreventivaSubdomain {
+    type = FEATURE
+
+    Aggregate ExameSolicitado {
+
+        Entity ExameSolicitado {
+            aggregateRoot
+            - @ExameSolicitadoId exameId
+            - @AtendimentoId     consultaOrigemId
+            - @PacienteId        pacienteId
+            - @MedicoId          medicoSolicitanteId
+            String               tipoExame
+            Date                 solicitadoEm
+            - @StatusExame       status
+            String               arquivoLaudoUploadUrl
+            Date                 concluidoEm
+        }
+
+        enum StatusExame              { SOLICITADO, AGUARDANDO_RESULTADO, CONCLUIDO, CANCELADO }
+        ValueObject ExameSolicitadoId { String id }
+
+        Service ConfirmacaoExameService {
+            @ExameSolicitado anexarLaudoEMarcarConcluido(@ExameSolicitadoId id, String urlArquivo);
+            @ExameSolicitado marcarConcluidoPorEmissaoLaudo(@ExameSolicitadoId id);
+        }
+
+        Repository ExameSolicitadoRepository {
+            List<@ExameSolicitado> findByConsultaOrigem(@AtendimentoId consultaId);
+            List<@ExameSolicitado> findByPacientePendentes(@PacienteId pacienteId);
+            @ExameSolicitado save(@ExameSolicitado exame);
+        }
+    }
+
+    Aggregate DisponibilidadeMedico {
+
+        Entity DisponibilidadeMedico {
+            aggregateRoot
+            - @DisponibilidadeId   id
+            - @MedicoId            medicoId
+            - List<@JanelaHorario> janelasDisponiveis
+        }
+
+        ValueObject JanelaHorario {
+            DateTime inicio
+            DateTime fim
+            Boolean  ocupada
+        }
+        ValueObject DisponibilidadeId { String id }
+
+        Service ConsultaDisponibilidadeService {
+            List<@JanelaHorario> listarJanelasLivres(@MedicoId medicoId, Date dataInicio, Date dataFim);
+            Boolean validarJanelaLivre(@MedicoId medicoId, DateTime horarioDesejado);
+        }
+
+        Repository DisponibilidadeMedicoRepository {
+            @DisponibilidadeMedico findByMedico(@MedicoId medicoId);
+            @DisponibilidadeMedico save(@DisponibilidadeMedico disponibilidade);
+        }
+    }
+
+    Aggregate AgendamentoRetorno {
+
+        Entity AgendamentoRetorno {
+            aggregateRoot
+            - @AgendamentoRetornoId     agendamentoId
+            - @TutorId                  tutorId
+            - @PacienteId               pacienteId
+            - @AtendimentoId            consultaOrigemId
+            - @MedicoId                 medicoResponsavelId
+            - List<@ExameSolicitadoId>  examesVinculados
+            DateTime                    horarioAgendado
+            - @StatusAgendamentoRetorno status
+            Integer                     vezesReagendado
+        }
+
+        enum StatusAgendamentoRetorno    { CONFIRMADO, CANCELADO, REAGENDADO, REALIZADO }
+        ValueObject AgendamentoRetornoId { String id }
+
+        Service ValidacaoPreAgendamentoService {
+            Boolean consultaOrigemPermiteRetorno(@AtendimentoId atendimentoId);
+            Boolean possuiAoMenosUmExameConcluido(@AtendimentoId atendimentoId);
+        }
+
+        Service AgendamentoRetornoService {
+            @AgendamentoRetorno agendar(@TutorId tutorId, @AtendimentoId consultaOrigemId, DateTime horario);
+            void cancelar(@AgendamentoRetornoId id);
+        }
+
+        DomainEvent RetornoConfirmadoEvent {
+            - @AgendamentoRetornoId agendamentoId
+            - @TutorId tutorId
+            - @MedicoId medicoId
+            DateTime confirmadoEm
+        }
+
+        Repository AgendamentoRetornoRepository {
+            List<@AgendamentoRetorno> findByTutor(@TutorId tutorId);
+            List<@AgendamentoRetorno> findFuturosByPaciente(@PacienteId pacienteId);
+            @AgendamentoRetorno save(@AgendamentoRetorno agendamento);
+        }
+    }
+}
+
+BoundedContext ContextoAtendimentoClinico implements AtendimentoClinicoSubdomain {
+    type = FEATURE
+
+    Aggregate Atendimento {
+
+        Entity Atendimento {
+            aggregateRoot
+            - @AtendimentoId     atendimentoId
+            - @PacienteId        pacienteId
+            - @MedicoId          medicoResponsavel
+            - @ConsultorioId     consultorio
+            - @TriagemId         triagemRelacionada
+            DateTime             iniciadoEm
+            DateTime             finalizadoEm
+            - @StatusAtendimento status
+            String               anamneseClinica
+            Boolean              ehProcedimentoCirurgico
+        }
+
+        Entity Medico {
+            - @MedicoId medicoId
+            String      nomeCompleto
+            String      crmv
+            String      especialidade
+        }
+
+        Entity Consultorio {
+            - @ConsultorioId consultorioId
+            String           identificacao
+            Boolean          disponivel
+        }
+
+        enum StatusAtendimento    { AGUARDANDO_CHAMADA, CHAMADO, EM_ATENDIMENTO, FINALIZADO, CANCELADO }
+        ValueObject AtendimentoId { String id }
+        ValueObject MedicoId      { String id }
+        ValueObject ConsultorioId { String id }
+
+        Service ChamadaPacienteService {
+            @Atendimento chamarPaciente(@PacienteId pacienteId, @MedicoId medico, @ConsultorioId consultorio);
+            @Atendimento finalizarAtendimento(@AtendimentoId atendimentoId);
+        }
+
+        DomainEvent AtendimentoFinalizadoEvent {
+            - @AtendimentoId atendimentoId
+            - @PacienteId pacienteId
+            - @TutorId tutorId
+            - @MedicoId medicoId
+            DateTime finalizadoEm
+        }
+
+        Repository AtendimentoRepository {
+            @Atendimento findByPaciente(@PacienteId pacienteId);
+            List<@Atendimento> findUltimosByPaciente(@PacienteId pacienteId, Integer limite);
+            @Atendimento save(@Atendimento atendimento);
+        }
+
+        Repository MedicoRepository {
+            List<@Medico> findDisponiveis();
+            @Medico save(@Medico medico);
+        }
+
+        Repository ConsultorioRepository {
+            List<@Consultorio> findDisponiveis();
+            @Consultorio save(@Consultorio consultorio);
+        }
+    }
+
+    Aggregate RelatorioClinico {
+
+        Entity RelatorioClinico {
+            aggregateRoot
+            - @RelatorioClinicoId  relatorioId
+            - @AtendimentoId       atendimentoId
+            - @PacienteId          pacienteId
+            - @MedicoId            medicoResponsavel
+            - @SinaisVitais        sinaisVitaisAtuais
+            - @EvolucaoComparativa evolucaoComparativa
+            String                 diagnosticoTecnico
+            String                 orientacoesManejo
+            String                 resumoParaTutor
+            - List<@AnexoRelatorio> anexos
+            - List<String>         medicamentosPrescritos
+            - List<String>         alergiasDestaque
+            DateTime               geradoEm
+            DateTime               assinadoEm
+            Boolean                imutavel
+        }
+
+        ValueObject SinaisVitais {
+            Double   pesoKg
+            Double   temperaturaCelsius
+            Integer  frequenciaCardiacaBpm
+            DateTime aferidoEm
+        }
+
+        ValueObject EvolucaoComparativa {
+            Double variacaoPesoKg
+            String resumoTextual
+        }
+
+        ValueObject AnexoRelatorio {
+            String      nomeArquivo
+            - @TipoAnexo tipo
+            String      url
+        }
+        enum TipoAnexo                  { FOTO_LESAO, LAUDO_PDF, EXAME_IMAGEM }
+        ValueObject RelatorioClinicoId  { String id }
+
+        Service GeracaoEvolucaoComparativaService {
+            @SinaisVitais consolidarDaConsulta(@AtendimentoId atendimentoId);
+            @EvolucaoComparativa gerar(@PacienteId pacienteId, @SinaisVitais atual);
+        }
+
+        Service AssinaturaDigitalService {
+            @RelatorioClinico assinarDigitalmente(@RelatorioClinicoId id, @MedicoId medicoId);
+            String exportarParaPDF(@RelatorioClinicoId id);
+        }
+
+        DomainEvent RelatorioPublicadoParaTutorEvent {
+            - @RelatorioClinicoId relatorioId
+            - @PacienteId pacienteId
+            - @TutorId tutorId
+            DateTime publicadoEm
+        }
+
+        Repository RelatorioClinicoRepository {
+            @RelatorioClinico findByAtendimento(@AtendimentoId atendimentoId);
+            List<@RelatorioClinico> findByPacienteOrdenadoPorMaisRecente(@PacienteId pacienteId);
+            @RelatorioClinico save(@RelatorioClinico relatorio);
+        }
+    }
+
+    Aggregate PlanoNutricional {
+
+        Entity PlanoNutricional {
+            aggregateRoot
+            - @PlanoNutricionalId   planoId
+            - @PacienteId           pacienteId
+            - @AtendimentoId        atendimentoId
+            - @PesoIdeal            pesoIdeal
+            - @NivelAtividade       nivelAtividade
+            - List<@Comorbidade>    comorbidades
+            - @ResultadoNEM         resultado
+            - @CronogramaTransicao  cronogramaTransicao
+            - @AlertaManejoCritico  alertaManejoCritico
+            DateTime                calculadoEm
+            Boolean                 imutavel
+        }
+
+        ValueObject PesoIdeal {
+            Double pesoAtualKg
+            Double pesoIdealKg
+            Double divergenciaPercentual
+        }
+
+        ValueObject ResultadoNEM {
+            Double  kcalDiarias
+            Double  gramasDiariasTotais
+            Integer numeroDeRefeicoesDia
+            Date    dataPrevistaAtingirPesoIdeal
+        }
+
+        ValueObject CronogramaTransicao {
+            Integer                 duracaoEmDias
+            - List<@DiaTransicao>   dias
+        }
+
+        ValueObject DiaTransicao {
+            Integer numeroDia
+            Integer percentualDietaNova
+            Integer percentualDietaAntiga
+        }
+
+        ValueObject Comorbidade {
+            - @TipoComorbidade  tipo
+            Double              modificadorMetabolico
+        }
+
+        ValueObject AlertaManejoCritico {
+            Boolean             ativo
+            - @TipoAlertaManejo tipo
+            String              mensagem
+        }
+        enum TipoComorbidade            { NENHUMA, GESTACAO, NEFROPATIA, HEPATOPATIA, DIABETES, OBESIDADE, CARDIOPATIA }
+        enum NivelAtividade             { SEDENTARIO, POUCO_ATIVO, MODERADAMENTE_ATIVO, MUITO_ATIVO, ATLETA }
+        enum TipoAlertaManejo           { NENHUM, OBESIDADE, CAQUEXIA }
+        ValueObject PlanoNutricionalId  { String id }
+
+        Service CalculoNEMService {
+            @ResultadoNEM calcularNEM(@PesoIdeal pesoIdeal, @NivelAtividade nivelAtividade, List<@Comorbidade> comorbidades, Double kcalPorGramaRacao);
+        }
+
+        Service AnaliseComparativaPesoService {
+            Double sugerirAjustePercentual(@PacienteId pacienteId, @PesoIdeal atual);
+            @AlertaManejoCritico avaliarAlertaCritico(@PesoIdeal pesoIdeal);
+        }
+
+        Service GeracaoCronogramaTransicaoService {
+            @CronogramaTransicao gerarCronograma7Dias();
+        }
+
+        DomainEvent PlanoNutricionalEmitidoEvent {
+            - @PlanoNutricionalId planoId
+            - @PacienteId pacienteId
+            - @TutorId tutorId
+        }
+
+        Repository PlanoNutricionalRepository {
+            @PlanoNutricional findByAtendimento(@AtendimentoId atendimentoId);
+            List<@PlanoNutricional> findByPacienteHistorico(@PacienteId pacienteId);
+            @PlanoNutricional save(@PlanoNutricional planoNutricional);
+        }
+    }
+}
+
+BoundedContext ContextoFarmacovigilancia implements AtendimentoClinicoSubdomain {
+    type = FEATURE
+
+    Aggregate Medicamento {
+
+        Entity Medicamento {
+            aggregateRoot
+            - @MedicamentoId   medicamentoId
+            String             nomeComercial
+            String             principioAtivo
+            Double             concentracaoMgPorMl
+            Double             doseMinimaSeguraMgPorKg
+            Double             doseMaximaSeguraMgPorKg
+            - @RestricaoManejo restricaoManejo
+        }
+
+        enum RestricaoManejo      { NENHUMA, ESTOMAGO_VAZIO, COM_ALIMENTO, EVITAR_LACTICINIOS }
+        ValueObject MedicamentoId { String id }
+
+        Repository MedicamentoRepository {
+            @Medicamento findByPrincipioAtivo(String principioAtivo);
+            List<@Medicamento> findAll();
+            @Medicamento save(@Medicamento medicamento);
+        }
+    }
+
+    Aggregate MatrizInteracaoMedicamentosa {
+
+        Entity MatrizInteracao {
+            aggregateRoot
+            - @MatrizInteracaoId    matrizId
+            - List<@RegraInteracao> regras
+            DateTime                atualizadaEm
+        }
+
+        ValueObject RegraInteracao {
+            - @MedicamentoId        medicamentoA
+            - @MedicamentoId        medicamentoB
+            - @GravidadeInteracao   gravidade
+            String                  descricaoClinica
+            Boolean                 bloqueante
+        }
+        enum GravidadeInteracao       { LEVE, MODERADA, GRAVE, CRITICA }
+        ValueObject MatrizInteracaoId { String id }
+
+        Service ConsultaInteracoesService {
+            List<@RegraInteracao> verificarInteracoesEntre(List<@MedicamentoId> medicamentos);
+            Boolean possuiInteracaoBloqueante(List<@MedicamentoId> medicamentos);
+        }
+
+        Repository MatrizInteracaoRepository {
+            @MatrizInteracao findAtual();
+            @MatrizInteracao save(@MatrizInteracao matriz);
+        }
+    }
+
+    Aggregate Prescricao {
+
+        Entity Prescricao {
+            aggregateRoot
+            - @PrescricaoId            prescricaoId
+            - @AtendimentoId           atendimentoId
+            - @PacienteId              pacienteId
+            Double                     pesoPacienteAtualKg
+            - List<@TipoTagClinica>    tagsClinicasAtivas
+            - List<@ItemPrescricao>    itens
+            - @CronogramaAdministracao cronograma
+            DateTime                   emitidaEm
+            DateTime                   dataFimTratamento
+            - @StatusPrescricao        status
+            Boolean                    imutavel
+        }
+
+        Entity ItemPrescricao {
+            - @ItemPrescricaoId itemId
+            - @MedicamentoId    medicamentoId
+            String              nomeComercial
+            Double              doseInformadaMgPorKg
+            Double              doseCalculadaMg
+            Double              volumeFinalMl
+            String              posologia
+            Integer             duracaoDias
+            DateTime            dataInicioUso
+            DateTime            dataFimUso
+            - @StatusDosagem    statusDosagem
+            String              notaCuidadoEspecifico
+        }
+
+        ValueObject CronogramaAdministracao {
+            - List<@SlotHorario>    slotsDiarios
+            String                  conflitosResolvidos
+        }
+
+        ValueObject SlotHorario {
+            DateTime                horario
+            - @ItemPrescricaoId     itemId
+            Double                  volumeAdministrar
+            String                  notaCuidado
+        }
+        enum TipoTagClinica          { INSUFICIENCIA_RENAL, INSUFICIENCIA_HEPATICA, GERIATRICO, FILHOTE, GESTACAO, CARDIOPATIA }
+        enum StatusDosagem           { DENTRO_DO_LIMITE, PROXIMO_DO_LIMITE, TRAVADO_POR_DOSE, TRAVADO_POR_INTERACAO }
+        enum StatusPrescricao        { RASCUNHO, VALIDADA, TRAVADA_AGUARDANDO_REVISAO, EMITIDA, CANCELADA }
+        ValueObject PrescricaoId     { String id }
+        ValueObject ItemPrescricaoId { String id }
+
+        Service CalculadoraDosagemSeguraService {
+            @StatusDosagem validarDosagem(Double doseInformadaMgPorKg, Double pesoAnimalKg, @Medicamento medicamento);
+            Boolean deveTravarPrescricao(List<@ItemPrescricao> itens);
+        }
+
+        Service AjusteContextualPorTagsService {
+            Double calcularFatorReducao(List<@TipoTagClinica> tags);
+            Double converterMgParaVolume(Double doseMg, @Medicamento medicamento);
+        }
+
+        Service CronogramaAdministracaoService {
+            DateTime calcularDataFimTratamento(DateTime dataConsulta, List<@ItemPrescricao> itens);
+            @CronogramaAdministracao gerarCronograma(List<@ItemPrescricao> itens, List<@Medicamento> referencias);
+        }
+
+        Service EmissaoReceitaService {
+            String gerarPdfImutavel(@PrescricaoId prescricaoId);
+        }
+
+        DomainEvent PrescricaoEmitidaEvent {
+            - @PrescricaoId prescricaoId
+            - @PacienteId pacienteId
+            - @AtendimentoId atendimentoId
+            DateTime emitidaEm
+        }
+
+        Repository PrescricaoRepository {
+            @Prescricao findByAtendimento(@AtendimentoId atendimentoId);
+            List<@Prescricao> findByPaciente(@PacienteId pacienteId);
+            @Prescricao save(@Prescricao prescricao);
+        }
+    }
+}
+
+BoundedContext ContextoNotificacao implements NotificacaoSubdomain {
+    type = APPLICATION
+
+    Aggregate Notificacao {
+
+        Entity Notificacao {
+            aggregateRoot
+            - @NotificacaoId         notificacaoId
+            - @TipoDestinatario      tipoDestinatario
+            String                   destinatarioId
+            - @TipoNotificacao       tipo
+            - @PrioridadeNotificacao prioridade
+            String                   titulo
+            String                   mensagem
+            - @CanalEntrega          canal
+            String                   contextoOrigem
+            DateTime                 geradaEm
+            DateTime                 entregueEm
+            - @StatusNotificacao     status
+        }
+
+        enum TipoDestinatario      { TUTOR, RESPONSAVEL_SECUNDARIO, MEDICO, RECEPCIONISTA, EQUIPE_INTERNA }
+        enum TipoNotificacao       { ERRO, ATENCAO, INFORMATIVO, CONQUISTA, FINANCEIRO, CLINICO, VACINACAO }
+        enum PrioridadeNotificacao { BAIXA, MEDIA, ALTA, EPIDEMIOLOGICA }
+        enum CanalEntrega          { EMAIL, SMS, PUSH_APP, BANNER_INTERFACE, WHATSAPP, PAINEL_OPERACIONAL }
+        enum StatusNotificacao     { PENDENTE, ENVIADA, ENTREGUE, FALHA_ENTREGA, LIDA }
+        ValueObject NotificacaoId  { String id }
+
+        Service DespachoNotificacaoService {
+            @Notificacao despachar(@TipoDestinatario destinatario, String destinatarioId, String titulo, String mensagem, @CanalEntrega canal, @PrioridadeNotificacao prioridade);
+            void despacharEmCascata(List<@Notificacao> notificacoesEmSequencia);
+        }
+
+        Repository NotificacaoRepository {
+            List<@Notificacao> findByDestinatario(@TipoDestinatario tipo, String destinatarioId);
+            List<@Notificacao> findPendentesEnvio();
+            @Notificacao save(@Notificacao notificacao);
+        }
+    }
+}
