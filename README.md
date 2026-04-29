@@ -117,15 +117,15 @@ Executa o atendimento médico-veterinário com foco em segurança do paciente. V
 
 | Funcionalidade | Responsável |
 |---|---|
-| **1 - Busca Inteligente com Varredura Epidemiológica** | 🎯 Carlos Eduardo |
-| **2 - Cadastro com Tagueamento Automático** | 🎯 Mateus Ribeiro |
-| **3 - Registro de Queixa e Comportamento** | 🎯 Felipe Marques |
-| **4 - Triagem e Classificação de Risco** | 🎯 Bruno Assuncao |
-| **5 - Previsão de Espera Dinâmica** | 🎯 Felipe Marques |
-| **6 - Atualização Ativa do Painel de Espera** | 🎯 Carlos Eduardo |
-| **7 - Fila Ordenada por Risco** | 🎯 Bruno Assuncao |
-| **8 - Gestão de Alerta de SLA** | 🎯 Carlos Eduardo |
-| **9 - Chamada e Vínculo de Consultório** | 🎯 Artur Sales |
-| **10 - Plano Nutricional por Fórmula NEM** | 🎯 Mateus Ribeiro |
-| **11 - Calculadora de Dosagem Segura** | 🎯 Mateus Ribeiro |
-| **12 - Geração de Receita e Prazo de Tratamento** | 🎯 Artur Sales |
+| **1 - Prontuário Unificado do Tutor com Análise Epidemiológica** | 🎯 Artur Sales |
+| **2 -Triagem Clínica com Classificação Automática de Risco** | 🎯 Artur Sales   |
+| **3 - Protocolo Automatizado de Tutor Inacessível com Escalonamento** | 🎯 Carlos Eduardo |
+| **4 - Programa de Indicação com Recompensas** | 🎯 Carlos Eduardo |
+| **5 - Agendamento de Retorno com Integração de Exames Diagnósticos** | 🎯 Carlos Eduardo |
+| **6 - Monitoramento, Agendamento e Gestão Inteligente do Ciclo Vacinal** | 🎯 Mateus Ribeiro |
+| **7 - Assinatura de Plano e Gestão Financeira do Tutor** | 🎯 Felipe Marques |
+| **8 - Gerenciamento de Carência de Benefícios do Plano** | 🎯 Bruno Assuncao |
+| **9 - Programa de Conquistas e Gamificação do Assinante** | 🎯 Bruno Assuncao |
+| **10 - Emissão de Relatório Clínico Evolutivo e Sumário de Saúde** | 🎯 Mateus Ribeiro |
+| **11 - Gestão Nutricional Avançada e Prescrição de NEM** | 🎯 Felipe Marques |
+| **12 - Central de Farmacovigilância Inteligente e Gestão Terapêutica Integrada** | 🎯 Felipe Marques |
