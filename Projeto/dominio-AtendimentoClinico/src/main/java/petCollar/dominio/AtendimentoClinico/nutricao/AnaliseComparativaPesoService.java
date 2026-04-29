@@ -1,4 +1,4 @@
-package petcollar.dominio.atendimentoclinico.nutricao;
+package petCollar.dominio.AtendimentoClinico.nutricao;
 
 public class AnaliseComparativaPesoService {
 

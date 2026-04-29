@@ -1,9 +1,9 @@
-package petcollar.dominio.recepcaotriagem.paciente;
+package br.com.cesar.petCollar.dominio.compartilhado;
 
 import java.util.Objects;
 import java.util.UUID;
 
-public class PacienteId {
+public final class PacienteId {
 
     private final String valor;
 
@@ -16,23 +16,31 @@ public class PacienteId {
     }
 
     public static PacienteId de(String valor) {
-        if (valor == null || valor.isBlank())
+        if (valor == null || valor.isBlank()) {
             throw new IllegalArgumentException("PacienteId não pode ser vazio.");
+        }
         return new PacienteId(valor);
     }
 
-    public String getValor() { return valor; }
+    public String getValor() {
+        return valor;
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof PacienteId)) return false;
-        return Objects.equals(valor, ((PacienteId) o).valor);
+        PacienteId that = (PacienteId) o;
+        return Objects.equals(valor, that.valor);
     }
 
     @Override
-    public int hashCode() { return Objects.hash(valor); }
+    public int hashCode() {
+        return Objects.hash(valor);
+    }
 
     @Override
-    public String toString() { return valor; }
+    public String toString() {
+        return valor;
+    }
 }

@@ -1,16 +1,14 @@
 package petcollar.dominio.atendimentoclinico.bdd;
 
-import io.cucumber.java.pt.Dado;
-import io.cucumber.java.pt.E;
-import io.cucumber.java.pt.Então;
-import io.cucumber.java.pt.Quando;
-import petcollar.dominio.atendimentoclinico.nutricao.*;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import petCollar.dominio.AtendimentoClinico.nutricao.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 public class PassosGestaoNutricional {
 
@@ -24,7 +22,7 @@ public class PassosGestaoNutricional {
     // Passos @Dado — Setup
     // ════════════════════════════════════════════════════════════════════════════════════════════
 
-    @Dado("existe um plano nutricional com peso ideal {double} kg")
+    @Given("existe um plano nutricional com peso ideal {double} kg")
     public void dadaPlanoComPesoIdeal(double pesoIdealKg) {
         contexto.planoId = PlanoNutricionalId.gerar();
         contexto.pesoIdeal = new PesoIdeal(pesoIdealKg, pesoIdealKg);
@@ -32,17 +30,17 @@ public class PassosGestaoNutricional {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("o nivel de atividade e {string}")
+    @Given("o nivel de atividade e {string}")
     public void dadoNivelAtividade(String nivelStr) {
         contexto.nivelAtividadeAtual = NivelAtividade.valueOf(nivelStr);
     }
 
-    @Dado("nao ha comorbidades")
+    @Given("nao ha comorbidades")
     public void dadaSemComorbidades() {
         // Nada a fazer — comorbidades são vazias por padrão
     }
 
-    @Dado("existe um plano com peso ideal {double} kg e nivel {string}")
+    @Given("existe um plano com peso ideal {double} kg e nivel {string}")
     public void dadaPlanoComPesoIdealEAtividade(double pesoIdealKg, String nivelStr) {
         contexto.planoId = PlanoNutricionalId.gerar();
         contexto.pesoIdeal = new PesoIdeal(pesoIdealKg, pesoIdealKg);
@@ -50,7 +48,7 @@ public class PassosGestaoNutricional {
         contexto.excecaoCapturada = null;
     }
 
-    @E("o paciente tem a comorbidade {string} com modificador {double}")
+    @And("o paciente tem a comorbidade {string} com modificador {double}")
     public void eComorbidadeAplicada(String tipoComorbidadeStr, double modificador) {
         TipoComorbidade tipoComorbidade = TipoComorbidade.valueOf(tipoComorbidadeStr);
         Comorbidade comorbidade = new Comorbidade(tipoComorbidade, modificador);
@@ -63,7 +61,7 @@ public class PassosGestaoNutricional {
         );
     }
 
-    @Dado("existe um plano com peso atual {double} kg e peso ideal {double} kg")
+    @Given("existe um plano com peso atual {double} kg e peso ideal {double} kg")
     public void dadaPlanoComPesos(double pesoAtual, double pesoIdeal) {
         contexto.planoId = PlanoNutricionalId.gerar();
         contexto.pesoIdeal = new PesoIdeal(pesoAtual, pesoIdeal);
@@ -71,12 +69,12 @@ public class PassosGestaoNutricional {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("o NEM calculado e de {double} kcal")
+    @Given("o NEM calculado e de {double} kcal")
     public void dadoNEMFixo(double kcalDiarias) {
         contexto.nemResultante = kcalDiarias;
     }
 
-    @Dado("a racao tem {double} kcal por grama")
+    @Given("a racao tem {double} kcal por grama")
     public void dadaDensidadeEnergetica(double kcalPorGrama) {
         // Armazenar para uso no passo @Quando
         if (!contexto.toString().contains("kcalPorGrama")) {
@@ -88,7 +86,7 @@ public class PassosGestaoNutricional {
     // Passos @Quando — Ações (com try/catch obrigatório)
     // ════════════════════════════════════════════════════════════════════════════════════════════
 
-    @Quando("o servico calcular o NEM")
+    @When("o servico calcular o NEM")
     public void quandoServicoCalculaNEM() {
         try {
             contexto.plano = new PlanoNutricional(
@@ -104,7 +102,7 @@ public class PassosGestaoNutricional {
         }
     }
 
-    @Quando("o servico avaliar o alerta de manejo critico")
+    @When("o servico avaliar o alerta de manejo critico")
     public void quandoServicoAvaliaAlerta() {
         try {
             contexto.alertaResultante = contexto.analiseComparativaPesoService
@@ -114,7 +112,7 @@ public class PassosGestaoNutricional {
         }
     }
 
-    @Quando("o servico gerar o cronograma de transicao de 7 dias")
+    @When("o servico gerar o cronograma de transicao de 7 dias")
     public void quandoServicoGeraTransicao() {
         try {
             contexto.cronogramaResultante = contexto.geracaoCronogramaTransicaoService
@@ -124,7 +122,7 @@ public class PassosGestaoNutricional {
         }
     }
 
-    @Quando("o servico calcular as gramas diarias")
+    @When("o servico calcular as gramas diarias")
     public void quandoServicoCalculaGramas() {
         try {
             contexto.gramasDiariasResultante = contexto.calculoNEMService
@@ -138,7 +136,7 @@ public class PassosGestaoNutricional {
     // Passos @Então — Validações
     // ════════════════════════════════════════════════════════════════════════════════════════════
 
-    @Então("o resultado deve ser aproximadamente {int} kcal por dia")
+    @Then("o resultado deve ser aproximadamente {int} kcal por dia")
     public void entaoVerificaNEMEsperado(int nemEsperado) {
         assertNull(contexto.excecaoCapturada,
             "Não deveria ter lançado exceção: " + (contexto.excecaoCapturada != null ? contexto.excecaoCapturada.getMessage() : ""));
@@ -147,7 +145,7 @@ public class PassosGestaoNutricional {
             "NEM deveria ser aproximadamente " + nemEsperado);
     }
 
-    @Então("o tipo de alerta deve ser {string}")
+    @Then("o tipo de alerta deve ser {string}")
     public void entaoVerificaTipoAlerta(String tipoAlertaEsperado) {
         assertNull(contexto.excecaoCapturada,
             "Não deveria ter lançado exceção");
@@ -156,7 +154,7 @@ public class PassosGestaoNutricional {
             "Tipo de alerta incompatível");
     }
 
-    @Então("o dia {int} deve ter {double} porcento da dieta nova")
+    @Then("o dia {int} deve ter {double} porcento da dieta nova")
     public void entaoVerificaPercentualDia(int numeroDia, double percentualEsperado) {
         assertNull(contexto.excecaoCapturada,
             "Não deveria ter lançado exceção");
@@ -167,12 +165,12 @@ public class PassosGestaoNutricional {
             "Dia " + numeroDia + " devería ter " + percentualEsperado + "% da dieta nova");
     }
 
-    @E("o dia {int} deve ter {double} porcento da dieta nova")
+    @And("o dia {int} deve ter {double} porcento da dieta nova")
     public void eVerificaPercentualDia(int numeroDia, double percentualEsperado) {
         entaoVerificaPercentualDia(numeroDia, percentualEsperado);
     }
 
-    @Então("o resultado deve ser aproximadamente {int} gramas por dia")
+    @Then("o resultado deve ser aproximadamente {int} gramas por dia")
     public void entaoVerificaGramasDiarias(int gramasEsperadas) {
         assertNull(contexto.excecaoCapturada,
             "Não deveria ter lançado exceção");

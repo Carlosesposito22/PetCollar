@@ -1,4 +1,3 @@
-# language: pt
 Funcionalidade: Gerenciamento de Carencia de Beneficios do Plano
 
   Cenario: Beneficio ainda em carencia nao pode ser utilizado

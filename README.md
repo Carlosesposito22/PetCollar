@@ -1,32 +1,32 @@
 ## 🐾 **Sobre o Projeto**
 
-O **Sistema de Inteligência Clínica e Gestão Veterinária** é uma plataforma desenvolvida para modernizar e proteger o fluxo de atendimento em clínicas veterinárias. O sistema tem como motor central a **segurança do paciente** e a **gravidade médica**, garantindo que casos críticos sejam sempre priorizados — desde a recepção até a emissão da receita.
+O petCollar é uma plataforma de gestão veterinária de alta complexidade, desenvolvida para modernizar e proteger o fluxo assistencial em clínicas veterinárias. O sistema tem como motor central a segurança do paciente e a gravidade médica, garantindo que o tempo de resposta clínico dite o ritmo de toda a operação, desde a recepção inteligente até a inteligência farmacológica avançada.
 
 ---
 
 ## ⭐ **Funcionalidades Principais**
 
-### **🔍 Recepção Inteligente**
+### **🔍 Recepção e Biossegurança Clínica**
 
-- **Busca com Varredura Epidemiológica:** Localização ágil do tutor com análise automática do histórico clínico dos animais. Pacientes com doenças infectocontagiosas nos últimos 40 dias recebem a tag "Alerta Epidemiológico" e são movidos automaticamente para o topo da fila, garantindo a biossegurança da clínica.
-- **Cadastro com tagueamento automático**: cálculo de idade em tempo real e aplicação de tags visuais como *Braquiocefálico* e *Geriátrico* com base em raça e idade.
-- **Registro de queixa e alertas comportamentais** (ex: animal agressivo ou estressado) para preparar a equipe clínica antes do atendimento.
+- **Prontuário Unificado com Análise Epidemiológica:** Identificação inteligente do Tutor via CPF que executa uma varredura preditiva de riscos infectocontagiosos nos últimos 40 dias. Caso detectado, o sistema aplica o Alerta Epidemiológico, forçando a priorização imediata para isolamento sanitário.
+- **Triagem e Gestão Dinâmica de Fila:** Motor de cálculo que converte sintomas em um PesoTotal determinístico, definindo a Cor de Risco e a prioridade na Fila de Espera Dinâmica. O sistema monitora o SLA e automatiza a promoção ao topo da fila em casos de atraso crítico, provendo Previsão de Espera em tempo real.
+- **Protocolo de Tutor Inacessível com Escalonamento:** Fluxo de contingência automatizado para garantir a continuidade assistencial quando o responsável não responde. Inclui tentativas progressivas de contato e escalonamento para níveis de decisão clínica via responsáveis secundários.
 
-### **🚦 Triagem e Classificação de Risco**
+### **🚀 Crescimento e Fidelização Gamificada**
 
-- **Formulário de sintomas com pesos predefinidos** que resulta automaticamente em uma cor de prioridade: Vermelho, Amarelo ou Verde.
-- **Remoção da subjetividade** no primeiro contato, garantindo detecção precoce de casos graves.
+- **Programa de Indicação com Recompensas de Elite:** Motor de crescimento orgânico que gerencia links permanentes e automatiza recompensas de duas vias: 30% de desconto para o indicado e 15% de desconto mais uma Conquista Lendária para o indicador após a confirmação do pagamento.
+- **Programa de Conquistas e Gamificação do Assinante:** Sistema orientado a eventos que concede badges de raridade (Comum a Lendária) baseadas em marcos de saúde e fidelidade. Inclui barras de progresso em tempo real para incentivar o engajamento contínuo.
 
-### **📋 Gestão da Fila de Espera**
+### **📋 Portal do Tutor e Medicina Preventiva**
 
-- **Fila ordenada por gravidade** (Vermelho > Amarelo > Verde), com tempo de chegada usado apenas como critério de desempate.
-- **Previsão de espera dinâmica**: posição na fila × tempo médio por cor de risco, atualizada a cada chamada.
-- **Atualização ativa do painel**: ao acionar o painel, o sistema recalcula e persiste o tempo estimado de todos os pacientes em espera, verifica e persiste o status de SLA de cada um — aplicando alertas laranja ou vermelho quando os limites são atingidos — e só então retorna os dados consolidados com as contagens de violações e alertas epidemiológicos ativos.
+- **Agendamento de Retorno Integrado a Exames:** Validador clínico que vincula obrigatoriamente a consulta de retorno à conclusão de laudos e exames solicitados anteriormente, otimizando a precisão do diagnóstico final.
+- **Gestão Inteligente do Ciclo Vacinal:** Painel sentinela que realiza cálculos preditivos de doses futuras baseados em intervalos biológicos e protocolos clínicos, disparando alertas de proximidade e recalculando previsões em caso de atrasos.
 
-### **⏱️ Monitoramento de SLA**
+### **🩺 Inteligência Médica e Terapêutica**
 
-- **Alertas automáticos**: destaque laranja ao atingir 80% do prazo e alerta vermelho crítico ao atingir 100%.
-- **Promoção automática ao topo da fila** quando o tempo de espera expira, garantindo que nenhum paciente crítico seja esquecido.
+- **Relatório Clínico Evolutivo e Sumário de Saúde:** Compilação automática de dados vitais para geração de gráficos de evolução comparativa entre os atendimentos, finalizado com assinatura digital imutável para transparência do Tutor.
+- **Gestão Nutricional Avançada e Prescrição de NEM:** Suporte à decisão clínica que automatiza o cálculo da Necessidade Energética de Manutenção via fórmula metabólica (P^{0,75}), integrando comorbidades e cronogramas de transição alimentar.
+- **Central de Farmacovigilância e Gestão Terapêutica:**Motor de segurança farmacológica que executa a Blindagem de Dosagem, valida interações medicamentosas graves e projeta a Data de Fim do Tratamento baseada no fármaco de maior duração.
 
 ### **🏥 Atendimento Clínico**
 
@@ -34,6 +34,11 @@ O **Sistema de Inteligência Clínica e Gestão Veterinária** é uma plataforma
 - **Plano nutricional (NEM)**: cálculo de gramas diárias de ração com base no peso ideal e nível de atividade do animal.
 - **Calculadora de dosagem segura**: bloqueio automático de prescrições que excedam o limite de segurança por kg cadastrado para o medicamento.
 - **Data de fim do tratamento**: identificação automática do medicamento de uso mais longo para preencher a conclusão da receita.
+
+### **💳 Gestão Financeira e de Benefícios**
+
+- **Assinatura de Plano e Gestão Financeira**: Controle dinâmico de acesso com processamento de Juros Simples de 0,033% ao dia e transições automáticas de status da conta para Inadimplente ou Suspensa.
+- **Gerenciamento de Carência de Benefícios do Plano**: Motor de cálculo que monitora limites e períodos de carência em tempo real, emitindo Tickets de Benefício com código GUID único e validade de 48 horas.
 
 ---
 
@@ -46,13 +51,13 @@ O **Sistema de Inteligência Clínica e Gestão Veterinária** é uma plataforma
 > - 🧩 [CML](https://github.com/Carlosesposito22/petCollar/tree/main/entregaveis/cml)
 > - 🧠 [Domínio](https://github.com/Carlosesposito22/petCollar/tree/main/entregaveis/dominio)
 > - 🗺️ [Mapa de Histórias](https://github.com/Carlosesposito22/petCollar/tree/main/entregaveis/mapa)
-> - 🎨 [Protótipo](https://disco-fancy-97893312.figma.site/)
+> - 🎨 [Protótipo](https://wink-equity-09401367.figma.site/)
 >
 > Clique nos nomes acima para acessar os arquivos correspondentes.  
 > As imagens abaixo também são clicáveis e redirecionam para suas respectivas pastas.
 
 ---
-
+<!--
 ## 🏛️ **Arquitetura DDD**
 
 O sistema é estruturado em três **Bounded Contexts** com responsabilidades bem delimitadas, dois subdomínios **Core** e um **Supporting**, interligados por relações estratégicas de Upstream/Downstream e Shared Kernel.
@@ -108,8 +113,8 @@ Executa o atendimento médico-veterinário com foco em segurança do paciente. V
 **Agregados:** `Atendimento` · `PlanoNutricional` · `Prescricao`
 
 **Repositories:** `AtendimentoRepository` · `MedicoRepository` · `ConsultorioRepository` · `PlanoNutricionalRepository` · `PrescricaoRepository` · `MedicamentoRepository`
-
 ---
+  -->
 
 ## 📋 **Distribuição de Tarefas**
 
@@ -117,15 +122,15 @@ Executa o atendimento médico-veterinário com foco em segurança do paciente. V
 
 | Funcionalidade | Responsável |
 |---|---|
-| **1 - Busca Inteligente com Varredura Epidemiológica** | 🎯 Carlos Eduardo |
-| **2 - Cadastro com Tagueamento Automático** | 🎯 Mateus Ribeiro |
-| **3 - Registro de Queixa e Comportamento** | 🎯 Felipe Marques |
-| **4 - Triagem e Classificação de Risco** | 🎯 Bruno Assuncao |
-| **5 - Previsão de Espera Dinâmica** | 🎯 Felipe Marques |
-| **6 - Atualização Ativa do Painel de Espera** | 🎯 Carlos Eduardo |
-| **7 - Fila Ordenada por Risco** | 🎯 Bruno Assuncao |
-| **8 - Gestão de Alerta de SLA** | 🎯 Carlos Eduardo |
-| **9 - Chamada e Vínculo de Consultório** | 🎯 Artur Sales |
-| **10 - Plano Nutricional por Fórmula NEM** | 🎯 Mateus Ribeiro |
-| **11 - Calculadora de Dosagem Segura** | 🎯 Mateus Ribeiro |
-| **12 - Geração de Receita e Prazo de Tratamento** | 🎯 Artur Sales |
+| **1 - Prontuário Unificado do Tutor com Análise Epidemiológica** | 🎯 Artur Sales |
+| **2 -Triagem Clínica com Classificação Automática de Risco** | 🎯 Artur Sales   |
+| **3 - Protocolo Automatizado de Tutor Inacessível com Escalonamento** | 🎯 Carlos Eduardo |
+| **4 - Programa de Indicação com Recompensas** | 🎯 Carlos Eduardo |
+| **5 - Agendamento de Retorno com Integração de Exames Diagnósticos** | 🎯 Carlos Eduardo |
+| **6 - Monitoramento, Agendamento e Gestão Inteligente do Ciclo Vacinal** | 🎯 Mateus Ribeiro |
+| **7 - Assinatura de Plano e Gestão Financeira do Tutor** | 🎯 Felipe Marques |
+| **8 - Gerenciamento de Carência de Benefícios do Plano** | 🎯 Bruno Assuncao |
+| **9 - Programa de Conquistas e Gamificação do Assinante** | 🎯 Bruno Assuncao |
+| **10 - Emissão de Relatório Clínico Evolutivo e Sumário de Saúde** | 🎯 Mateus Ribeiro |
+| **11 - Gestão Nutricional Avançada e Prescrição de NEM** | 🎯 Felipe Marques |
+| **12 - Central de Farmacovigilância Inteligente e Gestão Terapêutica Integrada** | 🎯 Felipe Marques |

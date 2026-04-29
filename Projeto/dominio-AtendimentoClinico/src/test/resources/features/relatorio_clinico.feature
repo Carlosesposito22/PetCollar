@@ -1,4 +1,3 @@
-# language: pt
 Feature: Emissao de Relatorio Clinico Evolutivo e Sumario de Saude
 
   Scenario: Gerar relatorio com sinais vitais do atendimento

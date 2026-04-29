@@ -1,4 +1,8 @@
-package petcollar.dominio.atendimentoclinico.relatorio;
+package petCollar.dominio.AtendimentoClinico.relatorio;
+
+import br.com.cesar.petCollar.dominio.compartilhado.AtendimentoId;
+import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
+import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

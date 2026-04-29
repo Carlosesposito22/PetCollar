@@ -1,4 +1,3 @@
-# language: pt
 Feature: Prontuario Unificado do Tutor com Analise Epidemiologica
 
   Scenario: Busca por CPF encontra tutor cadastrado

@@ -1,0 +1,12 @@
+package petcollar.dominio.assinaturafaturamento.indicacao;
+
+public enum TipoEventoRastreio {
+    CLIQUE_NO_LINK,
+    CADASTRO_INICIADO,
+    ASSINATURA_GERADA,
+    PAGAMENTO_CONFIRMADO,
+    RECOMPENSA_DISPARADA,
+    FRAUDE_DETECTADA_AUTO_INDICACAO,
+    FRAUDE_DETECTADA_METODO_DUPLICADO,
+    LAST_CLICK_ATRIBUIDO
+}

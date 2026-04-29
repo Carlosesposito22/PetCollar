@@ -1,5 +1,4 @@
-package petcollar.dominio.atendimentoclinico.nutricao;
-
+package petCollar.dominio.AtendimentoClinico.nutricao;
 import java.util.List;
 
 public class CalculoNEMService {

@@ -1,9 +1,9 @@
 package petcollar.dominio.assinaturafaturamento.bdd;
 
-import io.cucumber.java.pt.Dado;
-import io.cucumber.java.pt.E;
-import io.cucumber.java.pt.Então;
-import io.cucumber.java.pt.Quando;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import petcollar.dominio.assinaturafaturamento.*;
 
 import java.time.LocalDate;
@@ -25,7 +25,7 @@ public class PassosAssinaturaFaturamento {
 
     // ── Contratação ─────────────────────────────────────────────────────────
 
-    @Dado("existe um plano ativo disponivel para contratacao")
+    @Given("existe um plano ativo disponivel para contratacao")
     public void dadaPlanoAtivoDisponivel() {
         contexto.planoId = PlanoId.gerar();
         contexto.plano = new Plano(
@@ -38,7 +38,7 @@ public class PassosAssinaturaFaturamento {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("existe um plano desativado")
+    @Given("existe um plano desativado")
     public void dadaPlanoDesativado() {
         contexto.planoId = PlanoId.gerar();
         contexto.plano = new Plano(
@@ -53,7 +53,7 @@ public class PassosAssinaturaFaturamento {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico contratar o plano para o tutor {string}")
+    @When("o servico contratar o plano para o tutor {string}")
     public void quandoServicoContratar(String tutorId) {
         try {
             contexto.assinatura = contexto.contratacaoPlanoService
@@ -63,7 +63,7 @@ public class PassosAssinaturaFaturamento {
         }
     }
 
-    @Quando("o servico tentar contratar o plano para o tutor {string}")
+    @When("o servico tentar contratar o plano para o tutor {string}")
     public void quandoServicoTentarContratar(String tutorId) {
         try {
             contexto.assinatura = contexto.contratacaoPlanoService
@@ -73,7 +73,7 @@ public class PassosAssinaturaFaturamento {
         }
     }
 
-    @Então("a assinatura deve ter status {string}")
+    @Then("a assinatura deve ter status {string}")
     public void entaoVerificaStatusAssinatura(String statusEsperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertEquals(
@@ -82,14 +82,14 @@ public class PassosAssinaturaFaturamento {
         );
     }
 
-    @E("a primeira cobranca deve ter sido salva no repositorio")
+    @And("a primeira cobranca deve ter sido salva no repositorio")
     public void eVerificaSaveCobranca() {
         verify(contexto.cobrancaRepositorio, times(1)).save(any(Cobranca.class));
     }
 
     // ── Confirmação de pagamento ─────────────────────────────────────────────
 
-    @Dado("existe uma assinatura com status {string}")
+    @Given("existe uma assinatura com status {string}")
     public void dadaAssinaturaComStatus(String statusStr) {
         contexto.assinaturaId = AssinaturaId.gerar();
         contexto.planoId = PlanoId.gerar();
@@ -108,7 +108,7 @@ public class PassosAssinaturaFaturamento {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico confirmar o primeiro pagamento da assinatura")
+    @When("o servico confirmar o primeiro pagamento da assinatura")
     public void quandoServicoConfirmarPrimeiroPagamento() {
         try {
             contexto.assinatura = contexto.contratacaoPlanoService
@@ -120,13 +120,13 @@ public class PassosAssinaturaFaturamento {
 
     // ── Cálculo de juros ────────────────────────────────────────────────────
 
-    @Dado("existe uma cobranca com valor original de {double} reais")
+    @Given("existe uma cobranca com valor original de {double} reais")
     public void dadaCobrancaComValorOriginal(double valor) {
         contexto.valorOriginalCobranca = valor;
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico calcular o valor atualizado com {int} meses de atraso")
+    @When("o servico calcular o valor atualizado com {int} meses de atraso")
     public void quandoServicoCalcularJuros(int meses) {
         try {
             contexto.valorCalculado = contexto.calculoJurosService
@@ -136,7 +136,7 @@ public class PassosAssinaturaFaturamento {
         }
     }
 
-    @Então("o valor com juros deve ser {double} reais")
+    @Then("o valor com juros deve ser {double} reais")
     public void entaoVerificaValorComJuros(double valorEsperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertEquals(valorEsperado, contexto.valorCalculado.getValor(), 0.001);
@@ -144,7 +144,7 @@ public class PassosAssinaturaFaturamento {
 
     // ── Gestão de inadimplência ──────────────────────────────────────────────
 
-    @Dado("existe uma assinatura com {int} mensalidades consecutivas em atraso")
+    @Given("existe uma assinatura com {int} mensalidades consecutivas em atraso")
     public void dadaAssinaturaComMensalidadesEmAtraso(int quantidade) {
         contexto.assinaturaId = AssinaturaId.gerar();
         contexto.planoId = PlanoId.gerar();
@@ -162,7 +162,7 @@ public class PassosAssinaturaFaturamento {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico avaliar o status da assinatura")
+    @When("o servico avaliar o status da assinatura")
     public void quandoServicoAvaliarStatus() {
         try {
             contexto.assinatura = contexto.gestaoInadimplenciaService
@@ -172,7 +172,7 @@ public class PassosAssinaturaFaturamento {
         }
     }
 
-    @Dado("existe uma assinatura com status {string} e {int} cobrancas em atraso")
+    @Given("existe uma assinatura com status {string} e {int} cobrancas em atraso")
     public void dadaAssinaturaInadimplenteComCobrancas(String statusStr, int qtdCobrancas) {
         contexto.assinaturaId = AssinaturaId.gerar();
         contexto.planoId = PlanoId.gerar();
@@ -212,7 +212,7 @@ public class PassosAssinaturaFaturamento {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("as cobrancas forem quitadas")
+    @When("as cobrancas forem quitadas")
     public void quandoCobrancasForemQuitadas() {
         try {
             contexto.assinatura = contexto.gestaoInadimplenciaService
@@ -222,7 +222,7 @@ public class PassosAssinaturaFaturamento {
         }
     }
 
-    @Então("o contador de mensalidades em atraso deve ser zero")
+    @Then("o contador de mensalidades em atraso deve ser zero")
     public void entaoContadorDeveSerZero() {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertEquals(0, contexto.assinatura.getMensalidadesConsecutivasEmAtraso());
@@ -230,7 +230,7 @@ public class PassosAssinaturaFaturamento {
 
     // ── Geração de QR Code ───────────────────────────────────────────────────
 
-    @Dado("existe uma cobranca em atraso da assinatura")
+    @Given("existe uma cobranca em atraso da assinatura")
     public void dadaCobrancaEmAtraso() {
         contexto.assinaturaId = AssinaturaId.gerar();
         contexto.cobrancaId = CobrancaId.gerar();
@@ -248,7 +248,7 @@ public class PassosAssinaturaFaturamento {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico gerar o QR Code para a cobranca")
+    @When("o servico gerar o QR Code para a cobranca")
     public void quandoServicoGerarQRCode() {
         try {
             contexto.pagamento = contexto.geracaoQRCodeService
@@ -258,7 +258,7 @@ public class PassosAssinaturaFaturamento {
         }
     }
 
-    @Então("um pagamento com QR Code deve ser criado com status {string}")
+    @Then("um pagamento com QR Code deve ser criado com status {string}")
     public void entaoVerificaPagamentoStatus(String statusEsperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertNotNull(contexto.pagamento);
@@ -267,7 +267,7 @@ public class PassosAssinaturaFaturamento {
         verify(contexto.pagamentoRepositorio, times(1)).save(contexto.pagamento);
     }
 
-    @Dado("existe uma assinatura suspensa com {int} cobrancas em atraso")
+    @Given("existe uma assinatura suspensa com {int} cobrancas em atraso")
     public void dadaAssinaturaSuspensaComCobrancas(int qtdCobrancas) {
         contexto.assinaturaId = AssinaturaId.gerar();
         List<Cobranca> cobrancas = new ArrayList<>();
@@ -287,7 +287,7 @@ public class PassosAssinaturaFaturamento {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico gerar o QR Code consolidado para a assinatura")
+    @When("o servico gerar o QR Code consolidado para a assinatura")
     public void quandoServicoGerarQRCodeConsolidado() {
         try {
             contexto.pagamento = contexto.geracaoQRCodeService
@@ -297,7 +297,7 @@ public class PassosAssinaturaFaturamento {
         }
     }
 
-    @Então("um pagamento consolidado deve ser criado com status {string}")
+    @Then("um pagamento consolidado deve ser criado com status {string}")
     public void entaoVerificaPagamentoConsolidadoStatus(String statusEsperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertNotNull(contexto.pagamento);
@@ -305,7 +305,7 @@ public class PassosAssinaturaFaturamento {
         assertNotNull(contexto.pagamento.getQrCode());
     }
 
-    @E("o valor do pagamento deve corresponder a soma das cobrancas")
+    @And("o valor do pagamento deve corresponder a soma das cobrancas")
     public void eVerificaValorConsolidado() {
         double somaEsperada = contexto.cobrancasEmAtraso.stream()
                 .mapToDouble(c -> c.getValorOriginal().getValor())
@@ -314,14 +314,14 @@ public class PassosAssinaturaFaturamento {
         verify(contexto.pagamentoRepositorio, times(1)).save(contexto.pagamento);
     }
 
-    @Dado("nao existe cobranca com o id informado")
+    @Given("nao existe cobranca com o id informado")
     public void dadaNaoExisteCobranca() {
         contexto.cobrancaId = CobrancaId.gerar();
         when(contexto.cobrancaRepositorio.findById(contexto.cobrancaId)).thenReturn(null);
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico tentar gerar o QR Code para essa cobranca")
+    @When("o servico tentar gerar o QR Code para essa cobranca")
     public void quandoServicoTentarGerarQRCode() {
         try {
             contexto.pagamento = contexto.geracaoQRCodeService
@@ -331,7 +331,7 @@ public class PassosAssinaturaFaturamento {
         }
     }
 
-    @Então("deve ser lancada uma excecao de argumento invalido")
+    @Then("deve ser lancada uma excecao de argumento invalido")
     public void entaoExcecaoArgumentoInvalido() {
         assertNotNull(contexto.excecaoCapturada);
         assertInstanceOf(IllegalArgumentException.class, contexto.excecaoCapturada);

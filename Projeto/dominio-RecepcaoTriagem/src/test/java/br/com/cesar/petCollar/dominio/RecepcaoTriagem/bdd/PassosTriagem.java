@@ -1,12 +1,12 @@
 package br.com.cesar.petCollar.dominio.RecepcaoTriagem.bdd;
 
-import io.cucumber.java.pt.Dado;
-import io.cucumber.java.pt.E;
-import io.cucumber.java.pt.Então;
-import io.cucumber.java.pt.Quando;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import petcollar.dominio.recepcaotriagem.paciente.Especie;
 import petcollar.dominio.recepcaotriagem.paciente.Paciente;
-import petcollar.dominio.recepcaotriagem.paciente.PacienteId;
+import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import petcollar.dominio.recepcaotriagem.triagem.CorDeRisco;
 import petcollar.dominio.recepcaotriagem.triagem.PesoTotal;
 import petcollar.dominio.recepcaotriagem.triagem.RespostaSintoma;
@@ -17,22 +17,20 @@ import petcollar.dominio.recepcaotriagem.triagem.TriagemId;
 
 import java.time.LocalDate;
 
-import br.com.cesar.petCollar.dominio.RecepcaoTriagem.bdd.ContextoCenarioF02;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class PassosTriagem {
 
-    private final ContextoCenarioF02 contexto;
+    private final ContextoCenario contexto;
 
-    public PassosTriagem(ContextoCenarioF02 contexto) {
+    public PassosTriagem(ContextoCenario contexto) {
         this.contexto = contexto;
     }
 
     // ── Cenários de ClassificacaoDeRiscoService ───────────────────────────────
 
-    @Dado("existe uma triagem em elaboracao para o paciente")
+    @Given("existe uma triagem em elaboracao para o paciente")
     public void dadaTriagemEmElaboracao() {
         contexto.triagemId = TriagemId.gerar();
         contexto.triagem = new Triagem(contexto.triagemId, PacienteId.gerar());
@@ -41,19 +39,19 @@ public class PassosTriagem {
         contexto.excecaoCapturada = null;
     }
 
-    @E("o sintoma {string} com peso {int} esta presente")
+    @And("o sintoma {string} com peso {int} esta presente")
     public void eSintomaComPesoPresente(String codigo, int peso) {
         Sintoma sintoma = new Sintoma(codigo, codigo, peso);
         contexto.triagem.adicionarResposta(new RespostaSintoma(sintoma, true));
     }
 
-    @E("a configuracao define limiteVermelho {int} e limiteAmarelo {int}")
+    @And("a configuracao define limiteVermelho {int} e limiteAmarelo {int}")
     public void eConfiguracaoLimites(int limiteVermelho, int limiteAmarelo) {
         contexto.limiteVermelho = limiteVermelho;
         contexto.limiteAmarelo = limiteAmarelo;
     }
 
-    @Quando("o servico calcular a cor de risco")
+    @When("o servico calcular a cor de risco")
     public void quandoServicoCalculaCorDeRisco() {
         try {
             PesoTotal pesoTotal = contexto.servicoClassificacao.calcular(
@@ -67,7 +65,7 @@ public class PassosTriagem {
         }
     }
 
-    @Então("a cor de risco resultante deve ser {string}")
+    @Then("a cor de risco resultante deve ser {string}")
     public void entaoCorDeRiscoResultante(String corEsperada) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertEquals(CorDeRisco.valueOf(corEsperada), contexto.corDeRiscoResultante);
@@ -75,7 +73,7 @@ public class PassosTriagem {
 
     // ── Cenário de FinalizacaoTriagemService ──────────────────────────────────
 
-    @Dado("existe uma triagem em elaboracao com cor de risco calculada")
+    @Given("existe uma triagem em elaboracao com cor de risco calculada")
     public void dadaTriagemComCorDeRiscoCalculada() {
         contexto.triagemId = TriagemId.gerar();
         contexto.triagem = new Triagem(contexto.triagemId, PacienteId.gerar());
@@ -85,7 +83,7 @@ public class PassosTriagem {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico finalizar a triagem")
+    @When("o servico finalizar a triagem")
     public void quandoServicoFinalizaTriagem() {
         try {
             contexto.servicoFinalizacao.finalizar(contexto.triagemId);
@@ -94,13 +92,13 @@ public class PassosTriagem {
         }
     }
 
-    @Então("o status da triagem deve ser {string}")
+    @Then("o status da triagem deve ser {string}")
     public void entaoStatusDaTriagem(String statusEsperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertEquals(StatusTriagem.valueOf(statusEsperado), contexto.triagem.getStatus());
     }
 
-    @E("a triagem deve estar bloqueada para alteracao")
+    @And("a triagem deve estar bloqueada para alteracao")
     public void eTriagemBloqueadaParaAlteracao() {
         assertTrue(contexto.triagem.isBloqueadaParaAlteracao(),
                 "A triagem deveria estar bloqueada para alteração");
@@ -108,7 +106,7 @@ public class PassosTriagem {
 
     // ── Cenário de TagueamentoAutomaticoService ───────────────────────────────
 
-    @Dado("existe um paciente da especie {string} com data de nascimento ha {int} anos")
+    @Given("existe um paciente da especie {string} com data de nascimento ha {int} anos")
     public void dadaPacienteComIdadeEmAnos(String especieStr, int anos) {
         contexto.pacienteId = PacienteId.gerar();
         LocalDate dataNascimento = LocalDate.now().minusYears(anos);
@@ -119,7 +117,7 @@ public class PassosTriagem {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico aplicar as tags automaticas")
+    @When("o servico aplicar as tags automaticas")
     public void quandoServicoAplicaTagsAutomaticas() {
         try {
             contexto.servicoTagueamento.aplicarTagsAutomaticas(contexto.pacienteId);
@@ -128,7 +126,7 @@ public class PassosTriagem {
         }
     }
 
-    @Então("o paciente deve ter a tag {string}")
+    @Then("o paciente deve ter a tag {string}")
     public void entaoPacienteTemTag(String codigoTag) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         boolean temTag = contexto.paciente.getTags().stream()

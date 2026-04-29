@@ -1,4 +1,3 @@
-# language: pt
 Feature: Triagem Clinica com Classificacao Automatica de Risco
 
   Scenario: Sintomas graves resultam em cor Vermelho

@@ -1,9 +1,9 @@
 package petcollar.dominio.gamificacao.bdd;
 
-import io.cucumber.java.pt.Dado;
-import io.cucumber.java.pt.E;
-import io.cucumber.java.pt.Então;
-import io.cucumber.java.pt.Quando;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import petcollar.dominio.gamificacao.conquista.*;
 
 import java.time.LocalDateTime;
@@ -23,7 +23,7 @@ public class PassosGamificacao {
 
     // ── Cenário 1: Evento único concede badge imediatamente ─────────────────
 
-    @Dado("existe uma badge de evento unico com chave {string}")
+    @Given("existe uma badge de evento unico com chave {string}")
     public void dadaBadgeEventoUnico(String chave) {
         contexto.badgeId = BadgeId.gerar();
         contexto.badge = new Badge(
@@ -34,13 +34,13 @@ public class PassosGamificacao {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("o tutor ainda nao conquistou essa badge")
+    @Given("o tutor ainda nao conquistou essa badge")
     public void dadaTutorNaoConquistou() {
         when(contexto.conquistaRepositorio.existsByTutorEBadge(contexto.tutorId, contexto.badgeId))
                 .thenReturn(false);
     }
 
-    @Quando("o servico avaliar as badges para o evento {string}")
+    @When("o servico avaliar as badges para o evento {string}")
     public void quandoServicoAvaliarBadges(String chave) {
         try {
             contexto.conquistasRetornadas = contexto.concessaoService
@@ -50,21 +50,21 @@ public class PassosGamificacao {
         }
     }
 
-    @Então("a badge deve ser concedida ao tutor")
+    @Then("a badge deve ser concedida ao tutor")
     public void entaoBadgeConcedida() {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertNotNull(contexto.conquistasRetornadas);
         assertEquals(1, contexto.conquistasRetornadas.size());
     }
 
-    @E("a conquista deve ser registrada")
+    @And("a conquista deve ser registrada")
     public void eConquistaRegistrada() {
         verify(contexto.conquistaRepositorio, times(1)).save(any(ConquistaTutor.class));
     }
 
     // ── Cenário 2: Badge quantitativa exige meta ────────────────────────────
 
-    @Dado("existe uma badge quantitativa com meta de {int} e chave {string}")
+    @Given("existe uma badge quantitativa com meta de {int} e chave {string}")
     public void dadaBadgeQuantitativa(int meta, String chave) {
         contexto.badgeId = BadgeId.gerar();
         contexto.badge = new Badge(
@@ -77,7 +77,7 @@ public class PassosGamificacao {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("existe um progresso do tutor com valor atual {int} para essa badge")
+    @Given("existe um progresso do tutor com valor atual {int} para essa badge")
     public void dadaProgressoComValor(int valorAtual) {
         contexto.progresso = new ProgressoBadge(
                 ProgressoBadgeId.gerar(), contexto.tutorId, contexto.badgeId,
@@ -87,7 +87,7 @@ public class PassosGamificacao {
                 .thenReturn(contexto.progresso);
     }
 
-    @Quando("o servico atualizar o progresso em {int} para essa badge")
+    @When("o servico atualizar o progresso em {int} para essa badge")
     public void quandoAtualizarProgresso(int incremento) {
         try {
             contexto.progresso = contexto.calculoProgressoService
@@ -97,26 +97,26 @@ public class PassosGamificacao {
         }
     }
 
-    @Então("o percentual de conclusao deve ser {int}")
+    @Then("o percentual de conclusao deve ser {int}")
     public void entaoPercentualConclusao(int percentualEsperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertEquals(percentualEsperado, (int) contexto.progresso.calcularPercentualConclusao());
     }
 
-    @E("a badge deve ter meta atingida")
+    @And("a badge deve ter meta atingida")
     public void eMetaAtingida() {
         assertTrue(contexto.progresso.metaAtingida());
     }
 
     // ── Cenário 3: Badge já conquistada não é concedida novamente ───────────
 
-    @Dado("o tutor ja conquistou essa badge anteriormente")
+    @Given("o tutor ja conquistou essa badge anteriormente")
     public void dadaTutorJaConquistou() {
         when(contexto.conquistaRepositorio.existsByTutorEBadge(contexto.tutorId, contexto.badgeId))
                 .thenReturn(true);
     }
 
-    @Então("a badge nao deve ser concedida novamente")
+    @Then("a badge nao deve ser concedida novamente")
     public void entaoBadgeNaoConcedidaNovamente() {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertNotNull(contexto.conquistasRetornadas);
@@ -126,7 +126,7 @@ public class PassosGamificacao {
 
     // ── Cenário 4: Listar próximas conquistas ──────────────────────────────
 
-    @Dado("o tutor possui 3 progressos com percentuais 80 60 e 40")
+    @Given("o tutor possui 3 progressos com percentuais 80 60 e 40")
     public void dadaTresProgressos() {
         BadgeId b1 = BadgeId.gerar();
         BadgeId b2 = BadgeId.gerar();
@@ -147,7 +147,7 @@ public class PassosGamificacao {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico listar as {int} proximas conquistas do tutor")
+    @When("o servico listar as {int} proximas conquistas do tutor")
     public void quandoListarProximasConquistas(int quantidade) {
         try {
             contexto.progressosRetornados = contexto.calculoProgressoService
@@ -157,7 +157,7 @@ public class PassosGamificacao {
         }
     }
 
-    @Então("as {int} badges retornadas devem estar em ordem decrescente de percentual")
+    @Then("as {int} badges retornadas devem estar em ordem decrescente de percentual")
     public void entaoBadgesEmOrdemDecrescente(int quantidade) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertNotNull(contexto.progressosRetornados);
@@ -173,28 +173,28 @@ public class PassosGamificacao {
 
     // ── Cenário 5: Badge quantitativa não concedida antes da meta ──────────
 
-    @Dado("o tutor ainda nao tem progresso para essa badge")
+    @Given("o tutor ainda nao tem progresso para essa badge")
     public void dadaSemProgresso() {
         when(contexto.progressoRepositorio.findByTutorEBadge(contexto.tutorId, contexto.badgeId))
                 .thenReturn(null);
         contexto.excecaoCapturada = null;
     }
 
-    @Então("a badge nao deve ser concedida ainda")
+    @Then("a badge nao deve ser concedida ainda")
     public void entaoBadgeNaoConcedidaAinda() {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertNotNull(contexto.conquistasRetornadas);
         assertEquals(0, contexto.conquistasRetornadas.size());
     }
 
-    @E("o progresso do tutor deve ser {int}")
+    @And("o progresso do tutor deve ser {int}")
     public void eProgressoDoTutor(int valorEsperado) {
         verify(contexto.progressoRepositorio, times(1)).save(any(ProgressoBadge.class));
     }
 
     // ── Cenário 6: Incremento inválido lança exceção ────────────────────────
 
-    @Dado("existe um progresso do tutor com valor atual {int} e meta {int}")
+    @Given("existe um progresso do tutor com valor atual {int} e meta {int}")
     public void dadaProgressoComValorEMeta(int valorAtual, int meta) {
         contexto.badgeId = BadgeId.gerar();
         contexto.progresso = new ProgressoBadge(
@@ -205,7 +205,7 @@ public class PassosGamificacao {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico tentar atualizar o progresso com incremento {int}")
+    @When("o servico tentar atualizar o progresso com incremento {int}")
     public void quandoAtualizarProgressoInvalido(int incremento) {
         try {
             contexto.calculoProgressoService
@@ -215,7 +215,7 @@ public class PassosGamificacao {
         }
     }
 
-    @Então("deve ser lancada uma excecao de argumento invalido")
+    @Then("deve ser lancada uma excecao de argumento invalido")
     public void entaoExcecaoArgumentoInvalido() {
         assertNotNull(contexto.excecaoCapturada);
         assertInstanceOf(IllegalArgumentException.class, contexto.excecaoCapturada);

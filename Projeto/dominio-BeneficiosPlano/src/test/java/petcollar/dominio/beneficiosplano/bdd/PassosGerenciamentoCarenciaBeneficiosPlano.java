@@ -1,9 +1,9 @@
 package petcollar.dominio.beneficiosplano.bdd;
 
-import io.cucumber.java.pt.Dado;
-import io.cucumber.java.pt.E;
-import io.cucumber.java.pt.Então;
-import io.cucumber.java.pt.Quando;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import petcollar.dominio.beneficiosplano.BeneficioCatalogoId;
 import petcollar.dominio.beneficiosplano.BeneficioTutor;
 import petcollar.dominio.beneficiosplano.BeneficioTutorId;
@@ -56,7 +56,7 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         when(contexto.ticketBeneficioRepositorio.findByStatus(StatusTicket.GERADO)).thenReturn(List.of(contexto.ticketBeneficio));
     }
 
-    @Dado("existe um beneficio do tutor com data de liberacao no futuro")
+    @Given("existe um beneficio do tutor com data de liberacao no futuro")
     public void existeUmBeneficioDoTutorComDataDeLiberacaoNoFuturo() {
         contexto.beneficioTutorId = BeneficioTutorId.gerar();
         contexto.beneficioTutor = novoBeneficioTutor(
@@ -70,7 +70,7 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("o beneficio tem {int} usos restantes no periodo")
+    @Given("o beneficio tem {int} usos restantes no periodo")
     public void oBeneficioTemUsosRestantesNoPeriodo(Integer usosRestantes) {
         contexto.beneficioTutor = new BeneficioTutor(
                 contexto.beneficioTutor.getId(),
@@ -89,7 +89,7 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         configurarBeneficioNoRepositorio();
     }
 
-    @Dado("existe um beneficio do tutor com data de liberacao no passado")
+    @Given("existe um beneficio do tutor com data de liberacao no passado")
     public void existeUmBeneficioDoTutorComDataDeLiberacaoNoPassado() {
         contexto.beneficioTutorId = BeneficioTutorId.gerar();
         contexto.beneficioTutor = novoBeneficioTutor(
@@ -103,7 +103,7 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("existe um beneficio disponivel com {int} usos restantes")
+    @Given("existe um beneficio disponivel com {int} usos restantes")
     public void existeUmBeneficioDisponivelComUsosRestantes(Integer usosRestantes) {
         contexto.beneficioTutorId = BeneficioTutorId.gerar();
         contexto.beneficioTutor = novoBeneficioTutor(
@@ -117,7 +117,7 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("existe um beneficio com status {string} e {int} usos restantes")
+    @Given("existe um beneficio com status {string} e {int} usos restantes")
     public void existeUmBeneficioComStatusEUsosRestantes(String statusStr, Integer usosRestantes) {
         StatusBeneficio status = StatusBeneficio.valueOf(statusStr);
         LocalDateTime dataLiberacao = status == StatusBeneficio.EM_CARENCIA ? contexto.agora.plusDays(1) : contexto.agora.minusDays(1);
@@ -133,7 +133,7 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("o periodo atual do beneficio comecou ha {int} meses")
+    @Given("o periodo atual do beneficio comecou ha {int} meses")
     public void oPeriodoAtualDoBeneficioComecouHaMeses(Integer meses) {
         contexto.beneficioTutor = new BeneficioTutor(
                 contexto.beneficioTutor.getId(),
@@ -152,12 +152,12 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         configurarBeneficioNoRepositorio();
     }
 
-    @Dado("ja existe um ticket ativo para este beneficio")
+    @Given("ja existe um ticket ativo para este beneficio")
     public void jaExisteUmTicketAtivoParaEsteBeneficio() {
         when(contexto.ticketBeneficioRepositorio.existsByBeneficioTutorIdAndStatus(contexto.beneficioTutorId, StatusTicket.GERADO)).thenReturn(true);
     }
 
-    @Dado("existe um ticket com status {string} gerado ha mais de {int} hora")
+    @Given("existe um ticket com status {string} gerado ha mais de {int} hora")
     public void existeUmTicketComStatusGeradoHaMaisDeHora(String statusStr, Integer horas) {
         contexto.beneficioTutorId = BeneficioTutorId.gerar();
         contexto.beneficioTutor = novoBeneficioTutor(
@@ -186,7 +186,7 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("existe um ticket com status {string} gerado recentemente")
+    @Given("existe um ticket com status {string} gerado recentemente")
     public void existeUmTicketComStatusGeradoRecentemente(String statusStr) {
         contexto.beneficioTutorId = BeneficioTutorId.gerar();
         contexto.beneficioTutor = novoBeneficioTutor(
@@ -215,12 +215,12 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("o beneficio associado nao existe no repositorio")
+    @Given("o beneficio associado nao existe no repositorio")
     public void oBeneficioAssociadoNaoExisteNoRepositorio() {
         when(contexto.beneficioTutorRepositorio.findById(contexto.beneficioTutorId)).thenReturn(null);
     }
 
-    @Quando("o servico calcular o status do beneficio")
+    @When("o servico calcular o status do beneficio")
     public void oServicoCalcularOStatusDoBeneficio() {
         try {
             contexto.statusCalculado = contexto.calculoStatusBeneficioService.calcularStatus(contexto.beneficioTutor, contexto.agora);
@@ -229,7 +229,7 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         }
     }
 
-    @Quando("o servico gerar um ticket para o beneficio")
+    @When("o servico gerar um ticket para o beneficio")
     public void oServicoGerarUmTicketParaOBeneficio() {
         try {
             contexto.ticketBeneficio = contexto.geracaoTicketService.gerarTicket(contexto.beneficioTutorId, contexto.agora);
@@ -238,7 +238,7 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         }
     }
 
-    @Quando("o servico cancelar os tickets expirados")
+    @When("o servico cancelar os tickets expirados")
     public void oServicoCancelarOsTicketsExpirados() {
         try {
             contexto.ticketsExpirados = contexto.expiracaoTicketService.cancelarTicketsExpirados(contexto.agora);
@@ -247,7 +247,7 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         }
     }
 
-    @Então("o status deve ser {string}")
+    @Then("o status deve ser {string}")
     public void oStatusDeveSer(String statusEsperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção.");
         assertNotNull(contexto.beneficioTutor, "Benefício não pode ser nulo.");
@@ -255,26 +255,26 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         assertEquals(StatusBeneficio.valueOf(statusEsperado), contexto.beneficioTutor.getStatus());
     }
 
-    @Então("os usos restantes do periodo atual devem ser {int}")
+    @Then("os usos restantes do periodo atual devem ser {int}")
     public void osUsosRestantesDoPeriodoAtualDevemSer(Integer usosEsperados) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção.");
         assertEquals(usosEsperados.intValue(), contexto.beneficioTutor.getUsosRestantesPeriodoAtual());
     }
 
-    @Então("os usos restantes do beneficio devem ser {int}")
+    @Then("os usos restantes do beneficio devem ser {int}")
     public void osUsosRestantesDoBeneficioDevemSer(Integer usosEsperados) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção.");
         assertEquals(usosEsperados.intValue(), contexto.beneficioTutor.getUsosRestantesPeriodoAtual());
     }
 
-    @Então("o ticket deve ter status {string}")
+    @Then("o ticket deve ter status {string}")
     public void oTicketDeveTerStatus(String statusEsperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção.");
         assertNotNull(contexto.ticketBeneficio, "Ticket não pode ser nulo.");
         assertEquals(StatusTicket.valueOf(statusEsperado), contexto.ticketBeneficio.getStatus());
     }
 
-    @E("o ticket deve ter um codigo GUID unico")
+    @And("o ticket deve ter um codigo GUID unico")
     public void oTicketDeveTerUmCodigoGUIDUnico() {
         assertNotNull(contexto.ticketBeneficio, "Ticket não pode ser nulo.");
         assertNotNull(contexto.ticketBeneficio.getCodigoGUID());
@@ -283,7 +283,7 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         assertDoesNotThrow(() -> UUID.fromString(contexto.ticketBeneficio.getCodigoGUID().getValor()));
     }
 
-    @E("o uso deve ser devolvido ao saldo do beneficio")
+    @And("o uso deve ser devolvido ao saldo do beneficio")
     public void oUsoDeveSerDevolvidoAoSaldoDoBeneficio() {
         assertNotNull(contexto.ticketBeneficio);
         assertNotNull(contexto.beneficioTutor);
@@ -293,35 +293,35 @@ public class PassosGerenciamentoCarenciaBeneficiosPlano {
         verify(contexto.beneficioTutorRepositorio, times(1)).save(contexto.beneficioTutor);
     }
 
-    @E("o repositorio deve ter salvo o ticket")
+    @And("o repositorio deve ter salvo o ticket")
     public void oRepositorioDeveTerSalvoOTicket() {
         verify(contexto.ticketBeneficioRepositorio, times(1)).save(contexto.ticketBeneficio);
     }
 
-    @E("o repositorio deve ter salvo o beneficio")
+    @And("o repositorio deve ter salvo o beneficio")
     public void oRepositorioDeveTerSalvoOBeneficio() {
         verify(contexto.beneficioTutorRepositorio, times(1)).save(contexto.beneficioTutor);
     }
 
-    @E("o repositorio deve ter salvo o beneficio atualizado")
+    @And("o repositorio deve ter salvo o beneficio atualizado")
     public void oRepositorioDeveTerSalvoOBeneficioAtualizado() {
         verify(contexto.beneficioTutorRepositorio, atLeastOnce()).save(contexto.beneficioTutor);
     }
 
-    @Então("nenhum ticket deve ter sido expirado")
+    @Then("nenhum ticket deve ter sido expirado")
     public void nenhumTicketDeveTerSidoExpirado() {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção.");
         assertTrue(contexto.ticketsExpirados == null || contexto.ticketsExpirados.isEmpty());
         assertEquals(StatusTicket.GERADO, contexto.ticketBeneficio.getStatus());
     }
 
-    @Então("deve ser lancada uma excecao de estado invalido")
+    @Then("deve ser lancada uma excecao de estado invalido")
     public void deveSerLancadaUmaExcecaoDeEstadoInvalido() {
         assertNotNull(contexto.excecaoCapturada, "Era esperado lançar exceção.");
         assertInstanceOf(IllegalStateException.class, contexto.excecaoCapturada);
     }
 
-    @Então("deve ser lancada uma excecao de argumento invalido")
+    @Then("deve ser lancada uma excecao de argumento invalido")
     public void deveSerLancadaUmaExcecaoDeArgumentoInvalido() {
         assertNotNull(contexto.excecaoCapturada, "Era esperado lançar exceção.");
         assertInstanceOf(IllegalArgumentException.class, contexto.excecaoCapturada);
