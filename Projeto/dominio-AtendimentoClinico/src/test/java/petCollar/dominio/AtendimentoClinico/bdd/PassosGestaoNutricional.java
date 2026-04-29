@@ -89,13 +89,15 @@ public class PassosGestaoNutricional {
     @When("o servico calcular o NEM")
     public void quandoServicoCalculaNEM() {
         try {
-            contexto.plano = new PlanoNutricional(
-                contexto.planoId,
-                "paciente-123",
-                contexto.pesoIdeal,
-                contexto.nivelAtividadeAtual,
-                List.of()  // Sem comorbidades por enquanto
-            );
+            if (contexto.plano == null) {
+                contexto.plano = new PlanoNutricional(
+                    contexto.planoId,
+                    "paciente-123",
+                    contexto.pesoIdeal,
+                    contexto.nivelAtividadeAtual,
+                    List.of()
+                );
+            }
             contexto.nemResultante = contexto.plano.getResultadoNEM().getKcalDiarias();
         } catch (Exception e) {
             contexto.excecaoCapturada = e;
@@ -163,11 +165,6 @@ public class PassosGestaoNutricional {
         DiaTransicao dia = contexto.cronogramaResultante.getDiasTransicao().get(numeroDia - 1);
         assertEquals(percentualEsperado, dia.getPercentualDietaNova(), 0.1,
             "Dia " + numeroDia + " devería ter " + percentualEsperado + "% da dieta nova");
-    }
-
-    @And("o dia {int} deve ter {double} porcento da dieta nova")
-    public void eVerificaPercentualDia(int numeroDia, double percentualEsperado) {
-        entaoVerificaPercentualDia(numeroDia, percentualEsperado);
     }
 
     @Then("o resultado deve ser aproximadamente {int} gramas por dia")
