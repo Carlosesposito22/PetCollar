@@ -12,7 +12,7 @@ import petcollar.dominio.recepcaotriagem.prontuario.Tutor;
 import petcollar.dominio.recepcaotriagem.prontuario.TutorId;
 import petcollar.dominio.recepcaotriagem.prontuario.VarreduraEpidemiologicaService;
 
-public class ContextoCenario {
+public class ContextoCenarioF01 {
 
     // ── Mocks de repositório ────────────────────────────────────────────────
     public final ITutorRepositorio tutorRepositorio =

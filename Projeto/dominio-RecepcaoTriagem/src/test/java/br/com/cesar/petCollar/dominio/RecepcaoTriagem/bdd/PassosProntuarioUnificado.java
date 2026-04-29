@@ -19,9 +19,9 @@ import static org.mockito.Mockito.*;
 
 public class PassosProntuarioUnificado {
 
-    private final ContextoCenario contexto;
+    private final ContextoCenarioF01 contexto;
 
-    public PassosProntuarioUnificado(ContextoCenario contexto) {
+    public PassosProntuarioUnificado(ContextoCenarioF01 contexto) {
         this.contexto = contexto;
     }
 
