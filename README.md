@@ -53,6 +53,176 @@ O **Sistema de Inteligência Clínica e Gestão Veterinária** é uma plataforma
 
 ---
 
+## ▶️ **Como rodar o projeto**
+
+O sistema é dividido em **dois módulos** que sobem separadamente:
+
+| Módulo | Tecnologia | Porta | Pasta |
+|---|---|---|---|
+| **Backend (API)** | Java 17+ · Spring Boot · Spring Security · JWT | `8080` | `Projeto/apresentacao-backend` |
+| **Frontend (SPA)** | React · Vite · TypeScript · Tailwind | `5173` | `Projeto/apresentacao-frontend/web` |
+
+> O frontend faz proxy de `/api/**` → `http://localhost:8080`, então **suba primeiro o backend** e depois o frontend.
+
+---
+
+### 1) 📋 Pré-requisitos
+
+Antes de começar, instale na sua máquina:
+
+| Ferramenta | Versão | Verificar | Onde obter |
+|---|---|---|---|
+| **Git** | qualquer | `git --version` | <https://git-scm.com/downloads> |
+| **JDK** | **17 ou superior** (21 LTS recomendado) | `java -version` | <https://adoptium.net/> |
+| **Node.js** | **18 ou superior** (inclui `npm`) | `node -v` e `npm -v` | <https://nodejs.org/> (LTS) |
+
+> ⚡ **Você NÃO precisa instalar o Maven.** O projeto inclui o **Maven Wrapper** (`mvnw` / `mvnw.cmd`) — basta usar `.\mvnw.cmd` em vez de `mvn` e ele baixa a versão correta do Maven automaticamente na primeira execução.
+
+> 💡 **Windows (atalho):** com [winget](https://learn.microsoft.com/windows/package-manager/winget/) (já vem no Windows 10+), instale tudo numa linha:
+> ```powershell
+> winget install -e EclipseAdoptium.Temurin.21.JDK OpenJS.NodeJS.LTS Git.Git
+> ```
+> Feche e reabra o terminal para o `PATH` atualizar.
+
+> ⚠️ **Verifique se `JAVA_HOME` está definido.** No PowerShell: `echo $env:JAVA_HOME`. Se vier vazio, defina (substitua o caminho pelo seu JDK):
+> ```powershell
+> [Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Java\jdk-21", "User")
+> ```
+> e reabra o terminal.
+
+---
+
+### 2) 📥 Clonar o repositório
+
+Abra um terminal **na pasta onde você quer guardar o projeto** (ex.: `Documents`) e execute:
+
+```bash
+git clone https://github.com/Carlosesposito22/petCollar.git
+cd petCollar
+```
+
+A partir deste ponto, **todos os caminhos abaixo são relativos à raiz `petCollar/`**.
+
+---
+
+### 3) 🟦 Subir o backend (porta 8080)
+
+Abra um terminal **na raiz do repositório**. São dois passos: instalar todos os módulos no repositório local do Maven e depois subir só o backend.
+
+**Windows (PowerShell):**
+```powershell
+cd Projeto
+
+# 1) Compila e instala todos os módulos (só precisa rodar a primeira vez
+#    ou depois de mexer em algum dominio-*/aplicacao/infraestrutura)
+.\mvnw.cmd "-Dmaven.test.skip=true" install
+
+# 2) Sobe o Spring Boot apenas no módulo de apresentação
+.\mvnw.cmd -pl apresentacao-backend spring-boot:run
+```
+
+**Linux / macOS:**
+```bash
+cd Projeto
+chmod +x mvnw     # apenas na primeira vez
+./mvnw -Dmaven.test.skip=true install
+./mvnw -pl apresentacao-backend spring-boot:run
+```
+
+> **Primeira execução:** o wrapper baixa o Maven 3.9.9 (~10 MB) em `~/.m2/wrapper`, depois o Maven baixa todas as dependências — pode levar alguns minutos. Da segunda vez em diante é instantâneo.
+>
+> ⚠️ **Por que dois comandos?** O Spring Boot Maven Plugin (`spring-boot:run`) é executado em todos os módulos do reactor quando usado com `-am`, e falha nos POMs intermediários. Rodar `install` primeiro popula o `~/.m2` local; depois `-pl apresentacao-backend` (sem `-am`) sobe só o módulo de apresentação.
+>
+> 💡 **Aspas em volta de `"-Dmaven.test.skip=true"` são necessárias no PowerShell** (sem elas o ponto é interpretado como operador).
+
+Quando aparecer no log algo como `Started PetCollarApplication in X seconds`, o backend está pronto em **<http://localhost:8080>**.
+
+**Deixe este terminal aberto** e abra outro para o passo seguinte.
+
+---
+
+### 4) 🟩 Subir o frontend (porta 5173)
+
+Em um **novo terminal**, partindo da raiz do repositório:
+
+```bash
+cd Projeto/apresentacao-frontend/web
+npm install
+npm run dev
+```
+
+- `npm install` baixa as dependências do frontend (só precisa rodar uma vez, ou quando o `package.json` mudar).
+- `npm run dev` sobe o Vite com hot-reload.
+
+Acesse no navegador: **<http://localhost:5173>**
+
+---
+
+### 5) 🔐 Credenciais de demonstração
+
+A senha de **todos** os usuários de exemplo é: `petcollar123`
+
+| Perfil | Identificador | Observação |
+|---|---|---|
+| **Tutor** | `tutor@petcollar.com` | login por e-mail |
+| **Tutor (suspenso)** | `suspenso@petcollar.com` | exibe banner vermelho de conta suspensa |
+| **Recepcionista** | `100001` | matrícula de 6 dígitos |
+| **Médico Veterinário** | `200001` | matrícula de 6 dígitos |
+
+> Os usuários ficam em memória ([UsuarioRepositorioEmMemoria.java](Projeto/apresentacao-backend/src/main/java/br/com/cesar/petCollar/apresentacao/IdentidadeAcesso/UsuarioRepositorioEmMemoria.java)) enquanto o agregado de IdentidadeAcesso não estiver pronto.
+
+---
+
+### 6) 🛠️ Comandos úteis
+
+Todos relativos à raiz do repositório.
+
+**Backend** (use `.\mvnw.cmd` no PowerShell ou `./mvnw` no Linux/macOS)
+```powershell
+# compilar e instalar tudo sem rodar testes
+cd Projeto; .\mvnw.cmd "-Dmaven.test.skip=true" install
+
+# rodar apenas os testes
+cd Projeto; .\mvnw.cmd test
+
+# subir só o backend (pressuponha que o install já foi feito)
+cd Projeto; .\mvnw.cmd -pl apresentacao-backend spring-boot:run
+
+# limpar tudo (target/)
+cd Projeto; .\mvnw.cmd clean
+```
+
+**Frontend**
+```bash
+cd Projeto/apresentacao-frontend/web
+
+npm run dev      # servidor de desenvolvimento (hot-reload)
+npm run build    # build de produção em dist/
+npm run preview  # serve o build de produção localmente
+```
+
+---
+
+### 7) 🐛 Resolução de problemas
+
+| Sintoma | Causa provável | Solução |
+|---|---|---|
+| `mvn` não é reconhecido | Você está usando `mvn` em vez do wrapper | Use `.\mvnw.cmd` (PowerShell) ou `./mvnw` (bash) — não precisa instalar Maven |
+| `JAVA_HOME not found in your environment` | Variável de ambiente faltando | Defina `JAVA_HOME` conforme nota em [§1](#1--pré-requisitos) e reabra o terminal |
+| `Unable to find a suitable main class` (no `petCollar-pai`) | `spring-boot:run` rodou no POM-pai em vez do módulo | Use **dois comandos** como em [§3](#3--subir-o-backend-porta-8080): primeiro `install`, depois `-pl apresentacao-backend spring-boot:run` |
+| `Failed to determine a suitable driver class` | Spring tentou ligar JPA/DataSource | Confirme que [application.yml](Projeto/apresentacao-backend/src/main/resources/application.yml) tem as quatro entradas em `spring.autoconfigure.exclude` |
+| `Unknown lifecycle phase ".test.skip=true"` | PowerShell quebrou o argumento no ponto | Envolva em aspas: `"-Dmaven.test.skip=true"` |
+| `Failed to delete ...\target\classes\...` | Arquivo travado por IDE/Java em execução | Feche a IDE/processo Java e rode novamente, ou apague os `target/` manualmente |
+| `cannot find symbol: class PacienteId / MedicoId / AtendimentoId` | Os IDs do agregado de relatório ainda não existem na forma final | Mantidos como `record` placeholder em [Projeto/dominio-AtendimentoClinico/.../relatorio/](Projeto/dominio-AtendimentoClinico/src/main/java/petCollar/dominio/AtendimentoClinico/relatorio/) — substituir pelo tipo real do domínio quando ele for criado |
+| `port 8080 already in use` | Outro processo na 8080 | `netstat -ano | findstr :8080` e finalize o PID, ou mude a porta em [application.yml](Projeto/apresentacao-backend/src/main/resources/application.yml) |
+| `port 5173 already in use` | Vite já rodando | Feche a outra instância ou rode `npm run dev -- --port 5174` |
+| `EACCES`/`EPERM` no `npm install` | Permissões do `node_modules` | Apague `node_modules` e `package-lock.json` e rode `npm install` de novo |
+| Login retorna `401` | Senha errada — confira em [§5](#5--credenciais-de-demonstração) | Use `petcollar123` |
+| Login retorna `423` | Conta marcada como suspensa | Use outro tutor (`tutor@petcollar.com`) — esse banner é proposital |
+| Tela em branco no `:5173` | Backend offline; chamadas `/api` falham | Confirme que o backend está no ar em `:8080` |
+
+---
+
 ## 🏛️ **Arquitetura DDD**
 
 O sistema é estruturado em três **Bounded Contexts** com responsabilidades bem delimitadas, dois subdomínios **Core** e um **Supporting**, interligados por relações estratégicas de Upstream/Downstream e Shared Kernel.

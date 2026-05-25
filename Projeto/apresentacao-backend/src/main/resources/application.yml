@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: petCollar-backend
+  # DataSource/JPA ficam desligados enquanto o domínio não estiver mapeado para o banco.
+  # O login usa usuários em memória; remover essas exclusões quando a persistência for ligada.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      - org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration
+      - org.springframework.boot.devtools.autoconfigure.DevToolsDataSourceAutoConfiguration
+
+petcollar:
+  security:
+    jwt:
+      # HS256 — substitua em produção por variável de ambiente / secret manager.
+      secret: "trocar-este-segredo-em-producao-com-no-minimo-32-bytes!!"
+      issuer: "petcollar"
+      expiracao-minutos: 60
+    cors:
+      # Patterns (com curinga) — aceita qualquer porta local em dev.
+      # Em produção, troque por origens fixas (ex.: "https://app.petcollar.com").
+      origens-permitidas:
+        - "http://localhost:*"
+        - "http://127.0.0.1:*"
+
+logging:
+  level:
+    org.springframework.security: INFO

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"perfil\":\"TUTOR\",\"identificador\":\"tutor@petcollar.com\",\"senha\":\"petcollar123\"}' -w \"\\\\nHTTP: %{http_code}\\\\n\")"
+    ]
+  }
+}
