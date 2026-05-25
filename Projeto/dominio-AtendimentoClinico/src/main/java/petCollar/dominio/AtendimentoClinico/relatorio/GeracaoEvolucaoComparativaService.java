@@ -1,6 +1,5 @@
-package petcollar.dominio.atendimentoclinico.relatorio;
+package petCollar.dominio.AtendimentoClinico.relatorio;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class GeracaoEvolucaoComparativaService {
@@ -11,9 +10,6 @@ public class GeracaoEvolucaoComparativaService {
         this.repositorio = repositorio;
     }
 
-    /**
-     * Registra os sinais vitais no relatório do atendimento em curso (RN-115).
-     */
     public RelatorioClinico consolidarSinaisVitais(RelatorioClinicoId relatorioId,
                                                     SinaisVitais sinaisVitais) {
         RelatorioClinico relatorio = repositorio.findById(relatorioId);
@@ -25,11 +21,6 @@ public class GeracaoEvolucaoComparativaService {
         return relatorio;
     }
 
-    /**
-     * Gera a evolução comparativa entre o atendimento atual e o histórico do paciente.
-     * Se não houver atendimento anterior, o resumo indica "Primeiro atendimento registrado" (RN-117).
-     * A variação de peso é calculada: pesoAtual - pesoanterior (RN-116).
-     */
     public RelatorioClinico gerarEvolucaoComparativa(RelatorioClinicoId relatorioId,
                                                       double pesoAnteriorKg) {
         RelatorioClinico relatorio = repositorio.findById(relatorioId);
@@ -59,10 +50,6 @@ public class GeracaoEvolucaoComparativaService {
         return relatorio;
     }
 
-    /**
-     * Calcula a evolução comparativa de forma pura, sem persistência.
-     * Útil para pré-visualização antes de salvar.
-     */
     public EvolucaoComparativa calcularEvolucao(double pesoAtualKg, double pesoAnteriorKg) {
         if (pesoAtualKg <= 0)
             throw new IllegalArgumentException("Peso atual deve ser maior que zero.");

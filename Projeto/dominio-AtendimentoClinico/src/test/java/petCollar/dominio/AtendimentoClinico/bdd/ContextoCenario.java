@@ -1,51 +1,31 @@
 package petcollar.dominio.atendimentoclinico.bdd;
 
 import org.mockito.Mockito;
-import petcollar.dominio.atendimentoclinico.relatorio.*;
-import petcollar.dominio.atendimentoclinico.nutricao.*;
-
-import java.util.List;
+import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
+import petCollar.dominio.AtendimentoClinico.relatorio.*;
+import petCollar.dominio.AtendimentoClinico.nutricao.*;
 
 public class ContextoCenario {
 
-    // ── Mocks de repositório ──────────────────────────────────────────────────
-    public final IRelatorioClinicoRepositorio repositorioRelatorio =
-            Mockito.mock(IRelatorioClinicoRepositorio.class);
+    public final IRelatorioClinicoRepositorio repositorioRelatorio = Mockito.mock(IRelatorioClinicoRepositorio.class);
 
-    // ── Serviços de domínio (recebem mocks via construtor) ────────────────────
-    public final GeracaoEvolucaoComparativaService servicoEvolucao =
-            new GeracaoEvolucaoComparativaService(repositorioRelatorio);
+    public final GeracaoEvolucaoComparativaService servicoEvolucao = new GeracaoEvolucaoComparativaService(repositorioRelatorio);
 
-    public final AssinaturaDigitalService servicoAssinatura =
-            new AssinaturaDigitalService(repositorioRelatorio);
+    public final AssinaturaDigitalService servicoAssinatura = new AssinaturaDigitalService(repositorioRelatorio);
 
-    // ── Estado do cenário (preenchido pelos passos) ───────────────────────────
     public RelatorioClinico relatorio;
     public RelatorioClinicoId relatorioId;
     public PacienteId pacienteId;
     public EvolucaoComparativa evolucaoGerada;
 
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-    // Mocks de Repositório
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-    public final IPlanoNutricionalRepositorio repositorioPlanoNutricional =
-            Mockito.mock(IPlanoNutricionalRepositorio.class);
+    public final IPlanoNutricionalRepositorio repositorioPlanoNutricional = Mockito.mock(IPlanoNutricionalRepositorio.class);
 
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-    // Serviços de Domínio (puros, instanciados diretamente)
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-    public final CalculoNEMService calculoNEMService =
-            new CalculoNEMService();
+    public final CalculoNEMService calculoNEMService = new CalculoNEMService();
 
-    public final AnaliseComparativaPesoService analiseComparativaPesoService =
-            new AnaliseComparativaPesoService();
+    public final AnaliseComparativaPesoService analiseComparativaPesoService = new AnaliseComparativaPesoService();
 
-    public final GeracaoCronogramaTransicaoService geracaoCronogramaTransicaoService =
-            new GeracaoCronogramaTransicaoService();
+    public final GeracaoCronogramaTransicaoService geracaoCronogramaTransicaoService = new GeracaoCronogramaTransicaoService();
 
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-    // Estado do Cenário (preenchido pelos passos Cucumber)
-    // ════════════════════════════════════════════════════════════════════════════════════════════
     public PlanoNutricional plano;
     public PlanoNutricionalId planoId;
     public PesoIdeal pesoIdeal;

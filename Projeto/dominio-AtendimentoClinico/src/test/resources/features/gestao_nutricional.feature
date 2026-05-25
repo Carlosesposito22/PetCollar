@@ -1,4 +1,3 @@
-# language: pt
 Feature: Gestao Nutricional Avancada e Prescricao de NEM
 
   Scenario: Calcular NEM para paciente moderadamente ativo com peso ideal 10 kg

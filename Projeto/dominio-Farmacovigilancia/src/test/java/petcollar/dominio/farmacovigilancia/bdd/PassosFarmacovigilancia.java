@@ -1,9 +1,9 @@
 package petcollar.dominio.farmacovigilancia.bdd;
 
-import io.cucumber.java.pt.Dado;
-import io.cucumber.java.pt.E;
-import io.cucumber.java.pt.Então;
-import io.cucumber.java.pt.Quando;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import petcollar.dominio.farmacovigilancia.*;
 
 import java.time.LocalDate;
@@ -25,7 +25,7 @@ public class PassosFarmacovigilancia {
 
     // ── Cenários de dosagem ─────────────────────────────────────────────────
 
-    @Dado("existe um medicamento com dose maxima de {double} mg por kg")
+    @Given("existe um medicamento com dose maxima de {double} mg por kg")
     public void dadaMedicamentoComDoseMaxima(double doseMaxima) {
         contexto.medicamentoId = MedicamentoId.gerar();
         contexto.medicamento = new Medicamento(
@@ -38,13 +38,13 @@ public class PassosFarmacovigilancia {
         contexto.excecaoCapturada = null;
     }
 
-    @E("o paciente pesa {double} kg com dose prescrita de {double} mg")
+    @And("o paciente pesa {double} kg com dose prescrita de {double} mg")
     public void eoPacientePesaComDose(double pesoKg, double dosePrescritaMg) {
         contexto.pesoKg = pesoKg;
         contexto.dosePrescritaMg = dosePrescritaMg;
     }
 
-    @Quando("o servico validar a dosagem")
+    @When("o servico validar a dosagem")
     public void quandoServicoValidarDosagem() {
         try {
             contexto.statusDosagemResultado = contexto.calculadoraDosagem.validar(
@@ -56,7 +56,7 @@ public class PassosFarmacovigilancia {
         }
     }
 
-    @Então("o status da dosagem deve ser {string}")
+    @Then("o status da dosagem deve ser {string}")
     public void entaoStatusDosagemDeveSer(String statusEsperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertEquals(StatusDosagem.valueOf(statusEsperado), contexto.statusDosagemResultado);
@@ -64,7 +64,7 @@ public class PassosFarmacovigilancia {
 
     // ── Cenários de interação ───────────────────────────────────────────────
 
-    @Dado("existe uma prescricao com dois medicamentos com interacao critica bloqueante")
+    @Given("existe uma prescricao com dois medicamentos com interacao critica bloqueante")
     public void dadaPrescricaoComInteracaoBloqueante() {
         MedicamentoId idA = MedicamentoId.gerar();
         MedicamentoId idB = MedicamentoId.gerar();
@@ -92,7 +92,7 @@ public class PassosFarmacovigilancia {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico verificar as interacoes medicamentosas")
+    @When("o servico verificar as interacoes medicamentosas")
     public void quandoServicoVerificarInteracoes() {
         try {
             contexto.interacoesDetectadas = contexto.consultaInteracoes.verificar(contexto.prescricao);
@@ -101,13 +101,13 @@ public class PassosFarmacovigilancia {
         }
     }
 
-    @Então("a prescricao deve ter status {string}")
+    @Then("a prescricao deve ter status {string}")
     public void entaoPrescricaoDeveTermStatus(String statusEsperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertEquals(StatusPrescricao.valueOf(statusEsperado), contexto.prescricao.getStatus());
     }
 
-    @E("o motivo deve indicar interacao bloqueante")
+    @And("o motivo deve indicar interacao bloqueante")
     public void eMotivoDeveIndicarInteracaoBloqueante() {
         assertNotNull(contexto.interacoesDetectadas);
         assertTrue(contexto.interacoesDetectadas.stream().anyMatch(RegraInteracao::isBloqueante));
@@ -115,19 +115,19 @@ public class PassosFarmacovigilancia {
 
     // ── Cenários de ajuste contextual por tags ──────────────────────────────
 
-    @Dado("existe um paciente com tag {string}")
+    @Given("existe um paciente com tag {string}")
     public void dadaPacienteComTag(String tagStr) {
         contexto.tagClinicaSelecionada = TipoTagClinica.valueOf(tagStr);
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("um medicamento com dose maxima de {double} mg por kg")
+    @Given("um medicamento com dose maxima de {double} mg por kg")
     public void dadaMedicamentoComDoseMaximaSimples(double doseMaxima) {
         contexto.medicamento = new Medicamento(
                 MedicamentoId.gerar(), "MedicamentoComTag", 0.0, doseMaxima, 1.0, RestricaoManejo.NENHUMA);
     }
 
-    @Quando("o servico calcular o fator de reducao contextual")
+    @When("o servico calcular o fator de reducao contextual")
     public void quandoServicoCalcularFatorReducao() {
         try {
             List<TipoTagClinica> tags = Arrays.asList(contexto.tagClinicaSelecionada);
@@ -139,7 +139,7 @@ public class PassosFarmacovigilancia {
         }
     }
 
-    @Então("a dose maxima efetiva deve ser {double} mg por kg")
+    @Then("a dose maxima efetiva deve ser {double} mg por kg")
     public void entaoDoseMaximaEfetivaDeveSer(double esperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertEquals(esperado, contexto.doseMaximaEfetiva, 0.001);
@@ -147,7 +147,7 @@ public class PassosFarmacovigilancia {
 
     // ── Cenários de cronograma ──────────────────────────────────────────────
 
-    @Dado("existe uma prescricao com item A de duracao {int} dias e item B de duracao {int} dias")
+    @Given("existe uma prescricao com item A de duracao {int} dias e item B de duracao {int} dias")
     public void dadaPrescricaoComDoisItens(int duracaoA, int duracaoB) {
         contexto.prescricaoId = PrescricaoId.gerar();
         contexto.prescricao = new Prescricao(contexto.prescricaoId);
@@ -163,12 +163,12 @@ public class PassosFarmacovigilancia {
         contexto.excecaoCapturada = null;
     }
 
-    @E("ambos os itens foram iniciados hoje")
+    @And("ambos os itens foram iniciados hoje")
     public void eAmbosIniciadosHoje() {
         // Os itens já foram criados com LocalDateTime.now() no passo anterior
     }
 
-    @Quando("o servico calcular a data de fim do tratamento")
+    @When("o servico calcular a data de fim do tratamento")
     public void quandoServicoCalcularDataFim() {
         try {
             contexto.dataFimTratamento = contexto.cronogramaService
@@ -178,7 +178,7 @@ public class PassosFarmacovigilancia {
         }
     }
 
-    @Então("a data de fim deve ser daqui a {int} dias")
+    @Then("a data de fim deve ser daqui a {int} dias")
     public void entaoDataFimDeveSerDaquiADias(int dias) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         LocalDate esperado = LocalDate.now().plusDays(dias);
@@ -187,7 +187,7 @@ public class PassosFarmacovigilancia {
 
     // ── Cenários de emissão ─────────────────────────────────────────────────
 
-    @Dado("existe uma prescricao com todos os itens com status {string}")
+    @Given("existe uma prescricao com todos os itens com status {string}")
     public void dadaPrescricaoComItensComStatus(String statusStr) {
         contexto.prescricaoId = PrescricaoId.gerar();
         StatusDosagem statusDosagem = StatusDosagem.valueOf(statusStr);
@@ -214,7 +214,7 @@ public class PassosFarmacovigilancia {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico emitir a prescricao")
+    @When("o servico emitir a prescricao")
     public void quandoServicoEmitirPrescricao() {
         try {
             contexto.prescricao = contexto.emissaoService.emitir(contexto.prescricaoId);
@@ -223,13 +223,13 @@ public class PassosFarmacovigilancia {
         }
     }
 
-    @Então("o status da prescricao deve ser {string}")
+    @Then("o status da prescricao deve ser {string}")
     public void entaoStatusPrescricaoDeveSer(String statusEsperado) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertEquals(StatusPrescricao.valueOf(statusEsperado), contexto.prescricao.getStatus());
     }
 
-    @Dado("existe uma prescricao com um item com status {string}")
+    @Given("existe uma prescricao com um item com status {string}")
     public void dadaPrescricaoComItemTravado(String statusStr) {
         contexto.prescricaoId = PrescricaoId.gerar();
         StatusDosagem statusDosagem = StatusDosagem.valueOf(statusStr);
@@ -256,7 +256,7 @@ public class PassosFarmacovigilancia {
         contexto.excecaoCapturada = null;
     }
 
-    @Quando("o servico tentar emitir a prescricao")
+    @When("o servico tentar emitir a prescricao")
     public void quandoServicoTentarEmitirPrescricao() {
         try {
             contexto.emissaoService.emitir(contexto.prescricaoId);
@@ -265,7 +265,7 @@ public class PassosFarmacovigilancia {
         }
     }
 
-    @Então("deve ser lancada uma excecao de estado invalido")
+    @Then("deve ser lancada uma excecao de estado invalido")
     public void entaoExcecaoEstadoInvalido() {
         assertNotNull(contexto.excecaoCapturada);
         assertInstanceOf(IllegalStateException.class, contexto.excecaoCapturada);

@@ -1,5 +1,7 @@
 package petcollar.dominio.recepcaotriagem.paciente;
 
+import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;

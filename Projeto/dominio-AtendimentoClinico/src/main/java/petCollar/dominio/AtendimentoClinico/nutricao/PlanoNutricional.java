@@ -1,4 +1,4 @@
-package petcollar.dominio.atendimentoclinico.nutricao;
+package petCollar.dominio.AtendimentoClinico.nutricao;
 
 import java.time.LocalDateTime;
 import java.util.Collections;

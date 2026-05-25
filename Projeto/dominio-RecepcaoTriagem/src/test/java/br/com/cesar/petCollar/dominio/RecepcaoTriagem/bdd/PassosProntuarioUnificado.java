@@ -1,11 +1,11 @@
 package br.com.cesar.petCollar.dominio.RecepcaoTriagem.bdd;
 
-import io.cucumber.java.pt.Dado;
-import io.cucumber.java.pt.E;
-import io.cucumber.java.pt.Então;
-import io.cucumber.java.pt.Quando;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.When;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Then;
 import petcollar.dominio.recepcaotriagem.prontuario.CPF;
-import petcollar.dominio.recepcaotriagem.prontuario.PacienteId;
+import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import petcollar.dominio.recepcaotriagem.prontuario.ResultadoBusca;
 import petcollar.dominio.recepcaotriagem.prontuario.ResultadoBuscaId;
 import petcollar.dominio.recepcaotriagem.prontuario.Tutor;
@@ -19,15 +19,15 @@ import static org.mockito.Mockito.*;
 
 public class PassosProntuarioUnificado {
 
-    private final ContextoCenarioF01 contexto;
+    private final ContextoCenario contexto;
 
-    public PassosProntuarioUnificado(ContextoCenarioF01 contexto) {
+    public PassosProntuarioUnificado(ContextoCenario contexto) {
         this.contexto = contexto;
     }
 
     // ── @Dado ────────────────────────────────────────────────────────────────
 
-    @Dado("existe um tutor cadastrado com CPF {string}")
+    @Given("existe um tutor cadastrado com CPF {string}")
     public void dadaTutorCadastrado(String cpfStr) {
         contexto.cpf = CPF.de(cpfStr);
         contexto.tutorId = TutorId.gerar();
@@ -38,7 +38,7 @@ public class PassosProntuarioUnificado {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("nao existe tutor cadastrado com CPF {string}")
+    @Given("nao existe tutor cadastrado com CPF {string}")
     public void dadaTutorNaoCadastrado(String cpfStr) {
         contexto.cpf = CPF.de(cpfStr);
         when(contexto.tutorRepositorio.findByCpf(any(CPF.class)))
@@ -48,7 +48,7 @@ public class PassosProntuarioUnificado {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("existe um tutor com CPF {string} com um animal vinculado")
+    @Given("existe um tutor com CPF {string} com um animal vinculado")
     public void dadaTutorComAnimalVinculado(String cpfStr) {
         contexto.cpf = CPF.de(cpfStr);
         contexto.tutorId = TutorId.gerar();
@@ -63,14 +63,14 @@ public class PassosProntuarioUnificado {
 
     // ── @E (configuração complementar de estado) ─────────────────────────────
 
-    @E("o animal possui diagnostico infectante nos ultimos 40 dias")
+    @And("o animal possui diagnostico infectante nos ultimos 40 dias")
     public void eAnimalComDiagnosticoInfectante() {
         when(contexto.diagnosticoRepositorio
                 .findInfectantesUltimos(40, contexto.pacienteId))
                 .thenReturn(List.of("Cinomose"));
     }
 
-    @E("o animal nao possui diagnosticos infectantes recentes")
+    @And("o animal nao possui diagnosticos infectantes recentes")
     public void eAnimalSemDiagnosticoInfectante() {
         when(contexto.diagnosticoRepositorio
                 .findInfectantesUltimos(40, contexto.pacienteId))
@@ -79,7 +79,7 @@ public class PassosProntuarioUnificado {
 
     // ── @Quando ──────────────────────────────────────────────────────────────
 
-    @Quando("o servico buscar o tutor pelo CPF {string}")
+    @When("o servico buscar o tutor pelo CPF {string}")
     public void quandoBuscarPorCpf(String cpfStr) {
         try {
             CPF cpf = CPF.de(cpfStr);
@@ -89,7 +89,7 @@ public class PassosProntuarioUnificado {
         }
     }
 
-    @Quando("o servico cadastrar o tutor com CPF {string} e nome {string}")
+    @When("o servico cadastrar o tutor com CPF {string} e nome {string}")
     public void quandoCadastrarNovoTutor(String cpfStr, String nome) {
         try {
             CPF cpf = CPF.de(cpfStr);
@@ -100,7 +100,7 @@ public class PassosProntuarioUnificado {
         }
     }
 
-    @Quando("o servico executar a varredura epidemiologica")
+    @When("o servico executar a varredura epidemiologica")
     public void quandoExecutarVarredura() {
         try {
             contexto.servicoVarredura.executarVarredura(contexto.tutor, contexto.resultado);
@@ -109,7 +109,7 @@ public class PassosProntuarioUnificado {
         }
     }
 
-    @Quando("o servico tentar buscar com CPF {string}")
+    @When("o servico tentar buscar com CPF {string}")
     public void quandoTentarBuscarCpfInvalido(String cpfStr) {
         try {
             CPF cpf = CPF.de(cpfStr);
@@ -121,44 +121,44 @@ public class PassosProntuarioUnificado {
 
     // ── @Então ───────────────────────────────────────────────────────────────
 
-    @Então("o resultado deve indicar que o tutor foi encontrado")
+    @Then("o resultado deve indicar que o tutor foi encontrado")
     public void entaoTutorEncontrado() {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertNotNull(contexto.resultado);
         assertTrue(contexto.resultado.isTutorEncontrado());
     }
 
-    @E("a lista de animais vinculados deve ser retornada")
+    @And("a lista de animais vinculados deve ser retornada")
     public void eListaAnimaisRetornada() {
         assertNotNull(contexto.resultado.getTutor().getPacientesVinculados());
     }
 
-    @Então("o tutor deve ser salvo no repositorio")
+    @Then("o tutor deve ser salvo no repositorio")
     public void entaoTutorSalvo() {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         verify(contexto.tutorRepositorio, times(1)).save(contexto.tutor);
     }
 
-    @E("o resultado da busca deve ser atualizado com o novo tutor")
+    @And("o resultado da busca deve ser atualizado com o novo tutor")
     public void eResultadoAtualizadoComTutor() {
         assertNotNull(contexto.resultado);
         assertTrue(contexto.resultado.isTutorEncontrado());
         verify(contexto.resultadoBuscaRepositorio, times(1)).save(contexto.resultado);
     }
 
-    @Então("o alerta epidemiologico global deve ser verdadeiro")
+    @Then("o alerta epidemiologico global deve ser verdadeiro")
     public void entaoAlertaVerdadeiro() {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertTrue(contexto.resultado.isAlertaEpidemiologicoGlobal());
     }
 
-    @Então("o alerta epidemiologico global deve ser falso")
+    @Then("o alerta epidemiologico global deve ser falso")
     public void entaoAlertaFalso() {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertFalse(contexto.resultado.isAlertaEpidemiologicoGlobal());
     }
 
-    @Então("deve ser lancada uma excecao de argumento invalido")
+    @Then("deve ser lancada uma excecao de argumento invalido")
     public void entaoExcecaoArgumentoInvalido() {
         assertNotNull(contexto.excecaoCapturada);
         assertInstanceOf(IllegalArgumentException.class, contexto.excecaoCapturada);

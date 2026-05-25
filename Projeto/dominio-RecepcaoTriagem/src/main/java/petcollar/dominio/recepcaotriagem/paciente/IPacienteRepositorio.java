@@ -1,6 +1,6 @@
 package petcollar.dominio.recepcaotriagem.paciente;
 
-import java.util.List;
+import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 
 public interface IPacienteRepositorio {
     void save(Paciente paciente);
