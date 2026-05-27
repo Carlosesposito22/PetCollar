@@ -114,13 +114,13 @@ A partir deste ponto, **todos os caminhos abaixo são relativos à raiz `petColl
 
 Abra um terminal **na raiz do repositório**. São dois passos: instalar todos os módulos no repositório local do Maven e depois subir só o backend.
 
-**Windows (PowerShell):**
+**Windows (PowerShell):** — atenção às **aspas** em volta do `-D` (obrigatórias no PowerShell)
 ```powershell
 cd Projeto
 
 # 1) Compila e instala todos os módulos (só precisa rodar a primeira vez
 #    ou depois de mexer em algum dominio-*/aplicacao/infraestrutura)
-.\mvnw.cmd -DskipTests install
+.\mvnw.cmd "-Dmaven.test.skip=true" install
 
 # 2) Sobe o Spring Boot apenas no módulo de apresentação
 .\mvnw.cmd -pl apresentacao-backend spring-boot:run
@@ -130,7 +130,7 @@ cd Projeto
 ```bash
 cd Projeto
 chmod +x mvnw     # apenas na primeira vez
-./mvnw -DskipTests install
+./mvnw -Dmaven.test.skip=true install
 ./mvnw -pl apresentacao-backend spring-boot:run
 ```
 
@@ -138,7 +138,7 @@ chmod +x mvnw     # apenas na primeira vez
 >
 > ⚠️ **Por que dois comandos?** O Spring Boot Maven Plugin (`spring-boot:run`) é executado em todos os módulos do reactor quando usado com `-am`, e falha nos POMs intermediários. Rodar `install` primeiro popula o `~/.m2` local; depois `-pl apresentacao-backend` (sem `-am`) sobe só o módulo de apresentação.
 >
-> 💡 **Use `-DskipTests` (sem ponto) no PowerShell.** Se preferir `-Dmaven.test.skip=true`, **envolva em aspas**: `.\mvnw.cmd "-Dmaven.test.skip=true" install` — sem aspas o PowerShell quebra o argumento no ponto e o Maven reclama de "Unknown lifecycle phase".
+> ⚠️ **Use `-Dmaven.test.skip=true` (com aspas no PowerShell), NÃO `-DskipTests`.** Existem testes BDD ainda em desenvolvimento que não compilam; `-DskipTests` tenta compilá-los e falha, enquanto `-Dmaven.test.skip=true` pula a compilação dos testes. As aspas evitam que o PowerShell quebre o argumento no ponto (erro "Unknown lifecycle phase").
 
 Quando aparecer no log algo como `Started PetCollarApplication in X seconds`, o backend está pronto em **<http://localhost:8080>**.
 
@@ -191,7 +191,7 @@ Todos relativos à raiz do repositório.
 **Backend** (use `.\mvnw.cmd` no PowerShell ou `./mvnw` no Linux/macOS)
 ```powershell
 # compilar e instalar tudo sem rodar testes
-cd Projeto; .\mvnw.cmd -DskipTests install
+cd Projeto; .\mvnw.cmd "-Dmaven.test.skip=true" install
 
 # rodar apenas os testes
 cd Projeto; .\mvnw.cmd test
@@ -220,7 +220,8 @@ npm run preview  # serve o build de produção localmente
 |---|---|---|
 | `mvn` não é reconhecido | Você está usando `mvn` em vez do wrapper | Use `.\mvnw.cmd` (PowerShell) ou `./mvnw` (bash) — não precisa instalar Maven |
 | `JAVA_HOME not found in your environment` | Variável de ambiente faltando | Defina `JAVA_HOME` conforme nota em [§1](#1--pré-requisitos) e reabra o terminal |
-| `Unknown lifecycle phase ".test.skip=true"` | PowerShell quebrou o argumento no ponto | Use `-DskipTests` (sem ponto) ou envolva em aspas: `"-Dmaven.test.skip=true"` |
+| `Unknown lifecycle phase ".test.skip=true"` | PowerShell quebrou o argumento no ponto | Envolva em aspas: `.\mvnw.cmd "-Dmaven.test.skip=true" install` |
+| `cannot find symbol` em `*/src/test/java/.../bdd/ContextoCenario.java` | Testes BDD em desenvolvimento não compilam | Use `"-Dmaven.test.skip=true"` (pula compilação dos testes), **não** `-DskipTests` |
 | `Unable to find a suitable main class` (no `petCollar-pai`) | `spring-boot:run` rodou no POM-pai em vez do módulo | Use **dois comandos** como em [§3](#3--subir-o-backend-porta-8080): primeiro `install`, depois `-pl apresentacao-backend spring-boot:run` |
 | `Failed to determine a suitable driver class` | Spring tentou ligar JPA/DataSource | Confirme que [application.yml](Projeto/apresentacao-backend/src/main/resources/application.yml) tem as quatro entradas em `spring.autoconfigure.exclude` |
 | Login retorna `403` no navegador | Vite numa porta não liberada no CORS | Já corrigido: o backend aceita `http://localhost:*`. Recompile o backend se ainda estiver na versão antiga |

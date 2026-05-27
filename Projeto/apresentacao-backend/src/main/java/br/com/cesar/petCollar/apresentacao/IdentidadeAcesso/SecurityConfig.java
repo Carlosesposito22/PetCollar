@@ -49,6 +49,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/tutores/*/simular-pagamento").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN_CLINICA")
+                .requestMatchers("/api/tutor/**").hasRole("TUTOR")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(filtro, UsernamePasswordAuthenticationFilter.class);

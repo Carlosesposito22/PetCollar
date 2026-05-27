@@ -28,7 +28,7 @@ public class AutenticacaoService {
             throw new ContaSuspensaException();
         }
 
-        if (usuario.status() == StatusConta.PENDENTE_PAGAMENTO) {
+        if (usuario.status() == StatusConta.PENDENTE) {
             throw new PagamentoPendenteException(usuario.identificador());
         }
 

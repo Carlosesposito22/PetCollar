@@ -1,7 +1,8 @@
 package br.com.cesar.petCollar.apresentacao.IdentidadeAcesso;
 
 public enum StatusConta {
+    PENDENTE,
     ATIVA,
-    SUSPENSA,
-    PENDENTE_PAGAMENTO
+    INADIMPLENTE,
+    SUSPENSA
 }

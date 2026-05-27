@@ -9,8 +9,8 @@
   body {
     @apply font-sans text-ink-800 antialiased;
     background:
-      radial-gradient(1200px 600px at 90% -10%, rgba(30, 170, 120, 0.10), transparent 60%),
-      radial-gradient(900px 500px at -10% 110%, rgba(19, 138, 98, 0.10), transparent 55%),
+      radial-gradient(1200px 600px at 90% -10%, rgba(2, 170, 181, 0.12), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(224, 19, 58, 0.06), transparent 55%),
       linear-gradient(180deg, #f8fafc 0%, #eef2f5 100%);
     min-height: 100vh;
   }
@@ -27,8 +27,8 @@
   }
   .btn-primary {
     @apply inline-flex w-full items-center justify-center gap-2 rounded-xl
-           bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-card
-           hover:bg-ink-800 active:scale-[0.99] transition disabled:opacity-60
+           bg-brand-500 px-5 py-3 text-sm font-semibold text-white shadow-card
+           hover:bg-brand-600 active:scale-[0.99] transition disabled:opacity-60
            disabled:cursor-not-allowed;
   }
   .btn-ghost {

@@ -40,7 +40,7 @@ public class TutorController {
                 req.nomeCompleto(),
                 Perfil.TUTOR,
                 encoder.encode(req.senha()),
-                StatusConta.PENDENTE_PAGAMENTO,
+                StatusConta.PENDENTE,
                 req.cpf(),
                 req.telefone(),
                 req.endereco(),
@@ -62,7 +62,7 @@ public class TutorController {
         UsuarioAutenticavel tutor = repositorio.buscar(Perfil.TUTOR, identificador)
                 .orElseThrow(TutorNaoEncontradoException::new);
 
-        if (tutor.status() != StatusConta.PENDENTE_PAGAMENTO) {
+        if (tutor.status() != StatusConta.PENDENTE) {
             return ResponseEntity.ok(new RespostaContratacao(
                     tutor.identificador(), tutor.nome(), tutor.email(),
                     tutor.status().name(), null));

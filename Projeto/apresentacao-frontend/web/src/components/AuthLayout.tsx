@@ -16,20 +16,20 @@ export function AuthLayout({ children, showBack = false, highlight }: Props) {
         <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-black/10 blur-3xl" />
 
         <div className="relative">
-          <BrandWordmark />
+          <BrandWordmark tone="light" />
         </div>
 
         <div className="relative max-w-md">
           <h1 className="text-3xl font-bold leading-tight">
-            Atendimento clínico mais seguro, do balcão à prescrição.
+            Fortalecendo o vínculo entre pessoas e animais.
           </h1>
-          <p className="mt-4 text-brand-50/90">
-            Priorize casos críticos, monitore SLAs em tempo real e bloqueie dosagens
-            inseguras — tudo em um único fluxo.
+          <p className="mt-4 text-white/90">
+            Atendimento clínico mais seguro, do balcão à prescrição: priorize casos
+            críticos, monitore SLAs e bloqueie dosagens inseguras — em um único fluxo.
           </p>
 
           {highlight ?? (
-            <ul className="mt-8 space-y-3 text-sm text-brand-50/95">
+            <ul className="mt-8 space-y-3 text-sm text-white/95">
               <Bullet>Triagem por escore com cor de risco</Bullet>
               <Bullet>Fila inteligente por gravidade e SLA</Bullet>
               <Bullet>Cálculo de NEM e dosagem segura</Bullet>
@@ -37,8 +37,8 @@ export function AuthLayout({ children, showBack = false, highlight }: Props) {
           )}
         </div>
 
-        <div className="relative text-xs text-brand-50/70">
-          © {new Date().getFullYear()} petCollar — Todos os direitos reservados
+        <div className="relative text-xs text-white/70">
+          © {new Date().getFullYear()} petCollar — Viva a experiência Pet Collar
         </div>
       </aside>
 

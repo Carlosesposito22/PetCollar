@@ -45,7 +45,7 @@ export function TutorLogin() {
           identificador: pendenteId,
           nome: pendenteId,
           email: pendenteId,
-          status: "PENDENTE_PAGAMENTO",
+          status: "PENDENTE",
           codigoPix: "00020126580014BR.GOV.BCB.PIX0136a1b2c3d4...",
         },
       },

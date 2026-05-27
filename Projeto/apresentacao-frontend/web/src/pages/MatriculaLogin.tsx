@@ -30,7 +30,7 @@ export function MatriculaLogin({ perfil, rotuloPerfil, titulo }: Props) {
     setEnviando(true);
     try {
       await login(perfil, matricula, senha);
-      navigate("/app");
+      navigate("/staff");
     } catch (err) {
       setErro((err as Error).message);
     } finally {

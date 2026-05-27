@@ -1,34 +1,56 @@
+type Tone = "dark" | "light";
+
+/** Pata da marca petCollar (vermelho #E0133A por padrão via text-paw-500). */
+export function Paw({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} fill="currentColor" aria-hidden>
+      <ellipse cx="32" cy="45" rx="14" ry="11" />
+      <circle cx="13" cy="31" r="6.5" />
+      <circle cx="25.5" cy="19" r="6.5" />
+      <circle cx="38.5" cy="19" r="6.5" />
+      <circle cx="51" cy="31" r="6.5" />
+    </svg>
+  );
+}
+
+/** Selo quadrado com a pata — usado como ícone/avatar da marca. */
 export function BrandMark({ size = 40 }: { size?: number }) {
   return (
     <div
-      className="inline-flex items-center justify-center rounded-2xl bg-brand-600 text-brand-50 shadow-card"
+      className="inline-flex items-center justify-center rounded-2xl bg-brand-500 shadow-card"
       style={{ width: size, height: size }}
       aria-hidden
     >
-      <svg viewBox="0 0 64 64" width={size * 0.6} height={size * 0.6} fill="currentColor">
-        <path d="M22 38c0-5 4-9 10-9s10 4 10 9c0 4-3 7-10 7s-10-3-10-7Z" />
-        <circle cx="22" cy="22" r="4" />
-        <circle cx="32" cy="18" r="4" />
-        <circle cx="42" cy="22" r="4" />
-        <circle cx="16" cy="30" r="3" />
-        <circle cx="48" cy="30" r="3" />
-      </svg>
+      <Paw className="text-white" />
     </div>
   );
 }
 
-export function BrandWordmark() {
+/**
+ * Wordmark "PET CØLLAR" — o "O" de COLLAR é substituído pela pata vermelha,
+ * fiel ao manual de identidade visual.
+ */
+export function BrandWordmark({ tone = "dark", size = "md" }: { tone?: Tone; size?: "md" | "lg" }) {
+  const texto = tone === "light" ? "text-white" : "text-brand-600";
+  const subtitulo = tone === "light" ? "text-white/80" : "text-ink-500";
+  const escala = size === "lg" ? "text-3xl" : "text-2xl";
+  const pataAltura = size === "lg" ? "h-6 w-6" : "h-5 w-5";
+
   return (
-    <div className="flex items-center gap-3">
-      <BrandMark />
-      <div className="leading-tight">
-        <div className="text-xl font-extrabold tracking-tight text-ink-900">
-          pet<span className="text-brand-600">Collar</span>
-        </div>
-        <div className="text-[11px] font-medium uppercase tracking-widest text-ink-500">
-          Inteligência clínica veterinária
-        </div>
-      </div>
+    <div className="flex items-center gap-2.5">
+      <span className={`font-extrabold leading-none tracking-tight ${escala} ${texto}`}>
+        <span>PET</span>
+        <span className="ml-1.5 inline-flex items-center">
+          C
+          <Paw className={`mx-[1px] text-paw-500 ${pataAltura}`} />
+          LLAR
+        </span>
+      </span>
+      {size === "lg" && (
+        <span className={`ml-1 hidden text-[11px] font-medium leading-tight sm:block ${subtitulo}`}>
+          Fortalecendo o vínculo<br />entre pessoas e animais
+        </span>
+      )}
     </div>
   );
 }

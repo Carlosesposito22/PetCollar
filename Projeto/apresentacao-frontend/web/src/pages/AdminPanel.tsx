@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth, type Perfil } from "../auth/AuthContext";
 import { BrandWordmark } from "../components/Brand";
 
-type Status = "ATIVA" | "SUSPENSA" | "PENDENTE_PAGAMENTO";
+type Status = "PENDENTE" | "ATIVA" | "INADIMPLENTE" | "SUSPENSA";
 
 type Usuario = {
   identificador: string;
@@ -166,14 +166,16 @@ function TabBtn({ ativo, onClick, children }: { ativo: boolean; onClick: () => v
 
 function StatusBadge({ status }: { status: Status }) {
   const map: Record<Status, string> = {
+    PENDENTE: "bg-amber-50 text-amber-700 ring-amber-100",
     ATIVA: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+    INADIMPLENTE: "bg-orange-50 text-orange-700 ring-orange-100",
     SUSPENSA: "bg-red-50 text-red-700 ring-red-100",
-    PENDENTE_PAGAMENTO: "bg-amber-50 text-amber-700 ring-amber-100",
   };
   const label: Record<Status, string> = {
+    PENDENTE: "Pendente",
     ATIVA: "Ativa",
+    INADIMPLENTE: "Inadimplente",
     SUSPENSA: "Suspensa",
-    PENDENTE_PAGAMENTO: "Pendente",
   };
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${map[status]}`}>
@@ -264,7 +266,7 @@ function TabelaTutores({
               <Td><StatusBadge status={u.status} /></Td>
               <Td className="text-right">
                 <div className="inline-flex gap-2">
-                  {u.status === "PENDENTE_PAGAMENTO" && (
+                  {u.status === "PENDENTE" && (
                     <button onClick={() => onConfirmarPagamento(u)} className="btn-ghost ring-1 ring-brand-200 text-brand-700 hover:bg-brand-50">
                       Confirmar pagamento
                     </button>
