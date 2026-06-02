@@ -11,6 +11,8 @@ import { Dashboard } from "./pages/Dashboard";
 import { TutorLayout } from "./pages/tutor/TutorLayout";
 import { TutorInicio } from "./pages/tutor/TutorInicio";
 import { TutorVacinacao } from "./pages/tutor/TutorVacinacao";
+import { TutorBeneficios } from "./pages/tutor/TutorBeneficios";
+import { TutorConquistas } from "./pages/tutor/TutorConquistas";
 import { EmBreve } from "./pages/tutor/EmBreve";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 
@@ -37,9 +39,9 @@ export function App() {
         <Route index element={<TutorInicio />} />
         <Route path="vacinacao" element={<TutorVacinacao />} />
         <Route path="financeiro" element={<EmBreve titulo="Financeiro" />} />
-        <Route path="beneficios" element={<EmBreve titulo="Benefícios" />} />
+        <Route path="beneficios" element={<TutorBeneficios />} />
         <Route path="consultas" element={<EmBreve titulo="Consultas" />} />
-        <Route path="conquistas" element={<EmBreve titulo="Conquistas" />} />
+        <Route path="conquistas" element={<TutorConquistas />} />
         <Route path="indicacoes" element={<EmBreve titulo="Indicações" />} />
       </Route>
 
