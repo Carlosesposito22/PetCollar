@@ -15,5 +15,11 @@ public interface PortalTutorRepositorio {
     List<Vacina> listarVacinasDoPaciente(String pacienteId);
     void salvarVacina(Vacina vacina);
 
+    // Financeiro
+    List<Mensalidade> listarMensalidadesDoTutor(String tutorId);
+    Optional<Mensalidade> buscarMensalidade(String id);
+    void salvarMensalidade(Mensalidade mensalidade);
+    Plano planoDoTutor(String tutorId);
+
     String novoId();
 }

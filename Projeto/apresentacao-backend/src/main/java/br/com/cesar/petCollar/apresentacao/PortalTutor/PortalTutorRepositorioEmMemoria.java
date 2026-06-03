@@ -1,6 +1,8 @@
 package br.com.cesar.petCollar.apresentacao.PortalTutor;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +23,8 @@ public class PortalTutorRepositorioEmMemoria implements PortalTutorRepositorio {
 
     private final ConcurrentMap<String, Paciente> pacientes = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Vacina> vacinas = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Mensalidade> mensalidades = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Plano> planosPorTutor = new ConcurrentHashMap<>();
 
     public PortalTutorRepositorioEmMemoria() {
         LocalDate hoje = LocalDate.now();
@@ -56,6 +60,39 @@ public class PortalTutorRepositorioEmMemoria implements PortalTutorRepositorio {
                 hoje.minusMonths(8), "Dr. Carlos Silva", "L20011"));
         salvarVacina(new Vacina(novoId(), bob.id(), "Antirrábica", null, null, true,
                 hoje.minusMonths(5), "Dra. Maria Santos", "R30022"));
+
+        // ── Financeiro do tutor demo (Plano + Mensalidades) ──────────────────
+        // Convenção: vencimento sempre dia 5; competência = mês anterior ao vencimento.
+        // Seed relativo a HOJE para a demo mostrar o mesmo padrão independente da data.
+        planosPorTutor.put(TUTOR_DEMO, Plano.BASICO_MENSAL);
+
+        LocalDate dia5DesteMes = hoje.withDayOfMonth(5);
+        LocalDate proximoVencimento = dia5DesteMes.isAfter(hoje)
+                ? dia5DesteMes
+                : dia5DesteMes.plusMonths(1);
+
+        // Mensalidade PAGA (vencimento ~2 meses atrás, paga 2 dias antes)
+        LocalDate vencPago = proximoVencimento.minusMonths(2);
+        salvarMensalidade(new Mensalidade(
+                novoId(), TUTOR_DEMO,
+                YearMonth.from(vencPago).minusMonths(1),
+                Plano.BASICO_MENSAL.valor(), null,
+                vencPago, vencPago.minusDays(2)));
+
+        // Mensalidade EM ATRASO (vencimento ~1 mês atrás, não paga)
+        LocalDate vencAtraso = proximoVencimento.minusMonths(1);
+        salvarMensalidade(new Mensalidade(
+                novoId(), TUTOR_DEMO,
+                YearMonth.from(vencAtraso).minusMonths(1),
+                Plano.BASICO_MENSAL.valor(), null,
+                vencAtraso, null));
+
+        // Mensalidade PENDENTE (próximo vencimento, ainda não venceu)
+        salvarMensalidade(new Mensalidade(
+                novoId(), TUTOR_DEMO,
+                YearMonth.from(proximoVencimento).minusMonths(1),
+                Plano.BASICO_MENSAL.valor(), null,
+                proximoVencimento, null));
     }
 
     @Override
@@ -97,6 +134,30 @@ public class PortalTutorRepositorioEmMemoria implements PortalTutorRepositorio {
     @Override
     public void salvarVacina(Vacina vacina) {
         vacinas.put(vacina.id(), vacina);
+    }
+
+    @Override
+    public List<Mensalidade> listarMensalidadesDoTutor(String tutorId) {
+        return mensalidades.values().stream()
+                .filter(m -> m.tutorId().equalsIgnoreCase(tutorId))
+                // mais recente primeiro
+                .sorted(Comparator.comparing(Mensalidade::vencimento).reversed())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<Mensalidade> buscarMensalidade(String id) {
+        return Optional.ofNullable(mensalidades.get(id));
+    }
+
+    @Override
+    public void salvarMensalidade(Mensalidade mensalidade) {
+        mensalidades.put(mensalidade.id(), mensalidade);
+    }
+
+    @Override
+    public Plano planoDoTutor(String tutorId) {
+        return planosPorTutor.getOrDefault(tutorId, Plano.BASICO_MENSAL);
     }
 
     @Override

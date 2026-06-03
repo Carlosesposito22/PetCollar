@@ -13,6 +13,8 @@ import { TutorInicio } from "./pages/tutor/TutorInicio";
 import { TutorVacinacao } from "./pages/tutor/TutorVacinacao";
 import { TutorBeneficios } from "./pages/tutor/TutorBeneficios";
 import { TutorConquistas } from "./pages/tutor/TutorConquistas";
+import { TutorFinanceiro } from "./pages/tutor/TutorFinanceiro";
+import { TutorFinanceiroPagamento } from "./pages/tutor/TutorFinanceiroPagamento";
 import { EmBreve } from "./pages/tutor/EmBreve";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 
@@ -38,7 +40,8 @@ export function App() {
       >
         <Route index element={<TutorInicio />} />
         <Route path="vacinacao" element={<TutorVacinacao />} />
-        <Route path="financeiro" element={<EmBreve titulo="Financeiro" />} />
+        <Route path="financeiro" element={<TutorFinanceiro />} />
+        <Route path="financeiro/pagamento/:id" element={<TutorFinanceiroPagamento />} />
         <Route path="beneficios" element={<TutorBeneficios />} />
         <Route path="consultas" element={<EmBreve titulo="Consultas" />} />
         <Route path="conquistas" element={<TutorConquistas />} />

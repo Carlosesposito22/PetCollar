@@ -17,6 +17,9 @@ target/
 *.njsproj
 *.sln
 
+
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db

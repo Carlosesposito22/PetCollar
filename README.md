@@ -130,8 +130,8 @@ cd Projeto
 ```bash
 cd Projeto
 chmod +x mvnw     # apenas na primeira vez
-./mvnw -Dmaven.test.skip=true install
-./mvnw -pl apresentacao-backend spring-boot:run
+.\mvnw.cmd "-Dmaven.test.skip=true" install
+.\mvnw.cmd -pl apresentacao-backend spring-boot:run
 ```
 
 > **Primeira execução:** o wrapper baixa o Maven 3.9.9 (~10 MB) em `~/.m2/wrapper`, depois o Maven baixa todas as dependências — pode levar alguns minutos. Da segunda vez em diante é instantâneo.

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.cesar.petCollar.apresentacao.PortalTutor.PortalTutorBootstrap;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -23,10 +24,14 @@ public class TutorController {
 
     private final UsuarioRepositorio repositorio;
     private final PasswordEncoder encoder;
+    private final PortalTutorBootstrap portalTutorBootstrap;
 
-    public TutorController(UsuarioRepositorio repositorio, PasswordEncoder encoder) {
+    public TutorController(UsuarioRepositorio repositorio,
+                           PasswordEncoder encoder,
+                           PortalTutorBootstrap portalTutorBootstrap) {
         this.repositorio = repositorio;
         this.encoder = encoder;
+        this.portalTutorBootstrap = portalTutorBootstrap;
     }
 
     @PostMapping("/contratar")
@@ -70,6 +75,9 @@ public class TutorController {
 
         tutor.mudarStatus(StatusConta.ATIVA);
         repositorio.salvar(tutor);
+
+        // Boleto inicial confirmado: cria a 1ª mensalidade (paga) e a próxima (pendente).
+        portalTutorBootstrap.inicializarFinanceiroDoTutor(tutor.identificador());
 
         return ResponseEntity.ok(new RespostaContratacao(
                 tutor.identificador(), tutor.nome(), tutor.email(),
