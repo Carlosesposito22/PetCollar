@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { RecepcionistaFila } from "./RecepcionistaFila";
 import { BrandWordmark } from "../components/Brand";
 
 const rotulos: Record<string, string> = {
@@ -10,6 +12,8 @@ const rotulos: Record<string, string> = {
 
 export function Dashboard() {
   const { session, logout } = useAuth();
+  const [mostrarFila, setMostrarFila] = useState(false);
+
   if (!session) return null;
 
   const isRecepcionista = session.user.perfil === "RECEPCIONISTA";
@@ -44,45 +48,59 @@ export function Dashboard() {
 
         {isRecepcionista ? (
           <>
-            <div className="grid gap-4 md:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => alert("Fluxo de busca por CPF em desenvolvimento.")}
-                className="group card flex min-h-[240px] flex-col justify-between rounded-[28px] border border-ink-200/80 bg-white p-8 text-left transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-brand-100"
-              >
-                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
-                  <IconSearch />
-                </span>
-                <div>
-                  <h2 className="text-xl font-semibold text-ink-900">Buscar Tutor por CPF</h2>
-                  <p className="mt-3 text-sm leading-6 text-ink-500">
-                    Encontre rapidamente o tutor e o cadastro do paciente usando o CPF.
-                  </p>
-                </div>
-                <span className="text-sm font-medium text-brand-700">Abrir busca →</span>
-              </button>
+            {mostrarFila ? (
+              <div>
+                <button
+                  onClick={() => setMostrarFila(false)}
+                  className="btn-ghost mb-6 text-sm"
+                >
+                  ← Voltar ao painel
+                </button>
+                <RecepcionistaFila />
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => alert("Fluxo de busca por CPF em desenvolvimento.")}
+                    className="group card flex min-h-[240px] flex-col justify-between rounded-[28px] border border-ink-200/80 bg-white p-8 text-left transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-brand-100"
+                  >
+                    <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
+                      <IconSearch />
+                    </span>
+                    <div>
+                      <h2 className="text-xl font-semibold text-ink-900">Buscar Tutor por CPF</h2>
+                      <p className="mt-3 text-sm leading-6 text-ink-500">
+                        Encontre rapidamente o tutor e o cadastro do paciente usando o CPF.
+                      </p>
+                    </div>
+                    <span className="text-sm font-medium text-brand-700">Abrir busca →</span>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => alert("Visualização da fila de espera em desenvolvimento.")}
-                className="group card flex min-h-[240px] flex-col justify-between rounded-[28px] border border-ink-200/80 bg-white p-8 text-left transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-brand-100"
-              >
-                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
-                  <IconQueue />
-                </span>
-                <div>
-                  <h2 className="text-xl font-semibold text-ink-900">Visualizar Fila de Espera Dinâmica</h2>
-                  <p className="mt-3 text-sm leading-6 text-ink-500">
-                    Veja a fila atualizada em tempo real para organizar os atendimentos com mais agilidade.
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarFila(true)}
+                    className="group card flex min-h-[240px] flex-col justify-between rounded-[28px] border border-ink-200/80 bg-white p-8 text-left transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-brand-100"
+                  >
+                    <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
+                      <IconQueue />
+                    </span>
+                    <div>
+                      <h2 className="text-xl font-semibold text-ink-900">Visualizar Fila de Espera Dinâmica</h2>
+                      <p className="mt-3 text-sm leading-6 text-ink-500">
+                        Veja a fila atualizada em tempo real para organizar os atendimentos com mais agilidade.
+                      </p>
+                    </div>
+                    <span className="text-sm font-medium text-brand-700">Abrir fila →</span>
+                  </button>
                 </div>
-                <span className="text-sm font-medium text-brand-700">Abrir fila →</span>
-              </button>
-            </div>
 
-            <div className="mt-8 rounded-3xl border border-dashed border-ink-300/70 bg-white/90 p-6 text-sm text-ink-600">
-              ANOTAÇÃO: Painel de acesso rápido às funções principais da recepção
-            </div>
+                <div className="mt-8 rounded-3xl border border-dashed border-ink-300/70 bg-white/90 p-6 text-sm text-ink-600">
+                  ANOTAÇÃO: Painel de acesso rápido às funções principais da recepção
+                </div>
+              </>
+            )}
           </>
         ) : (
           <div className="card rounded-3xl p-8">
