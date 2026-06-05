@@ -2,8 +2,8 @@ package br.com.cesar.petCollar.infraestrutura.AgendamentoClinico;
 
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.agenda.DisponibilidadeAgendaService;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.agenda.IAgendaRepositorio;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.AgendamentoConsultaInicialService;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.AgendamentoRetornoService;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.AgendamentoConsultaInicialService;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.AgendamentoRetornoService;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.GestaoAgendamentoService;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.IConsultaRepositorio;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaExame;
@@ -34,17 +34,19 @@ public class AgendamentoClinicoConfig {
 
     @Bean
     public AgendamentoConsultaInicialService agendamentoConsultaInicialService(
-            IConsultaRepositorio consultaRepositorio, IConsultaProntuario prontuario,
+            IConsultaProntuario prontuario, IConsultaRepositorio consultaRepositorio,
             DisponibilidadeAgendaService disponibilidade, IServicoNotificacao notificacao) {
-        return new AgendamentoConsultaInicialService(consultaRepositorio, prontuario,
+        return new AgendamentoConsultaInicialService(prontuario, consultaRepositorio,
             disponibilidade, notificacao);
     }
 
     @Bean
     public AgendamentoRetornoService agendamentoRetornoService(
-            IConsultaRepositorio consultaRepositorio, IConsultaProntuario prontuario,
-            IConsultaExame exames, IServicoNotificacao notificacao) {
-        return new AgendamentoRetornoService(consultaRepositorio, prontuario, exames, notificacao);
+            IConsultaProntuario prontuario, IConsultaRepositorio consultaRepositorio,
+            DisponibilidadeAgendaService disponibilidade, IServicoNotificacao notificacao,
+            IConsultaExame exames) {
+        return new AgendamentoRetornoService(prontuario, consultaRepositorio,
+            disponibilidade, notificacao, exames);
     }
 
     @Bean

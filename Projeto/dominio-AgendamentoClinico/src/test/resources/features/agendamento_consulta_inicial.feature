@@ -36,5 +36,6 @@ Funcionalidade: Agendamento de consulta inicial
     E um horário livre na agenda do médico
     Quando o tutor agenda a consulta inicial
     Então a consulta deve ficar com status "CONFIRMADA"
+    E a consulta deve ser do tipo "INICIAL"
     E o médico deve ser notificado
     E o tutor deve ser notificado

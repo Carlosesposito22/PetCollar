@@ -10,6 +10,7 @@ Funcionalidade: Agendamento de consulta de retorno
   Cenário: Retorno é bloqueado quando não há exame concluído
     Dado um prontuário com status "ATIVO" para o paciente
     E uma consulta de origem elegível a retorno
+    E um horário livre na agenda do médico
     E a consulta de origem não possui exames concluídos
     Quando o tutor agenda o retorno
     Então o agendamento deve ser recusado por regra de negócio
@@ -17,9 +18,12 @@ Funcionalidade: Agendamento de consulta de retorno
   Cenário: Retorno é liberado com ao menos um exame concluído
     Dado um prontuário com status "ATIVO" para o paciente
     E uma consulta de origem elegível a retorno
+    E um horário livre na agenda do médico
     E a consulta de origem possui 1 exame concluído
     Quando o tutor agenda o retorno
     Então a consulta deve ficar com status "CONFIRMADA"
+    E a consulta deve ser do tipo "RETORNO"
+    E a consulta deve ter vínculo com a consulta de origem
     E o médico deve ser notificado
     E o tutor deve ser notificado
 

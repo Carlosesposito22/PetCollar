@@ -8,8 +8,8 @@ import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.agenda.DisponibilidadeAgendaService;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.agenda.Expediente;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.agenda.IAgendaRepositorio;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.AgendamentoConsultaInicialService;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.AgendamentoRetornoService;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.AgendamentoConsultaInicialService;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.AgendamentoRetornoService;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.Consulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.ConsultaId;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.GestaoAgendamentoService;
@@ -47,9 +47,9 @@ public class ContextoCenario {
     public final DisponibilidadeAgendaService disponibilidade =
         new DisponibilidadeAgendaService(consultaRepositorio, agendaRepositorio);
     public final AgendamentoConsultaInicialService inicialService =
-        new AgendamentoConsultaInicialService(consultaRepositorio, prontuario, disponibilidade, notificacao);
+        new AgendamentoConsultaInicialService(prontuario, consultaRepositorio, disponibilidade, notificacao);
     public final AgendamentoRetornoService retornoService =
-        new AgendamentoRetornoService(consultaRepositorio, prontuario, exames, notificacao);
+        new AgendamentoRetornoService(prontuario, consultaRepositorio, disponibilidade, notificacao, exames);
     public final GestaoAgendamentoService gestaoService =
         new GestaoAgendamentoService(consultaRepositorio, notificacao);
 

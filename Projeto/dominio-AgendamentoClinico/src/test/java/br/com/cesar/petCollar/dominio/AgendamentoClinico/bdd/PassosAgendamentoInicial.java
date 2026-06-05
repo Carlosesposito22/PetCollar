@@ -5,6 +5,7 @@ import io.cucumber.java.pt.Entao;
 import io.cucumber.java.pt.Quando;
 
 import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.RequisicaoAgendamento;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.Consulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.ConsultaId;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.MotivoConsulta;
@@ -60,11 +61,11 @@ public class PassosAgendamentoInicial {
 
     @Quando("o tutor agenda a consulta inicial")
     public void agendaConsultaInicial() {
-        contexto.consulta = new Consulta(ConsultaId.gerar(), contexto.pacienteId, contexto.tutorId,
-            contexto.medicoId, EspecialidadeId.gerar(),
+        RequisicaoAgendamento requisicao = new RequisicaoAgendamento(
+            contexto.pacienteId, contexto.tutorId, contexto.medicoId, EspecialidadeId.gerar(),
             MotivoConsulta.de("Consulta inicial de rotina"), contexto.horario);
         try {
-            contexto.inicialService.agendar(contexto.consulta);
+            contexto.consulta = contexto.inicialService.agendar(requisicao);
         } catch (Exception e) {
             contexto.excecao = e;
         }

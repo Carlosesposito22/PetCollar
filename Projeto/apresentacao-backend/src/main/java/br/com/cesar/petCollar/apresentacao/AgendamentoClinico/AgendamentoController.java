@@ -3,8 +3,9 @@ package br.com.cesar.petCollar.apresentacao.AgendamentoClinico;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.AgendamentoConsultaInicialService;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.AgendamentoRetornoService;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.AgendamentoConsultaInicialService;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.AgendamentoRetornoService;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.RequisicaoAgendamento;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.Consulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.ConsultaId;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.FiltroConsulta;
@@ -55,23 +56,21 @@ public class AgendamentoController {
     @PostMapping("/consulta-inicial")
     public ResponseEntity<ConsultaDTO> agendarInicial(
             @RequestBody RequisicaoAgendarConsultaInicialDTO req) {
-        Consulta consulta = new Consulta(
-            ConsultaId.gerar(),
+        RequisicaoAgendamento requisicao = new RequisicaoAgendamento(
             PacienteId.de(req.pacienteId()),
             TutorId.de(req.tutorId()),
             MedicoId.de(req.medicoId()),
             EspecialidadeId.de(req.especialidadeId()),
             MotivoConsulta.de(req.motivo()),
             new HorarioConsulta(req.inicio(), req.fim()));
-        inicialService.agendar(consulta);
+        Consulta consulta = inicialService.agendar(requisicao);
         return ResponseEntity.status(HttpStatus.CREATED).body(ConsultaDTO.de(consulta));
     }
 
     @PostMapping("/retorno")
     public ResponseEntity<ConsultaDTO> agendarRetorno(
             @RequestBody RequisicaoAgendarRetornoDTO req) {
-        Consulta retorno = new Consulta(
-            ConsultaId.gerar(),
+        RequisicaoAgendamento requisicao = new RequisicaoAgendamento(
             PacienteId.de(req.pacienteId()),
             TutorId.de(req.tutorId()),
             MedicoId.de(req.medicoId()),
@@ -79,7 +78,7 @@ public class AgendamentoController {
             MotivoConsulta.de(req.motivo()),
             new HorarioConsulta(req.inicio(), req.fim()),
             ConsultaId.de(req.consultaOrigemId()));
-        retornoService.agendar(retorno);
+        Consulta retorno = retornoService.agendar(requisicao);
         return ResponseEntity.status(HttpStatus.CREATED).body(ConsultaDTO.de(retorno));
     }
 

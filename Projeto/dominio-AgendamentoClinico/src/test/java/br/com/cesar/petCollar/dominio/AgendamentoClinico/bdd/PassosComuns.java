@@ -6,6 +6,7 @@ import io.cucumber.java.pt.Entao;
 
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.agenda.BloqueioAgenda;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.StatusConsulta;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.TipoConsulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.StatusProntuario;
 
 import java.util.List;
@@ -85,5 +86,16 @@ public class PassosComuns {
     @E("o tutor deve ser notificado")
     public void tutorNotificado() {
         verify(contexto.notificacao).notificarTutor(eq(contexto.tutorId), any());
+    }
+
+    @E("a consulta deve ser do tipo {string}")
+    public void consultaDoTipo(String tipo) {
+        assertNull(contexto.excecao, "Não deveria ter lançado exceção: " + contexto.excecao);
+        assertEquals(TipoConsulta.valueOf(tipo), contexto.consulta.getTipo());
+    }
+
+    @E("a consulta deve ter vínculo com a consulta de origem")
+    public void consultaTemVinculoComOrigem() {
+        assertEquals(contexto.origemId, contexto.consulta.getConsultaOrigemId());
     }
 }

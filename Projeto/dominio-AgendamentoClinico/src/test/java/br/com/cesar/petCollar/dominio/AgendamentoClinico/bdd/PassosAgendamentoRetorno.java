@@ -5,8 +5,10 @@ import io.cucumber.java.pt.E;
 import io.cucumber.java.pt.Entao;
 import io.cucumber.java.pt.Quando;
 
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.RequisicaoAgendamento;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.Consulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.ConsultaId;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.HorarioConsulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.MotivoConsulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade.EspecialidadeId;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.ExameResumo;
@@ -74,12 +76,12 @@ public class PassosAgendamentoRetorno {
 
     @Quando("o tutor agenda o retorno")
     public void agendaRetorno() {
-        contexto.consulta = new Consulta(ConsultaId.gerar(), contexto.pacienteId, contexto.tutorId,
-            contexto.medicoId, EspecialidadeId.gerar(),
-            MotivoConsulta.de("Retorno de acompanhamento"), contexto.horarioUtilLivre(),
-            contexto.origemId);
+        HorarioConsulta horario = contexto.horario != null ? contexto.horario : contexto.horarioUtilLivre();
+        RequisicaoAgendamento requisicao = new RequisicaoAgendamento(
+            contexto.pacienteId, contexto.tutorId, contexto.medicoId, EspecialidadeId.gerar(),
+            MotivoConsulta.de("Retorno de acompanhamento"), horario, contexto.origemId);
         try {
-            contexto.retornoService.agendar(contexto.consulta);
+            contexto.consulta = contexto.retornoService.agendar(requisicao);
         } catch (Exception e) {
             contexto.excecao = e;
         }
