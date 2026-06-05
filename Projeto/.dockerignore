@@ -1,0 +1,8 @@
+# Mantém o contexto de build do backend enxuto (não envia artefatos/locais).
+**/target
+**/node_modules
+**/dist
+.git
+.idea
+**/*.iml
+**/*.log

@@ -16,6 +16,9 @@ import { TutorConquistas } from "./pages/tutor/TutorConquistas";
 import { TutorFinanceiro } from "./pages/tutor/TutorFinanceiro";
 import { TutorFinanceiroPagamento } from "./pages/tutor/TutorFinanceiroPagamento";
 import { EmBreve } from "./pages/tutor/EmBreve";
+import { AgendamentoHub } from "./pages/tutor/agendamento/AgendamentoHub";
+import { NovaConsultaPage } from "./pages/tutor/agendamento/NovaConsultaPage";
+import { AgendamentoRetornoPage } from "./pages/tutor/agendamento/AgendamentoRetornoPage";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 
 export function App() {
@@ -43,7 +46,9 @@ export function App() {
         <Route path="financeiro" element={<TutorFinanceiro />} />
         <Route path="financeiro/pagamento/:id" element={<TutorFinanceiroPagamento />} />
         <Route path="beneficios" element={<TutorBeneficios />} />
-        <Route path="consultas" element={<EmBreve titulo="Consultas" />} />
+        <Route path="agendamentos" element={<AgendamentoHub />} />
+        <Route path="agendamentos/nova-consulta" element={<NovaConsultaPage />} />
+        <Route path="agendamentos/retorno" element={<AgendamentoRetornoPage />} />
         <Route path="conquistas" element={<TutorConquistas />} />
         <Route path="indicacoes" element={<EmBreve titulo="Indicações" />} />
       </Route>

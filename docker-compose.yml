@@ -1,0 +1,60 @@
+# petCollar — sobe a stack completa: banco (PostgreSQL), backend (Spring Boot) e
+# frontend (React/Vite + nginx). Uso:
+#
+#   docker compose up --build          # sobe tudo (build na primeira vez)
+#   docker compose down                # derruba
+#   docker compose down -v             # derruba e apaga o volume do banco
+#
+# Acesso:  frontend → http://localhost:3000   |   API → http://localhost:8080
+#          banco    → localhost:5432 (petcollar / petcollar)
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: petcollar-db
+    environment:
+      POSTGRES_DB: petcollar
+      POSTGRES_USER: petcollar
+      POSTGRES_PASSWORD: petcollar
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petcollar -d petcollar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./Projeto
+      dockerfile: apresentacao-backend/Dockerfile
+    container_name: petcollar-backend
+    environment:
+      # Conexão com o PostgreSQL deste compose. Hoje a persistência JPA está
+      # DESLIGADA no application.yml (CLAUDE.md §9) e o login usa usuários em
+      # memória — estas variáveis já deixam o banco pronto para quando as
+      # exclusões de autoconfiguração forem removidas.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/petcollar
+      SPRING_DATASOURCE_USERNAME: petcollar
+      SPRING_DATASOURCE_PASSWORD: petcollar
+      # Sobrescreve o segredo JWT placeholder do application.yml.
+      PETCOLLAR_SECURITY_JWT_SECRET: "troque-este-segredo-em-producao-com-no-minimo-32-bytes!!"
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./Projeto/apresentacao-frontend/web
+    container_name: petcollar-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

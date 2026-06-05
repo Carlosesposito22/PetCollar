@@ -7,7 +7,7 @@ const abas = [
   { to: "/app/financeiro", label: "Financeiro" },
   { to: "/app/beneficios", label: "Benefícios" },
   { to: "/app/vacinacao", label: "Vacinação" },
-  { to: "/app/consultas", label: "Consultas" },
+  { to: "/app/agendamentos", label: "Consultas" },
   { to: "/app/conquistas", label: "Conquistas" },
   { to: "/app/indicacoes", label: "Indicações" },
 ];
