@@ -3,6 +3,11 @@ package br.com.cesar.petCollar.apresentacao.PortalTutor;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repositório em memória do Portal do Tutor para Pacientes e Vacinas.
+ * F-07 (Assinatura/Financeiro) <strong>não vive mais aqui</strong> — está em
+ * {@code dominio-AssinaturaFaturamento} + adapters JPA em {@code infraestrutura}.
+ */
 public interface PortalTutorRepositorio {
 
     // Pacientes
@@ -14,12 +19,6 @@ public interface PortalTutorRepositorio {
     // Vacinas
     List<Vacina> listarVacinasDoPaciente(String pacienteId);
     void salvarVacina(Vacina vacina);
-
-    // Financeiro
-    List<Mensalidade> listarMensalidadesDoTutor(String tutorId);
-    Optional<Mensalidade> buscarMensalidade(String id);
-    void salvarMensalidade(Mensalidade mensalidade);
-    Plano planoDoTutor(String tutorId);
 
     String novoId();
 }

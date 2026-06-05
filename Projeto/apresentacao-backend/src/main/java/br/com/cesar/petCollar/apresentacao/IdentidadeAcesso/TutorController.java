@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.cesar.petCollar.apresentacao.PortalTutor.PortalTutorBootstrap;
+import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.ContratarPlanoUseCase;
+import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.PlanosPadrao;
+import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -24,14 +26,14 @@ public class TutorController {
 
     private final UsuarioRepositorio repositorio;
     private final PasswordEncoder encoder;
-    private final PortalTutorBootstrap portalTutorBootstrap;
+    private final ContratarPlanoUseCase contratarPlano;
 
     public TutorController(UsuarioRepositorio repositorio,
                            PasswordEncoder encoder,
-                           PortalTutorBootstrap portalTutorBootstrap) {
+                           ContratarPlanoUseCase contratarPlano) {
         this.repositorio = repositorio;
         this.encoder = encoder;
-        this.portalTutorBootstrap = portalTutorBootstrap;
+        this.contratarPlano = contratarPlano;
     }
 
     @PostMapping("/contratar")
@@ -76,8 +78,11 @@ public class TutorController {
         tutor.mudarStatus(StatusConta.ATIVA);
         repositorio.salvar(tutor);
 
-        // Boleto inicial confirmado: cria a 1ª mensalidade (paga) e a próxima (pendente).
-        portalTutorBootstrap.inicializarFinanceiroDoTutor(tutor.identificador());
+        // Boleto inicial confirmado: dispara o caso de uso de contratação que
+        // cria a primeira Cobrança já como PAGA (idempotente).
+        contratarPlano.executar(
+                TutorId.de(tutor.identificador()),
+                PlanosPadrao.ID_PLANO_BASICO_MENSAL);
 
         return ResponseEntity.ok(new RespostaContratacao(
                 tutor.identificador(), tutor.nome(), tutor.email(),

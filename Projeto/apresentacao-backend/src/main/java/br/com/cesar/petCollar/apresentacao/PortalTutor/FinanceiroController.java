@@ -16,142 +16,110 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.ConfirmarPagamentoCobrancaUseCase;
+import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.ConsultarResumoFinanceiroUseCase;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.Perfil;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.StatusConta;
-import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioAutenticavel;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioRepositorio;
+import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.Cobranca;
+import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.CobrancaId;
+import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.StatusCobranca;
+import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.Plano;
+import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.servico.SituacaoConta;
+import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
 /**
- * Área Financeira do Tutor (F-07).
- * Centraliza plano contratado, status da conta, mensalidades e ação de pagamento.
- * Status da Conta é recomputado a cada leitura:
- *   - 0 mensalidades em atraso → ATIVA
- *   - 1 ou 2 em atraso          → INADIMPLENTE
- *   - 3+ em atraso              → SUSPENSA (bloqueia o login)
+ * Área Financeira do Tutor (F-07). Adapter HTTP fino — toda a regra vive nos
+ * use cases de {@code aplicacao.AssinaturaFaturamento} e nos services/agregados
+ * de domínio. Aqui só fazemos:
+ *  1) extrair o tutor logado do {@link Principal};
+ *  2) chamar o use case;
+ *  3) converter o resultado em DTOs (records);
+ *  4) propagar a SituacaoConta para o {@code UsuarioAutenticavel} (controla login).
  */
 @RestController
 @RequestMapping("/api/tutor/financeiro")
 public class FinanceiroController {
 
-    private final PortalTutorRepositorio repositorio;
+    private final ConsultarResumoFinanceiroUseCase consultarResumo;
+    private final ConfirmarPagamentoCobrancaUseCase confirmarPagamento;
     private final UsuarioRepositorio usuarioRepositorio;
 
-    public FinanceiroController(PortalTutorRepositorio repositorio,
+    public FinanceiroController(ConsultarResumoFinanceiroUseCase consultarResumo,
+                                ConfirmarPagamentoCobrancaUseCase confirmarPagamento,
                                 UsuarioRepositorio usuarioRepositorio) {
-        this.repositorio = repositorio;
+        this.consultarResumo = consultarResumo;
+        this.confirmarPagamento = confirmarPagamento;
         this.usuarioRepositorio = usuarioRepositorio;
     }
 
     @GetMapping
     public ResumoFinanceiroDTO resumo(Principal principal) {
-        String tutorId = principal.getName();
-        List<Mensalidade> mensalidades = repositorio.listarMensalidadesDoTutor(tutorId);
-        Plano plano = repositorio.planoDoTutor(tutorId);
-
-        StatusConta statusAtualizado = recomputarStatusConta(tutorId, mensalidades);
-        // "Próximo vencimento":
-        //  - se existe uma PENDENTE, é o vencimento dela (calendário real);
-        //  - caso contrário (tutor recém-contratado, sem fatura aberta), projeta a partir
-        //    da última paga (+ 1 mês). Em atraso não conta como "próximo" pois já venceu.
-        LocalDate proximoVencimento = mensalidades.stream()
-                .filter(m -> m.status() == StatusMensalidade.PENDENTE)
-                .map(Mensalidade::vencimento)
-                .sorted()
-                .findFirst()
-                .orElseGet(() -> mensalidades.stream()
-                        .filter(m -> m.status() == StatusMensalidade.PAGO)
-                        .map(Mensalidade::vencimento)
-                        .max(java.util.Comparator.naturalOrder())
-                        .map(d -> d.plusMonths(1))
-                        .orElse(null));
-
-        List<MensalidadeDTO> dto = mensalidades.stream().map(MensalidadeDTO::de).toList();
-        return new ResumoFinanceiroDTO(
-                new PlanoDTO(plano.nome(), plano.valor()),
-                statusAtualizado,
-                proximoVencimento,
-                dto
-        );
+        TutorId tutorId = TutorId.de(principal.getName());
+        ConsultarResumoFinanceiroUseCase.Resultado r = consultarResumo.executar(tutorId);
+        sincronizarStatusContaDoTutor(tutorId, r.situacaoConta());
+        return ResumoFinanceiroDTO.de(r);
     }
 
-    @GetMapping("/mensalidades/{id}")
+    @GetMapping("/cobrancas/{id}")
     public DetalhePagamentoDTO detalhePagamento(@PathVariable String id, Principal principal) {
-        Mensalidade m = obterDoTutor(id, principal);
-        if (m.status() == StatusMensalidade.PAGO) {
-            throw new MensalidadeJaPagaException();
+        TutorId tutorId = TutorId.de(principal.getName());
+        Cobranca cobranca = consultarResumo.executar(tutorId).cobrancas().stream()
+                .filter(c -> c.getId().getValor().equals(id))
+                .findFirst()
+                .orElseThrow(CobrancaNaoEncontradaException::new);
+
+        if (cobranca.status() == StatusCobranca.PAGA) {
+            throw new CobrancaJaPagaException();
         }
-        return new DetalhePagamentoDTO(
-                m.id(),
-                m.competencia(),
-                m.vencimento(),
-                m.valorOriginal(),
-                m.descontoIndicacao(),
-                m.juros(),
-                m.diasAtraso(),
-                Mensalidade.TAXA_JUROS_DIARIA,
-                m.valorAtualizado(),
-                m.status(),
-                gerarCodigoPix(m.id(), m.valorAtualizado())
-        );
+        return DetalhePagamentoDTO.de(cobranca);
     }
 
-    @PostMapping("/mensalidades/{id}/pagar")
+    @PostMapping("/cobrancas/{id}/pagar")
     public ResumoFinanceiroDTO pagar(@PathVariable String id, Principal principal) {
-        Mensalidade m = obterDoTutor(id, principal);
-        if (m.status() == StatusMensalidade.PAGO) {
-            throw new MensalidadeJaPagaException();
+        TutorId tutorId = TutorId.de(principal.getName());
+        try {
+            confirmarPagamento.executar(tutorId, CobrancaId.de(id));
+        } catch (IllegalArgumentException e) {
+            throw new CobrancaNaoEncontradaException();
+        } catch (IllegalStateException e) {
+            throw new CobrancaJaPagaException();
         }
-        m.marcarPaga();
-        repositorio.salvarMensalidade(m);
         return resumo(principal);
     }
 
-    // ── Helpers ─────────────────────────────────────────────────────────────
+    // ── Sincronização de status de login (PortalTutor ↔ IdentidadeAcesso) ────
 
-    private Mensalidade obterDoTutor(String id, Principal principal) {
-        Mensalidade m = repositorio.buscarMensalidade(id)
-                .orElseThrow(MensalidadeNaoEncontradaException::new);
-        if (!m.tutorId().equalsIgnoreCase(principal.getName())) {
-            throw new MensalidadeNaoEncontradaException();
-        }
-        return m;
-    }
-
-    private StatusConta recomputarStatusConta(String tutorId, List<Mensalidade> mensalidades) {
-        long emAtraso = mensalidades.stream()
-                .filter(m -> m.status() == StatusMensalidade.EM_ATRASO)
-                .count();
-
-        StatusConta calculado;
-        if (emAtraso >= 3) calculado = StatusConta.SUSPENSA;
-        else if (emAtraso >= 1) calculado = StatusConta.INADIMPLENTE;
-        else calculado = StatusConta.ATIVA;
-
-        usuarioRepositorio.buscar(Perfil.TUTOR, tutorId).ifPresent(tutor -> {
-            // Preservar PENDENTE (contratação ainda não confirmada) — não regredir.
+    /**
+     * Reflete a {@link SituacaoConta} calculada por F-07 no {@code StatusConta}
+     * do usuário autenticável — é isso que controla o bloqueio de login (RN 7).
+     * PENDENTE da contratação inicial é preservado: não rebaixa.
+     */
+    private void sincronizarStatusContaDoTutor(TutorId tutorId, SituacaoConta situacao) {
+        usuarioRepositorio.buscar(Perfil.TUTOR, tutorId.getValor()).ifPresent(tutor -> {
             if (tutor.status() == StatusConta.PENDENTE) return;
-            if (tutor.status() != calculado) {
-                tutor.mudarStatus(calculado);
+            StatusConta novo = switch (situacao) {
+                case ATIVA        -> StatusConta.ATIVA;
+                case INADIMPLENTE -> StatusConta.INADIMPLENTE;
+                case SUSPENSA     -> StatusConta.SUSPENSA;
+                case PENDENTE     -> tutor.status(); // sem mudança
+            };
+            if (tutor.status() != novo) {
+                tutor.mudarStatus(novo);
                 usuarioRepositorio.salvar(tutor);
             }
         });
-
-        return calculado;
     }
 
-    private static String gerarCodigoPix(String mensalidadeId, BigDecimal valor) {
-        // Mock: em produção seria o payload BR Code retornado pelo PSP.
-        return "00020126580014BR.GOV.BCB.PIX0136"
-                + Integer.toHexString(mensalidadeId.hashCode())
-                + "5204000053039865802BR5913petCollar SA6009Sao Paulo62070503***6304"
-                + Integer.toHexString(valor.unscaledValue().intValue()).toUpperCase();
+    // ── DTOs ─────────────────────────────────────────────────────────────────
+
+    public record PlanoDTO(String id, String nome, BigDecimal valor) {
+        static PlanoDTO de(Plano p) {
+            return new PlanoDTO(p.getId().getValor(), p.getNome(), p.getMensalidade().getValor());
+        }
     }
 
-    // ── DTOs ────────────────────────────────────────────────────────────────
-
-    public record PlanoDTO(String nome, BigDecimal valor) {}
-
-    public record MensalidadeDTO(
+    public record CobrancaDTO(
             String id,
             YearMonth competencia,
             BigDecimal valorOriginal,
@@ -161,23 +129,39 @@ public class FinanceiroController {
             LocalDate vencimento,
             LocalDate dataPagamento,
             int diasAtraso,
-            StatusMensalidade status
+            StatusCobranca status
     ) {
-        static MensalidadeDTO de(Mensalidade m) {
-            return new MensalidadeDTO(
-                    m.id(), m.competencia(),
-                    m.valorOriginal(), m.descontoIndicacao(), m.juros(),
-                    m.valorAtualizado(), m.vencimento(), m.dataPagamento(),
-                    m.diasAtraso(), m.status());
+        static CobrancaDTO de(Cobranca c) {
+            return new CobrancaDTO(
+                    c.getId().getValor(),
+                    c.getCompetencia().getValor(),
+                    c.getValorOriginal(),
+                    c.getDescontoIndicacao(),
+                    c.juros(),
+                    c.valorAtualizado(),
+                    c.getVencimento(),
+                    c.getDataPagamento(),
+                    c.diasAtraso(),
+                    c.status()
+            );
         }
     }
 
     public record ResumoFinanceiroDTO(
             PlanoDTO plano,
-            StatusConta statusConta,
+            SituacaoConta statusConta,
             LocalDate proximoVencimento,
-            List<MensalidadeDTO> mensalidades
-    ) {}
+            List<CobrancaDTO> cobrancas
+    ) {
+        static ResumoFinanceiroDTO de(ConsultarResumoFinanceiroUseCase.Resultado r) {
+            return new ResumoFinanceiroDTO(
+                    r.plano() == null ? null : PlanoDTO.de(r.plano()),
+                    r.situacaoConta(),
+                    r.proximoVencimento(),
+                    r.cobrancas().stream().map(CobrancaDTO::de).toList()
+            );
+        }
+    }
 
     public record DetalhePagamentoDTO(
             String id,
@@ -189,31 +173,54 @@ public class FinanceiroController {
             int diasAtraso,
             BigDecimal taxaDiaria,
             BigDecimal valorAtualizado,
-            StatusMensalidade status,
+            StatusCobranca status,
             String codigoPix
-    ) {}
+    ) {
+        static DetalhePagamentoDTO de(Cobranca c) {
+            return new DetalhePagamentoDTO(
+                    c.getId().getValor(),
+                    c.getCompetencia().getValor(),
+                    c.getVencimento(),
+                    c.getValorOriginal(),
+                    c.getDescontoIndicacao(),
+                    c.juros(),
+                    c.diasAtraso(),
+                    new BigDecimal("0.00033"),
+                    c.valorAtualizado(),
+                    c.status(),
+                    gerarCodigoPix(c.getId().getValor(), c.valorAtualizado())
+            );
+        }
+    }
+
+    private static String gerarCodigoPix(String cobrancaId, BigDecimal valor) {
+        return "00020126580014BR.GOV.BCB.PIX0136"
+                + Integer.toHexString(cobrancaId.hashCode())
+                + "5204000053039865802BR5913petCollar SA6009Sao Paulo62070503***6304"
+                + Integer.toHexString(valor.unscaledValue().intValue()).toUpperCase();
+    }
 
     // ── Exceções ────────────────────────────────────────────────────────────
 
-    public static class MensalidadeNaoEncontradaException extends RuntimeException {
-        public MensalidadeNaoEncontradaException() { super("Mensalidade não encontrada."); }
+    public static class CobrancaNaoEncontradaException extends RuntimeException {
+        public CobrancaNaoEncontradaException() { super("Cobrança não encontrada."); }
     }
 
-    public static class MensalidadeJaPagaException extends RuntimeException {
-        public MensalidadeJaPagaException() { super("Esta mensalidade já está paga."); }
+    public static class CobrancaJaPagaException extends RuntimeException {
+        public CobrancaJaPagaException() { super("Esta cobrança já está paga."); }
     }
 
-    @ExceptionHandler(MensalidadeNaoEncontradaException.class)
-    public ResponseEntity<Map<String, String>> naoEncontrada(MensalidadeNaoEncontradaException e) {
+    @ExceptionHandler(CobrancaNaoEncontradaException.class)
+    public ResponseEntity<Map<String, String>> naoEncontrada(CobrancaNaoEncontradaException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-                "status", "MENSALIDADE_NAO_ENCONTRADA",
+                "status", "COBRANCA_NAO_ENCONTRADA",
                 "mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(MensalidadeJaPagaException.class)
-    public ResponseEntity<Map<String, String>> jaPaga(MensalidadeJaPagaException e) {
+    @ExceptionHandler(CobrancaJaPagaException.class)
+    public ResponseEntity<Map<String, String>> jaPaga(CobrancaJaPagaException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                "status", "MENSALIDADE_JA_PAGA",
+                "status", "COBRANCA_JA_PAGA",
                 "mensagem", e.getMessage()));
     }
 }

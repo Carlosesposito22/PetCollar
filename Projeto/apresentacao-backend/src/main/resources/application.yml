@@ -4,20 +4,31 @@ server:
 spring:
   application:
     name: petCollar-backend
-  # DataSource/JPA ficam desligados enquanto o domínio não estiver mapeado para o banco.
-  # O login usa usuários em memória; remover essas exclusões quando a persistência for ligada.
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
-      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
-      - org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration
-      - org.springframework.boot.devtools.autoconfigure.DevToolsDataSourceAutoConfiguration
+
+  # ── Persistência: PostgreSQL ─────────────────────────────────────────────
+  # Valores padrão apontam para o serviço `db` do docker-compose. Para rodar
+  # localmente sem Docker, suba um Postgres na 5432 com os mesmos credenciais
+  # ou sobrescreva via variáveis de ambiente SPRING_DATASOURCE_*.
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/petcollar}
+    username: ${SPRING_DATASOURCE_USERNAME:petcollar}
+    password: ${SPRING_DATASOURCE_PASSWORD:petcollar}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      # Cria/atualiza o schema a partir das entidades JPA. CLAUDE.md §9 — sem
+      # migrations manuais nesta fase do projeto.
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: false
+    open-in-view: false
 
 petcollar:
   security:
     jwt:
       # HS256 — substitua em produção por variável de ambiente / secret manager.
-      secret: "trocar-este-segredo-em-producao-com-no-minimo-32-bytes!!"
+      secret: ${PETCOLLAR_SECURITY_JWT_SECRET:trocar-este-segredo-em-producao-com-no-minimo-32-bytes!!}
       issuer: "petcollar"
       expiracao-minutos: 60
     cors:

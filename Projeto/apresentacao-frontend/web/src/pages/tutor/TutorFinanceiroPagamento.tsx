@@ -14,7 +14,7 @@ type DetalhePagamento = {
   diasAtraso: number;
   taxaDiaria: number;
   valorAtualizado: number;
-  status: "PENDENTE" | "EM_ATRASO" | "PAGO";
+  status: "PENDENTE" | "EM_ATRASO" | "PAGA";
   codigoPix: string;
 };
 
@@ -33,7 +33,7 @@ export function TutorFinanceiroPagamento() {
     setErro(null);
     setCarregando(true);
     try {
-      const res = await apiFetch(`/api/tutor/financeiro/mensalidades/${id}`);
+      const res = await apiFetch(`/api/tutor/financeiro/cobrancas/${id}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({} as { mensagem?: string }));
         throw new Error(body?.mensagem ?? `Falha (HTTP ${res.status}).`);
@@ -53,7 +53,7 @@ export function TutorFinanceiroPagamento() {
     setErro(null);
     setPagando(true);
     try {
-      const res = await apiFetch(`/api/tutor/financeiro/mensalidades/${id}/pagar`, { method: "POST" });
+      const res = await apiFetch(`/api/tutor/financeiro/cobrancas/${id}/pagar`, { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({} as { mensagem?: string }));
         throw new Error(body?.mensagem ?? `Falha ao confirmar (HTTP ${res.status}).`);

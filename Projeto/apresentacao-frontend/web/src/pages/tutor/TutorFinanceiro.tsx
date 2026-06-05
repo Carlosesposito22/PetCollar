@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { formatarCompetencia, formatarData, formatarReal } from "../../utils/formato";
 
-type StatusConta = "PENDENTE" | "ATIVA" | "INADIMPLENTE" | "SUSPENSA";
-type StatusMensalidade = "PENDENTE" | "EM_ATRASO" | "PAGO";
+// Espelham os enums do domínio (dominio-AssinaturaFaturamento + servico).
+type SituacaoConta = "PENDENTE" | "ATIVA" | "INADIMPLENTE" | "SUSPENSA";
+type StatusCobranca = "PENDENTE" | "EM_ATRASO" | "PAGA";
 
-type Plano = { nome: string; valor: number };
+type Plano = { id: string; nome: string; valor: number };
 
-type Mensalidade = {
+type Cobranca = {
   id: string;
   competencia: string;        // "yyyy-MM"
   valorOriginal: number;
@@ -18,14 +19,14 @@ type Mensalidade = {
   vencimento: string;
   dataPagamento: string | null;
   diasAtraso: number;
-  status: StatusMensalidade;
+  status: StatusCobranca;
 };
 
 type Resumo = {
-  plano: Plano;
-  statusConta: StatusConta;
+  plano: Plano | null;
+  statusConta: SituacaoConta;
   proximoVencimento: string | null;
-  mensalidades: Mensalidade[];
+  cobrancas: Cobranca[];
 };
 
 export function TutorFinanceiro() {
@@ -66,9 +67,9 @@ export function TutorFinanceiro() {
       {resumo && !carregando && (
         <>
           <CartaoResumo resumo={resumo} />
-          <TabelaMensalidades
-            mensalidades={resumo.mensalidades}
-            onPagar={m => navigate(`/app/financeiro/pagamento/${m.id}`)}
+          <TabelaCobrancas
+            cobrancas={resumo.cobrancas}
+            onPagar={c => navigate(`/app/financeiro/pagamento/${c.id}`)}
           />
           <Anotacao />
         </>
@@ -82,13 +83,19 @@ function CartaoResumo({ resumo }: { resumo: Resumo }) {
     <section className="card mb-6 p-6 ring-1 ring-ink-300/60">
       <div className="grid gap-6 sm:grid-cols-3">
         <Bloco rotulo="Plano Contratado">
-          <p className="text-base font-semibold text-ink-900">{resumo.plano.nome}</p>
-          <p className="mt-0.5 text-xs text-ink-500">
-            {formatarReal(resumo.plano.valor)} / mês
-          </p>
+          {resumo.plano ? (
+            <>
+              <p className="text-base font-semibold text-ink-900">{resumo.plano.nome}</p>
+              <p className="mt-0.5 text-xs text-ink-500">
+                {formatarReal(resumo.plano.valor)} / mês
+              </p>
+            </>
+          ) : (
+            <p className="text-base text-ink-500">—</p>
+          )}
         </Bloco>
         <Bloco rotulo="Status da Conta">
-          <StatusContaBadge status={resumo.statusConta} />
+          <SituacaoContaBadge situacao={resumo.statusConta} />
         </Bloco>
         <Bloco rotulo="Próximo Vencimento">
           <p className="text-base font-semibold text-ink-900">
@@ -109,27 +116,27 @@ function Bloco({ rotulo, children }: { rotulo: string; children: React.ReactNode
   );
 }
 
-function StatusContaBadge({ status }: { status: StatusConta }) {
-  const map: Record<StatusConta, { cor: string; rotulo: string }> = {
+function SituacaoContaBadge({ situacao }: { situacao: SituacaoConta }) {
+  const map: Record<SituacaoConta, { cor: string; rotulo: string }> = {
     PENDENTE:     { cor: "text-amber-700",  rotulo: "Pendente" },
     ATIVA:        { cor: "text-brand-600",  rotulo: "Ativa" },
     INADIMPLENTE: { cor: "text-orange-600", rotulo: "Inadimplente" },
     SUSPENSA:     { cor: "text-paw-600",    rotulo: "Suspensa" },
   };
-  const s = map[status];
+  const s = map[situacao];
   return <p className={`text-base font-semibold ${s.cor}`}>{s.rotulo}</p>;
 }
 
-function TabelaMensalidades({
-  mensalidades, onPagar,
+function TabelaCobrancas({
+  cobrancas, onPagar,
 }: {
-  mensalidades: Mensalidade[];
-  onPagar: (m: Mensalidade) => void;
+  cobrancas: Cobranca[];
+  onPagar: (c: Cobranca) => void;
 }) {
-  if (mensalidades.length === 0) {
+  if (cobrancas.length === 0) {
     return (
       <div className="card px-6 py-10 text-center text-sm text-ink-500">
-        Você ainda não possui mensalidades registradas.
+        Você ainda não possui cobranças registradas.
       </div>
     );
   }
@@ -152,20 +159,20 @@ function TabelaMensalidades({
             </tr>
           </thead>
           <tbody className="divide-y divide-ink-300/40">
-            {mensalidades.map(m => (
-              <tr key={m.id} className="hover:bg-ink-100/40">
-                <Td>{formatarCompetencia(m.competencia)}</Td>
-                <Td>{formatarReal(m.valorOriginal)}</Td>
-                <Td>{m.descontoIndicacao > 0 ? formatarReal(m.descontoIndicacao) : "—"}</Td>
-                <Td>{formatarReal(m.juros)}</Td>
-                <Td className="font-semibold text-ink-900">{formatarReal(m.valorAtualizado)}</Td>
-                <Td>{formatarData(m.vencimento)}</Td>
-                <Td>{formatarData(m.dataPagamento)}</Td>
-                <Td><StatusMensalidadeBadge status={m.status} /></Td>
+            {cobrancas.map(c => (
+              <tr key={c.id} className="hover:bg-ink-100/40">
+                <Td>{formatarCompetencia(c.competencia)}</Td>
+                <Td>{formatarReal(c.valorOriginal)}</Td>
+                <Td>{c.descontoIndicacao > 0 ? formatarReal(c.descontoIndicacao) : "—"}</Td>
+                <Td>{formatarReal(c.juros)}</Td>
+                <Td className="font-semibold text-ink-900">{formatarReal(c.valorAtualizado)}</Td>
+                <Td>{formatarData(c.vencimento)}</Td>
+                <Td>{formatarData(c.dataPagamento)}</Td>
+                <Td><StatusCobrancaBadge status={c.status} /></Td>
                 <Td className="text-right">
-                  {m.status !== "PAGO" && (
+                  {c.status !== "PAGA" && (
                     <button
-                      onClick={() => onPagar(m)}
+                      onClick={() => onPagar(c)}
                       className="btn-ghost ring-1 ring-ink-300 hover:ring-brand-500"
                     >
                       Pagar
@@ -188,14 +195,14 @@ function Td({ children, className }: { children: React.ReactNode; className?: st
   return <td className={`px-4 py-3 ${className ?? ""}`}>{children}</td>;
 }
 
-function StatusMensalidadeBadge({ status }: { status: StatusMensalidade }) {
-  const map: Record<StatusMensalidade, string> = {
-    PAGO:      "text-brand-600",
+function StatusCobrancaBadge({ status }: { status: StatusCobranca }) {
+  const map: Record<StatusCobranca, string> = {
+    PAGA:      "text-brand-600",
     PENDENTE:  "text-amber-700",
     EM_ATRASO: "text-paw-600",
   };
-  const rotulo: Record<StatusMensalidade, string> = {
-    PAGO: "Pago",
+  const rotulo: Record<StatusCobranca, string> = {
+    PAGA: "Paga",
     PENDENTE: "Pendente",
     EM_ATRASO: "Em Atraso",
   };
@@ -205,9 +212,9 @@ function StatusMensalidadeBadge({ status }: { status: StatusMensalidade }) {
 function Anotacao() {
   return (
     <div className="rounded-xl border border-dashed border-ink-300 bg-white/60 p-4 text-xs leading-relaxed text-ink-500">
-      Juros calculados automaticamente (0,033% ao dia). Conta <strong>Suspensa</strong> após 3
-      mensalidades consecutivas em atraso. QR Code gerado dinamicamente com valor atualizado.
-      Descontos de indicação aplicados automaticamente ao confirmar pagamento do indicado.
+      Juros simples calculados automaticamente (0,033% ao dia). Conta <strong>Suspensa</strong> após 3
+      cobranças consecutivas em atraso (F-07 RN 7). QR Code gerado dinamicamente com valor atualizado.
+      Descontos de indicação aplicados automaticamente ao confirmar pagamento do indicado (F-04).
     </div>
   );
 }
