@@ -49,5 +49,10 @@
             <artifactId>petCollar-dominio-AtendimentoClinico</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>petCollar-dominio-AgendamentoClinico</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 </project>

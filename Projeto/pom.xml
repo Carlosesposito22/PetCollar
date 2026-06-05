@@ -27,6 +27,7 @@
         <module>dominio-GestaoFluxo</module>
         <module>dominio-SaudePreventiva</module>
         <module>dominio-AtendimentoClinico</module>
+        <module>dominio-AgendamentoClinico</module>
         <module>aplicacao</module>
         <module>infraestrutura</module>
         <module>apresentacao-frontend</module>

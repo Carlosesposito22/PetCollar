@@ -1,4 +1,4 @@
-package petcollar.dominio.atendimentoclinico.bdd;
+package petCollar.dominio.AtendimentoClinico.bdd;
 
 import org.junit.platform.suite.api.ConfigurationParameter;
 import org.junit.platform.suite.api.IncludeEngines;
@@ -12,7 +12,7 @@ import static io.cucumber.junit.platform.engine.Constants.GLUE_PROPERTY_NAME;
 @SelectPackages("features")
 @ConfigurationParameter(
     key = GLUE_PROPERTY_NAME,
-    value = "petcollar.dominio.atendimentoclinico.bdd"
+    value = "petCollar.dominio.AtendimentoClinico.bdd"
 )
 public class CucumberRunnerTest {
 }
