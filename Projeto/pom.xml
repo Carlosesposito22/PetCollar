@@ -28,6 +28,7 @@
         <module>dominio-SaudePreventiva</module>
         <module>dominio-AtendimentoClinico</module>
         <module>dominio-AgendamentoClinico</module>
+        <module>dominio-ProtocoloInacessibilidade</module>
         <module>dominio-AssinaturaFaturamento</module>
         <module>aplicacao</module>
         <module>infraestrutura</module>

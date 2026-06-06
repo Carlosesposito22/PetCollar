@@ -1,0 +1,42 @@
+package br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta;
+
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato.CanalContato;
+
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Projeção (read-model) de um responsável secundário cadastrado no contexto
+ * RelacaoTutor, exposta pela porta {@link IResponsavelSecundarioRepositorio}. Traz
+ * o necessário ao acionamento: a identidade, o nome, a ordem de prioridade
+ * (crescente — menor é acionado primeiro, RN 4) e os canais de contato disponíveis.
+ */
+public final class ResponsavelSecundario {
+
+    private final ResponsavelSecundarioId id;
+    private final String nome;
+    private final int prioridade;
+    private final List<CanalContato> canais;
+
+    public ResponsavelSecundario(ResponsavelSecundarioId id, String nome, int prioridade,
+                                 List<CanalContato> canais) {
+        if (id == null)
+            throw new IllegalArgumentException("Id do responsável secundário não pode ser nulo.");
+        if (nome == null || nome.isBlank())
+            throw new IllegalArgumentException("Nome do responsável secundário não pode ser vazio.");
+        if (canais == null || canais.isEmpty())
+            throw new IllegalArgumentException("O responsável secundário deve ter ao menos um canal de contato.");
+        this.id = id;
+        this.nome = nome;
+        this.prioridade = prioridade;
+        this.canais = List.copyOf(canais);
+    }
+
+    public ResponsavelSecundarioId getId()   { return id; }
+    public String getNome()                  { return nome; }
+    public int getPrioridade()               { return prioridade; }
+
+    public List<CanalContato> getCanais() {
+        return Collections.unmodifiableList(canais);
+    }
+}
