@@ -20,6 +20,11 @@ import { AgendamentoHub } from "./pages/tutor/agendamento/AgendamentoHub";
 import { NovaConsultaPage } from "./pages/tutor/agendamento/NovaConsultaPage";
 import { AgendamentoRetornoPage } from "./pages/tutor/agendamento/AgendamentoRetornoPage";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
+import { AcompanhamentoProtocoloPage } from "./features/protocolo-inacessibilidade/pages/tutor/AcompanhamentoProtocoloPage";
+import { PainelProtocolosAtivosPage } from "./features/protocolo-inacessibilidade/pages/recepcionista/PainelProtocolosAtivosPage";
+import { DetalheProtocoloPage } from "./features/protocolo-inacessibilidade/pages/recepcionista/DetalheProtocoloPage";
+import { ConfiguracaoProtocoloPage } from "./features/protocolo-inacessibilidade/pages/administrador/ConfiguracaoProtocoloPage";
+import { HistoricoConfiguracaoPage } from "./features/protocolo-inacessibilidade/pages/administrador/HistoricoConfiguracaoPage";
 
 export function App() {
   return (
@@ -51,6 +56,8 @@ export function App() {
         <Route path="agendamentos/retorno" element={<AgendamentoRetornoPage />} />
         <Route path="conquistas" element={<TutorConquistas />} />
         <Route path="indicacoes" element={<EmBreve titulo="Indicações" />} />
+        {/* F-03 — acompanhamento do protocolo pelo tutor (RN 15) */}
+        <Route path="protocolos/:atendimentoId" element={<AcompanhamentoProtocoloPage />} />
       </Route>
 
       {/* Área de funcionários (recepcionista / médico) — placeholder por enquanto */}
@@ -68,6 +75,42 @@ export function App() {
         element={
           <ProtectedRoute perfil="ADMIN_CLINICA">
             <AdminPanel />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* F-03 — Protocolo de inacessibilidade: recepção (operacional) */}
+      <Route
+        path="/recepcao/protocolos"
+        element={
+          <ProtectedRoute perfil="RECEPCIONISTA">
+            <PainelProtocolosAtivosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/recepcao/protocolos/:protocoloId"
+        element={
+          <ProtectedRoute perfil="RECEPCIONISTA">
+            <DetalheProtocoloPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* F-03 — Protocolo de inacessibilidade: administração (configuração) */}
+      <Route
+        path="/admin/protocolos/configuracao"
+        element={
+          <ProtectedRoute perfil="ADMIN_CLINICA">
+            <ConfiguracaoProtocoloPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/protocolos/configuracao/historico"
+        element={
+          <ProtectedRoute perfil="ADMIN_CLINICA">
+            <HistoricoConfiguracaoPage />
           </ProtectedRoute>
         }
       />
