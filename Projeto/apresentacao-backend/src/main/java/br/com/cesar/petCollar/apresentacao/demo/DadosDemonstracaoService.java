@@ -8,19 +8,22 @@ import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioJpaRepository
 import br.com.cesar.petCollar.apresentacao.PortalTutor.Paciente;
 import br.com.cesar.petCollar.apresentacao.PortalTutor.PacienteJpa;
 import br.com.cesar.petCollar.apresentacao.PortalTutor.PacienteJpaRepository;
-import br.com.cesar.petCollar.apresentacao.PortalTutor.Vacina;
-import br.com.cesar.petCollar.apresentacao.PortalTutor.VacinaJpa;
-import br.com.cesar.petCollar.apresentacao.PortalTutor.VacinaJpaRepository;
 import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.PlanosPadrao;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.Cobranca;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.CobrancaId;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.Competencia;
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.CicloVacinal;
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.TipoProtocolo;
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.VacinaId;
 import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
+import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import br.com.cesar.petCollar.infraestrutura.AgendamentoClinico.EspecialidadeJpa;
 import br.com.cesar.petCollar.infraestrutura.AgendamentoClinico.EspecialidadeJpaRepository;
 import br.com.cesar.petCollar.infraestrutura.AssinaturaFaturamento.CobrancaJpa;
 import br.com.cesar.petCollar.infraestrutura.AssinaturaFaturamento.CobrancaJpaRepository;
+import br.com.cesar.petCollar.infraestrutura.SaudePreventiva.CicloVacinalJpa;
+import br.com.cesar.petCollar.infraestrutura.SaudePreventiva.CicloVacinalJpaRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +59,7 @@ public class DadosDemonstracaoService {
 
     private final UsuarioJpaRepository usuarios;
     private final PacienteJpaRepository pacientes;
-    private final VacinaJpaRepository vacinas;
+    private final CicloVacinalJpaRepository ciclosVacinais;
     private final EspecialidadeJpaRepository especialidades;
     private final CobrancaJpaRepository cobrancas;
     private final PasswordEncoder encoder;
@@ -64,13 +67,13 @@ public class DadosDemonstracaoService {
     public DadosDemonstracaoService(
             UsuarioJpaRepository usuarios,
             PacienteJpaRepository pacientes,
-            VacinaJpaRepository vacinas,
+            CicloVacinalJpaRepository ciclosVacinais,
             EspecialidadeJpaRepository especialidades,
             CobrancaJpaRepository cobrancas,
             PasswordEncoder encoder) {
         this.usuarios       = usuarios;
         this.pacientes      = pacientes;
-        this.vacinas        = vacinas;
+        this.ciclosVacinais = ciclosVacinais;
         this.especialidades = especialidades;
         this.cobrancas      = cobrancas;
         this.encoder        = encoder;
@@ -87,13 +90,11 @@ public class DadosDemonstracaoService {
             return;
         }
         log.info("[DEMO] Ativando modo demonstração…");
-
         String senha = encoder.encode(SENHA_DEMO);
         seedUsuarios(senha);
         vincularMedicoAEspecialidades(ID_MEDICO_DEMO);
-        seedPacientesEVacinas();
+        seedPacientesECiclosVacinais();
         seedCobrancas();
-
         log.info("[DEMO] Modo demonstração ativado. Login: {} / senha: {}", ID_TUTOR_DEMO, SENHA_DEMO);
     }
 
@@ -104,23 +105,14 @@ public class DadosDemonstracaoService {
             return;
         }
         log.info("[DEMO] Desativando modo demonstração…");
-
-        // Cobranças do tutor demo
         cobrancas.deleteAll(cobrancas.findByTutorIdOrderByVencimentoDesc(ID_TUTOR_DEMO));
-
-        // Vacinas e pacientes (todos são demo)
-        vacinas.deleteAll();
+        ciclosVacinais.deleteAll();
         pacientes.deleteAll();
-
-        // Especialidades: preservadas (seed operacional) — apenas desvincula o médico demo
         desvincularMedicoDeEspecialidades(ID_MEDICO_DEMO);
-
-        // Usuários demo (admin é seed operacional e NÃO é removido)
         for (String id : List.of(ID_TUTOR_DEMO, ID_SUSPENSO_DEMO,
                                   ID_RECEPCAO_DEMO, ID_MEDICO_DEMO)) {
             usuarios.deleteById(id);
         }
-
         log.info("[DEMO] Modo demonstração desativado. Dados removidos.");
     }
 
@@ -148,7 +140,6 @@ public class DadosDemonstracaoService {
                 Perfil.MEDICO_VETERINARIO, senha, StatusConta.ATIVA)));
     }
 
-    /** Adiciona {@code medicoId} à lista de médicos de todas as especialidades. */
     private void vincularMedicoAEspecialidades(String medicoId) {
         MedicoId medico = MedicoId.de(medicoId);
         especialidades.findAll().forEach(esp -> {
@@ -160,7 +151,6 @@ public class DadosDemonstracaoService {
         });
     }
 
-    /** Remove {@code medicoId} da lista de médicos de todas as especialidades. */
     private void desvincularMedicoDeEspecialidades(String medicoId) {
         MedicoId medico = MedicoId.de(medicoId);
         especialidades.findAll().forEach(esp -> {
@@ -171,27 +161,51 @@ public class DadosDemonstracaoService {
         });
     }
 
-    private void seedPacientesEVacinas() {
+    private void seedPacientesECiclosVacinais() {
         LocalDate hoje = LocalDate.now();
 
         Paciente rex  = novoPaciente(ID_TUTOR_DEMO, "Rex",  "Cão",  "Labrador", hoje.minusYears(3));
         Paciente miau = novoPaciente(ID_TUTOR_DEMO, "Miau", "Gato", "Persa",    hoje.minusYears(2));
         Paciente bob  = novoPaciente(ID_TUTOR_DEMO, "Bob",  "Cão",  "Beagle",   hoje.minusYears(5));
 
-        // Rex — ciclo V10 em andamento + vacina em atraso
-        salvarVacina(rex.id(), "V10",          1, 3, true,  hoje.minusMonths(4), "Dr. Carlos Silva",  "L12345");
-        salvarVacina(rex.id(), "V10",          2, 3, true,  hoje.minusMonths(3), "Dr. Carlos Silva",  "L12346");
-        salvarVacina(rex.id(), "Antirrábica",  null, null, true,  hoje.minusMonths(2), "Dra. Maria Santos", "R98765");
-        salvarVacina(rex.id(), "V10",          3, 3, false, hoje.plusMonths(1),  null, null);  // PENDENTE
-        salvarVacina(rex.id(), "Giardíase",    null, null, false, hoje.minusDays(20), null, null); // EM_ATRASO
+        // Rex — ciclo V10 em andamento (2 aplicadas + 1 pendente) + Antirrábica + Giardíase em atraso
+        CicloVacinal v10Rex = criarCiclo(rex.id(), "V10", 3, TipoProtocolo.FILHOTE, null);
+        v10Rex.adicionarPrimeiraDose(hoje.minusMonths(4));
+        v10Rex.getDoses().get(0).aplicar(hoje.minusMonths(4), "Dr. Carlos Silva", "L12345");
+        v10Rex.adicionarProximaDose(hoje.minusMonths(3));
+        v10Rex.getDoses().get(1).aplicar(hoje.minusMonths(3), "Dr. Carlos Silva", "L12346");
+        v10Rex.adicionarProximaDose(hoje.plusMonths(1));
+        salvarCiclo(v10Rex);
 
-        // Miau — vacina em atraso
-        salvarVacina(miau.id(), "Antirrábica",      null, null, true,  hoje.minusMonths(6), "Dra. Maria Santos", "R55501");
-        salvarVacina(miau.id(), "Quádrupla Felina",  1, 2, false, hoje.minusDays(10), null, null); // EM_ATRASO
+        CicloVacinal antirrabicaRex = criarCiclo(rex.id(), "Antirrábica", 1, TipoProtocolo.REFORCO_ANUAL, null);
+        antirrabicaRex.adicionarPrimeiraDose(hoje.minusMonths(2));
+        antirrabicaRex.getDoses().get(0).aplicar(hoje.minusMonths(2), "Dra. Maria Santos", "R98765");
+        salvarCiclo(antirrabicaRex);
+
+        CicloVacinal giardiaseRex = criarCiclo(rex.id(), "Giardíase", 1, TipoProtocolo.REFORCO_ANUAL, null);
+        giardiaseRex.adicionarPrimeiraDose(hoje.minusDays(20));
+        salvarCiclo(giardiaseRex);
+
+        // Miau — Antirrábica aplicada + Quádrupla Felina em atraso
+        CicloVacinal antirrabicaMiau = criarCiclo(miau.id(), "Antirrábica", 1, TipoProtocolo.REFORCO_ANUAL, null);
+        antirrabicaMiau.adicionarPrimeiraDose(hoje.minusMonths(6));
+        antirrabicaMiau.getDoses().get(0).aplicar(hoje.minusMonths(6), "Dra. Maria Santos", "R55501");
+        salvarCiclo(antirrabicaMiau);
+
+        CicloVacinal quadruplaFelina = criarCiclo(miau.id(), "Quádrupla Felina", 2, TipoProtocolo.FILHOTE, null);
+        quadruplaFelina.adicionarPrimeiraDose(hoje.minusDays(10));
+        salvarCiclo(quadruplaFelina);
 
         // Bob — tudo em dia
-        salvarVacina(bob.id(), "V10",          1, 1, true, hoje.minusMonths(8), "Dr. Carlos Silva",  "L20011");
-        salvarVacina(bob.id(), "Antirrábica",  null, null, true, hoje.minusMonths(5), "Dra. Maria Santos", "R30022");
+        CicloVacinal v10Bob = criarCiclo(bob.id(), "V10", 1, TipoProtocolo.REFORCO_ANUAL, null);
+        v10Bob.adicionarPrimeiraDose(hoje.minusMonths(8));
+        v10Bob.getDoses().get(0).aplicar(hoje.minusMonths(8), "Dr. Carlos Silva", "L20011");
+        salvarCiclo(v10Bob);
+
+        CicloVacinal antirrabicaBob = criarCiclo(bob.id(), "Antirrábica", 1, TipoProtocolo.REFORCO_ANUAL, null);
+        antirrabicaBob.adicionarPrimeiraDose(hoje.minusMonths(5));
+        antirrabicaBob.getDoses().get(0).aplicar(hoje.minusMonths(5), "Dra. Maria Santos", "R30022");
+        salvarCiclo(antirrabicaBob);
     }
 
     private void seedCobrancas() {
@@ -201,7 +215,6 @@ public class DadosDemonstracaoService {
         LocalDate dia5    = hoje.withDayOfMonth(5);
         LocalDate proxVenc = dia5.isAfter(hoje) ? dia5 : dia5.plusMonths(1);
 
-        // PAGA (~2 meses atrás)
         LocalDate vencPago = proxVenc.minusMonths(2);
         cobrancas.save(CobrancaJpa.fromDomain(new Cobranca(
                 CobrancaId.gerar(), tutorDemo,
@@ -210,7 +223,6 @@ public class DadosDemonstracaoService {
                 valor, null, vencPago,
                 vencPago.minusDays(2), BigDecimal.ZERO)));
 
-        // EM_ATRASO (~1 mês atrás, não paga)
         LocalDate vencAtraso = proxVenc.minusMonths(1);
         cobrancas.save(CobrancaJpa.fromDomain(new Cobranca(
                 CobrancaId.gerar(), tutorDemo,
@@ -218,7 +230,6 @@ public class DadosDemonstracaoService {
                 Competencia.de(YearMonth.from(vencAtraso).minusMonths(1)),
                 valor, null, vencAtraso)));
 
-        // PENDENTE (próximo vencimento)
         cobrancas.save(CobrancaJpa.fromDomain(new Cobranca(
                 CobrancaId.gerar(), tutorDemo,
                 PlanosPadrao.ID_PLANO_BASICO_MENSAL,
@@ -227,18 +238,20 @@ public class DadosDemonstracaoService {
     }
 
     private Paciente novoPaciente(String tutorId, String nome, String especie,
-                                  String raca, LocalDate nascimento) {
+                                   String raca, LocalDate nascimento) {
         String id = UUID.randomUUID().toString();
         Paciente p = new Paciente(id, tutorId, nome, especie, raca, nascimento);
         pacientes.save(PacienteJpa.fromDomain(p));
         return p;
     }
 
-    private void salvarVacina(String pacienteId, String ciclo, Integer doseNum,
-                               Integer totalDoses, boolean aplicada,
-                               LocalDate data, String medico, String lote) {
-        vacinas.save(VacinaJpa.fromDomain(new Vacina(
-                UUID.randomUUID().toString(), pacienteId, ciclo,
-                doseNum, totalDoses, aplicada, data, medico, lote)));
+    private CicloVacinal criarCiclo(String pacienteId, String nome, int totalDoses,
+                                     TipoProtocolo protocolo, Integer intervaloDias) {
+        return new CicloVacinal(VacinaId.gerar(), PacienteId.de(pacienteId),
+            nome, totalDoses, protocolo, intervaloDias);
+    }
+
+    private void salvarCiclo(CicloVacinal ciclo) {
+        ciclosVacinais.save(CicloVacinalJpa.fromDomain(ciclo));
     }
 }

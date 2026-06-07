@@ -1,5 +1,8 @@
 package br.com.cesar.petCollar.apresentacao.PortalTutor;
 
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.CicloVacinalService;
+import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
+
 import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
@@ -26,15 +29,18 @@ import jakarta.validation.constraints.NotNull;
 public class PacienteController {
 
     private final PortalTutorRepositorio repositorio;
+    private final CicloVacinalService cicloVacinalService;
 
-    public PacienteController(PortalTutorRepositorio repositorio) {
-        this.repositorio = repositorio;
+    public PacienteController(PortalTutorRepositorio repositorio,
+                               CicloVacinalService cicloVacinalService) {
+        this.repositorio        = repositorio;
+        this.cicloVacinalService = cicloVacinalService;
     }
 
     @GetMapping
     public List<PacienteDTO> listar(Principal principal) {
         return repositorio.listarPacientesDoTutor(principal.getName()).stream()
-                .map(p -> PacienteDTO.de(p, calcularAlertaAtraso(p.id())))
+                .map(p -> PacienteDTO.de(p, cicloVacinalService.possuiVacinaEmAtraso(PacienteId.de(p.id()))))
                 .toList();
     }
 
@@ -52,12 +58,13 @@ public class PacienteController {
         Paciente p = obterDoTutor(id, principal);
         p.atualizar(req.nome(), req.especie(), req.raca(), req.nascimento());
         repositorio.salvarPaciente(p);
-        return PacienteDTO.de(p, calcularAlertaAtraso(p.id()));
+        return PacienteDTO.de(p, cicloVacinalService.possuiVacinaEmAtraso(PacienteId.de(p.id())));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> remover(@PathVariable String id, Principal principal) {
         obterDoTutor(id, principal);
+        cicloVacinalService.removerPorPaciente(PacienteId.de(id));
         repositorio.removerPaciente(id);
         return ResponseEntity.noContent().build();
     }
@@ -68,11 +75,6 @@ public class PacienteController {
             throw new PacienteNaoEncontradoException();
         }
         return p;
-    }
-
-    private boolean calcularAlertaAtraso(String pacienteId) {
-        return repositorio.listarVacinasDoPaciente(pacienteId).stream()
-                .anyMatch(v -> v.status() == StatusVacina.EM_ATRASO);
     }
 
     public record RequisicaoPaciente(
@@ -97,7 +99,7 @@ public class PacienteController {
     }
 
     @ExceptionHandler(PacienteNaoEncontradoException.class)
-    public ResponseEntity<Map<String, String>> naoEncontrado(PacienteNaoEncontradoException e) {
+    public ResponseEntity<Map<String, String>> naoEncontrado(PacienteController.PacienteNaoEncontradoException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                 "status", "PACIENTE_NAO_ENCONTRADO",
                 "mensagem", e.getMessage()
