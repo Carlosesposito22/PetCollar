@@ -9,7 +9,6 @@ import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.HorarioConsult
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.IConsultaRepositorio;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.StatusConsulta;
 
-import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,7 +21,7 @@ import java.util.concurrent.ConcurrentMap;
  * enquanto o banco está desligado — ver application.yml). Substituível pelo adapter
  * JPA {@code ConsultaRepositorioJpa} sem tocar no domínio.
  */
-@Repository
+// @Repository removido — substituído por ConsultaRepositorioJpa (JPA)
 public class ConsultaRepositorioEmMemoria implements IConsultaRepositorio {
 
     private final ConcurrentMap<String, Consulta> consultas = new ConcurrentHashMap<>();

@@ -9,13 +9,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Repository;
 
 /**
  * Implementação provisória usada enquanto o domínio IdentidadeAcesso não expõe o
  * repositório real. Substituir por adapter que consulte o agregado quando ele existir.
  */
-@Repository
+// @Repository removido — substituído por UsuarioRepositorioJpa (JPA)
 public class UsuarioRepositorioEmMemoria implements UsuarioRepositorio {
 
     private final ConcurrentMap<String, UsuarioAutenticavel> usuarios = new ConcurrentHashMap<>();

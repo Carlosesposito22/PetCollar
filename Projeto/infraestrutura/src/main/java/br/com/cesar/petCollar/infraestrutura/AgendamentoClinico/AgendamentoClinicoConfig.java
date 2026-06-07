@@ -10,20 +10,18 @@ import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaExame;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaProntuario;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IServicoNotificacao;
 
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /**
- * Wiring canônico (§6.5 do guia) dos serviços de domínio do AgendamentoClinico como
- * beans, a partir das interfaces {@code IXxxRepositorio} e das portas de saída, que
- * o Spring resolve para os adapters JPA deste módulo.
- *
- * <p>Enquanto o DataSource/JPA estiver desligado (ver application.yml), esta
- * configuração permanece como referência: a infraestrutura não é varrida pelo
- * component-scan do backend, cujos beans em memória sobem a API. Ao ligar a
- * persistência, importe/escaneie este pacote para ativar os adapters JPA.
+ * Wiring canônico (§6.5) dos serviços de domínio do AgendamentoClinico como
+ * beans, a partir dos adapters JPA deste módulo.
  */
 @Configuration
+@EntityScan(basePackages = "br.com.cesar.petCollar.infraestrutura.AgendamentoClinico")
+@EnableJpaRepositories(basePackages = "br.com.cesar.petCollar.infraestrutura.AgendamentoClinico")
 public class AgendamentoClinicoConfig {
 
     @Bean

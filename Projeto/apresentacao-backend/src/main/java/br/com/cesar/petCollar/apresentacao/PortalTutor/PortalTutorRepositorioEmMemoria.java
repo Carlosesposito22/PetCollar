@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
-import org.springframework.stereotype.Repository;
 
 /**
  * Armazenamento em memória para Pacientes e Vacinas do Portal do Tutor. Estas
@@ -19,7 +18,7 @@ import org.springframework.stereotype.Repository;
  * {@code dominio-AssinaturaFaturamento} com persistência JPA — esta classe não
  * trata mais nada de financeiro.
  */
-@Repository
+// @Repository removido — substituído por PortalTutorRepositorioJpa (JPA)
 public class PortalTutorRepositorioEmMemoria implements PortalTutorRepositorio {
 
     private static final String TUTOR_DEMO = "tutor@petcollar.com";

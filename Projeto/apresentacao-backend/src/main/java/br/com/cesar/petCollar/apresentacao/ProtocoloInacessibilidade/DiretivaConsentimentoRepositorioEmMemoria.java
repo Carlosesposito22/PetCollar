@@ -4,7 +4,7 @@ import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.IDiretivaConsentimentoRepositorio;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.TipoConduta;
 
-import org.springframework.stereotype.Repository;
+
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * autorizadas pelo tutor (RN 10). Será substituído pelo adapter real quando
  * AtendimentoClinico expuser as diretivas assinadas.
  */
-@Repository
+// @Repository removido — substituído por adapter JPA
 public class DiretivaConsentimentoRepositorioEmMemoria implements IDiretivaConsentimentoRepositorio {
 
     private final ConcurrentMap<String, List<TipoConduta>> autorizadasPorPaciente = new ConcurrentHashMap<>();

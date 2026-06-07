@@ -5,17 +5,12 @@ import br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade.Especiali
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade.EspecialidadeId;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade.IEspecialidadeRepositorio;
 
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/**
- * Implementação provisória em memória de {@link IEspecialidadeRepositorio}.
- */
-@Repository
+/** @Repository removido — substituído por EspecialidadeRepositorioJpa (JPA). */
 public class EspecialidadeRepositorioEmMemoria implements IEspecialidadeRepositorio {
 
     private final ConcurrentMap<String, Especialidade> especialidades = new ConcurrentHashMap<>();

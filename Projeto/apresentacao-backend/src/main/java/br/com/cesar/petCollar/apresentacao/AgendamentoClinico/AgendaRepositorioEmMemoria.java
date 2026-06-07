@@ -6,8 +6,6 @@ import br.com.cesar.petCollar.dominio.AgendamentoClinico.agenda.Expediente;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.agenda.IAgendaRepositorio;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.HorarioConsulta;
 
-import org.springframework.stereotype.Repository;
-
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -17,11 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Implementação provisória em memória de {@link IAgendaRepositorio}. Aplica um
- * expediente-padrão (segunda a sexta, 08–18h, consultas de 30 min) e mantém uma
- * lista de bloqueios por médico.
+ * @Repository removido — substituído por AgendaRepositorioJpa (JPA).
  */
-@Repository
 public class AgendaRepositorioEmMemoria implements IAgendaRepositorio {
 
     private static final Expediente EXPEDIENTE_PADRAO = new Expediente(

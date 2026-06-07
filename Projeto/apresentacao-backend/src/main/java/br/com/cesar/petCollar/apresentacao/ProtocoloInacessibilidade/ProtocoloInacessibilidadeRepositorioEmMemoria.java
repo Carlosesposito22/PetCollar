@@ -7,7 +7,7 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.Protoc
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.StatusProtocolo;
 
-import org.springframework.stereotype.Repository;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentMap;
  * (stand-in enquanto o banco está desligado — ver application.yml). Substituível
  * pelo adapter JPA {@code ProtocoloInacessibilidadeRepositorioJpa} sem tocar no domínio.
  */
-@Repository
+// @Repository removido — substituído por adapter JPA
 public class ProtocoloInacessibilidadeRepositorioEmMemoria implements IProtocoloInacessibilidadeRepositorio {
 
     private final ConcurrentMap<String, ProtocoloInacessibilidade> protocolos = new ConcurrentHashMap<>();

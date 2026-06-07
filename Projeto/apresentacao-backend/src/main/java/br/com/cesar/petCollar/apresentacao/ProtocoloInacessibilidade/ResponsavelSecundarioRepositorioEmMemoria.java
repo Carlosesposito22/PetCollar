@@ -4,7 +4,7 @@ import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.IResponsavelSecundarioRepositorio;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResponsavelSecundario;
 
-import org.springframework.stereotype.Repository;
+
 
 import java.util.Comparator;
 import java.util.List;
@@ -18,7 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * ordenados por prioridade (RN 4). Será substituído pelo adapter real quando
  * RelacaoTutor expuser o cadastro de responsáveis.
  */
-@Repository
+// @Repository removido — substituído por adapter JPA
 public class ResponsavelSecundarioRepositorioEmMemoria implements IResponsavelSecundarioRepositorio {
 
     private final ConcurrentMap<String, List<ResponsavelSecundario>> porPaciente = new ConcurrentHashMap<>();

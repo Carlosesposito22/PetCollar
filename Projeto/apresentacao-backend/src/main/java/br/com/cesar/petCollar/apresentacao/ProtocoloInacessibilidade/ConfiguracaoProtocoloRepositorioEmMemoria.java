@@ -4,7 +4,7 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.configuracao.Con
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.configuracao.ConfiguracaoProtocoloId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.configuracao.IConfiguracaoProtocoloRepositorio;
 
-import org.springframework.stereotype.Repository;
+
 
 import java.util.Comparator;
 import java.util.List;
@@ -15,7 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Implementação provisória em memória de {@link IConfiguracaoProtocoloRepositorio}.
  * A vigente é a de maior versão; o histórico das anteriores é preservado.
  */
-@Repository
+// @Repository removido — substituído por adapter JPA
 public class ConfiguracaoProtocoloRepositorioEmMemoria implements IConfiguracaoProtocoloRepositorio {
 
     private final List<ConfiguracaoProtocolo> historico = new CopyOnWriteArrayList<>();

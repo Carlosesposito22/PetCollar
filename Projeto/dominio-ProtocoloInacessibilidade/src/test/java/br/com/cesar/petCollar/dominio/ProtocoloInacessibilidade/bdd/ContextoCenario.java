@@ -31,7 +31,6 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
 
 /**
  * Estado compartilhado entre os passos BDD (injetado via picocontainer). Reúne
