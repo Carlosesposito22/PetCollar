@@ -29,16 +29,19 @@ public class ConfiguracaoProtocoloRepositorioJpa implements IConfiguracaoProtoco
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ConfiguracaoProtocolo> buscarVigente() {
         return jpa.findTopByOrderByVersaoDesc().map(ConfiguracaoProtocoloJpa::toDomain);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ConfiguracaoProtocolo> buscarPorId(ConfiguracaoProtocoloId id) {
         return jpa.findById(id.getValor()).map(ConfiguracaoProtocoloJpa::toDomain);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ConfiguracaoProtocolo> listarHistorico() {
         return jpa.findAll().stream().map(ConfiguracaoProtocoloJpa::toDomain).toList();
     }

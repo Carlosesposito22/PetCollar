@@ -536,8 +536,6 @@ function AgendarNovaModal({
     }
   }
 
-  const opSel = PROTOCOLOS_OPCOES.find(o => o.value === protocolo)!;
-
   return (
     <ModalShell titulo="Agendar Nova Vacina" onFechar={onFechar}>
       {erro && (
