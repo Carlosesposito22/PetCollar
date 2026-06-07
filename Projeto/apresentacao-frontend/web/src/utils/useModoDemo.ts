@@ -32,7 +32,7 @@ export function useModoDemo() {
   // Shift+D aciona o toggle globalmente
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.shiftKey && e.key === "PET" && !e.repeat) alternar();
+      if (e.ctrlKey && e.shiftKey && e.key === "D" && !e.repeat) alternar();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
