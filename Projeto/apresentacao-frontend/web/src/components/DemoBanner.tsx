@@ -24,7 +24,7 @@ export function DemoBanner({ carregando }: Props) {
     >
       {carregando
         ? "⏳ Modo Demonstração — aguarde…"
-        : "🐾 Modo Demonstração ativo — pressione Shift+D para desativar"}
+        : "🐾 Modo Demonstração ativo — pressione Ctrl+Shift+D para desativar"}
     </div>
   );
 }
