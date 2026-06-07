@@ -1,8 +1,5 @@
 package br.com.cesar.petCollar.apresentacao.ProtocoloInacessibilidade;
 
-import br.com.cesar.petCollar.dominio.compartilhado.AtendimentoId;
-import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
-import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.configuracao.ConfiguracaoProtocolo;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.configuracao.ConfiguracaoProtocoloId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.configuracao.IConfiguracaoProtocoloRepositorio;
@@ -13,10 +10,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.IDiretivaC
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.IResponsavelSecundarioRepositorio;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.IServicoCanalContato;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.IServicoNotificacao;
-import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResponsavelSecundario;
-import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResponsavelSecundarioId;
-import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResumoAtendimento;
-import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.TipoConduta;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.IProtocoloInacessibilidadeRepositorio;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.EtapaContatoResponsaveisSecundariosService;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.EtapaContatoTutorService;
@@ -32,7 +25,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -105,17 +97,10 @@ public class ProtocoloInacessibilidadeConfig {
         return new ConsultaStatusProtocoloService(protocoloRepositorio);
     }
 
-    /**
-     * Seed: cria a configuração padrão (RN 1/2/6) se nenhuma existir e registra um
-     * atendimento de demonstração (com tutor "inacessível") + responsável secundário
-     * + diretiva autorizada, para exercitar os endpoints e o scheduler de timeout.
-     */
+    /** Seed: cria a configuração padrão (RN 1/2/6) se nenhuma existir. */
     @Bean
     public CommandLineRunner seedProtocoloInacessibilidade(
-            IConfiguracaoProtocoloRepositorio configuracaoRepositorio,
-            AtendimentoConsultaEmMemoria atendimentos,
-            ResponsavelSecundarioRepositorioEmMemoria responsaveis,
-            DiretivaConsentimentoRepositorioEmMemoria diretivas) {
+            IConfiguracaoProtocoloRepositorio configuracaoRepositorio) {
         return args -> {
             if (configuracaoRepositorio.buscarVigente().isEmpty()) {
                 configuracaoRepositorio.salvar(new ConfiguracaoProtocolo(
@@ -126,25 +111,8 @@ public class ProtocoloInacessibilidadeConfig {
                             NivelEscalonamento.NIVEL_2_COORDENACAO,
                             NivelEscalonamento.NIVEL_3_CLINICO,
                             NivelEscalonamento.NIVEL_4_DIRECAO)));
+                log.info("[SEED F-03] configuração padrão criada.");
             }
-
-            AtendimentoId atendimentoId = AtendimentoId.gerar();
-            PacienteId pacienteId = PacienteId.gerar();
-            TutorId tutorId = TutorId.gerar();
-
-            // Atendimento em andamento, com tutor sem interação há 30 min (estoura o timeout de 15).
-            atendimentos.registrar(new ResumoAtendimento(
-                atendimentoId, pacienteId, tutorId, LocalDateTime.now().minusMinutes(30), true));
-
-            responsaveis.cadastrar(pacienteId, new ResponsavelSecundario(
-                ResponsavelSecundarioId.gerar(), "Maria (responsável secundária)", 1,
-                List.of(CanalContato.TELEFONE, CanalContato.WHATSAPP)));
-
-            diretivas.autorizar(pacienteId, TipoConduta.MEDICACAO_CONTROLADA);
-            diretivas.autorizar(pacienteId, TipoConduta.INTERNACAO);
-
-            log.info("[SEED F-03] atendimento de demonstração: atendimentoId={} pacienteId={} tutorId={}",
-                atendimentoId.getValor(), pacienteId.getValor(), tutorId.getValor());
         };
     }
 }

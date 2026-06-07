@@ -9,6 +9,8 @@ import { PagamentoPendente } from "./pages/PagamentoPendente";
 import { AdminPanel } from "./pages/AdminPanel";
 import { Dashboard } from "./pages/Dashboard";
 import { TutorLayout } from "./pages/tutor/TutorLayout";
+import { RecepcionistaLayout } from "./pages/recepcionista/RecepcionistaLayout";
+import { AdminLayout } from "./pages/admin/AdminLayout";
 import { TutorInicio } from "./pages/tutor/TutorInicio";
 import { TutorVacinacao } from "./pages/tutor/TutorVacinacao";
 import { TutorBeneficios } from "./pages/tutor/TutorBeneficios";
@@ -60,60 +62,36 @@ export function App() {
         <Route path="protocolos/:atendimentoId" element={<AcompanhamentoProtocoloPage />} />
       </Route>
 
-      {/* Área de funcionários (recepcionista / médico) — placeholder por enquanto */}
+      {/* Área da Recepcionista */}
+      <Route path="/staff" element={<Navigate to="/recepcao" replace />} />
       <Route
-        path="/staff"
+        path="/recepcao"
         element={
-          <ProtectedRoute perfil={["RECEPCIONISTA", "MEDICO_VETERINARIO"]}>
-            <Dashboard />
+          <ProtectedRoute perfil="RECEPCIONISTA">
+            <RecepcionistaLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<Dashboard />} />
+        {/* F-03 — Protocolo de inacessibilidade: recepção (operacional) */}
+        <Route path="protocolos" element={<PainelProtocolosAtivosPage />} />
+        <Route path="protocolos/:protocoloId" element={<DetalheProtocoloPage />} />
+      </Route>
 
+      {/* Área do Admin */}
       <Route
         path="/admin"
         element={
           <ProtectedRoute perfil="ADMIN_CLINICA">
-            <AdminPanel />
+            <AdminLayout />
           </ProtectedRoute>
         }
-      />
-
-      {/* F-03 — Protocolo de inacessibilidade: recepção (operacional) */}
-      <Route
-        path="/recepcao/protocolos"
-        element={
-          <ProtectedRoute perfil="RECEPCIONISTA">
-            <PainelProtocolosAtivosPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/recepcao/protocolos/:protocoloId"
-        element={
-          <ProtectedRoute perfil="RECEPCIONISTA">
-            <DetalheProtocoloPage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* F-03 — Protocolo de inacessibilidade: administração (configuração) */}
-      <Route
-        path="/admin/protocolos/configuracao"
-        element={
-          <ProtectedRoute perfil="ADMIN_CLINICA">
-            <ConfiguracaoProtocoloPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/protocolos/configuracao/historico"
-        element={
-          <ProtectedRoute perfil="ADMIN_CLINICA">
-            <HistoricoConfiguracaoPage />
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<AdminPanel />} />
+        {/* F-03 — Protocolo de inacessibilidade: administração (configuração) */}
+        <Route path="protocolos/configuracao" element={<ConfiguracaoProtocoloPage />} />
+        <Route path="protocolos/configuracao/historico" element={<HistoricoConfiguracaoPage />} />
+      </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

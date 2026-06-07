@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth, type Perfil } from "../auth/AuthContext";
-import { BrandWordmark } from "../components/Brand";
 
 type Status = "PENDENTE" | "ATIVA" | "INADIMPLENTE" | "SUSPENSA";
 
@@ -16,7 +15,7 @@ type Usuario = {
 type Aba = "funcionarios" | "tutores";
 
 export function AdminPanel() {
-  const { session, logout, apiFetch } = useAuth();
+  const { apiFetch } = useAuth();
   const [aba, setAba] = useState<Aba>("funcionarios");
   const [funcionarios, setFuncionarios] = useState<Usuario[]>([]);
   const [tutores, setTutores] = useState<Usuario[]>([]);
@@ -57,19 +56,8 @@ export function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-ink-300/60 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <BrandWordmark />
-          <div className="flex items-center gap-4">
-            <span className="chip">Admin da clínica</span>
-            <span className="text-sm text-ink-700">{session?.user.identificador}</span>
-            <button onClick={logout} className="btn-ghost">Sair</button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-6 py-10">
+    <>
+    <main className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-ink-900">Gestão da clínica</h1>
@@ -133,20 +121,19 @@ export function AdminPanel() {
             )}
           />
         )}
-      </main>
-
-      {criandoAberto && (
-        <CriarFuncionarioModal
-          apiFetch={apiFetch}
-          onFechar={() => setCriandoAberto(false)}
-          onCriado={novo => {
-            setAviso(`Funcionário criado · matrícula ${novo.identificador}`);
-            setCriandoAberto(false);
-            void recarregar();
-          }}
-        />
-      )}
-    </div>
+    </main>
+    {criandoAberto && (
+      <CriarFuncionarioModal
+        apiFetch={apiFetch}
+        onFechar={() => setCriandoAberto(false)}
+        onCriado={novo => {
+          setAviso(`Funcionário criado · matrícula ${novo.identificador}`);
+          setCriandoAberto(false);
+          void recarregar();
+        }}
+      />
+    )}
+    </>
   );
 }
 

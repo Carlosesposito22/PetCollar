@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { RecepcionistaFila } from "./RecepcionistaFila";
-import { BrandWordmark } from "../components/Brand";
 
 const rotulos: Record<string, string> = {
   TUTOR: "Tutor",
@@ -11,7 +10,7 @@ const rotulos: Record<string, string> = {
 };
 
 export function Dashboard() {
-  const { session, logout } = useAuth();
+  const { session } = useAuth();
   const [mostrarFila, setMostrarFila] = useState(false);
 
   if (!session) return null;
@@ -19,23 +18,7 @@ export function Dashboard() {
   const isRecepcionista = session.user.perfil === "RECEPCIONISTA";
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-ink-300/60 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-2">
-            <BrandWordmark />
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="chip">{rotulos[session.user.perfil] ?? session.user.perfil}</span>
-              <span className="text-sm text-ink-700">{session.user.identificador}</span>
-            </div>
-          </div>
-          <button onClick={logout} className="btn-ghost w-fit">
-            Sair
-          </button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-10 flex flex-col gap-4 rounded-3xl bg-white p-8 shadow-card">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-700">Painel da Recepção</p>
@@ -110,8 +93,7 @@ export function Dashboard() {
             </p>
           </div>
         )}
-      </main>
-    </div>
+    </main>
   );
 }
 
