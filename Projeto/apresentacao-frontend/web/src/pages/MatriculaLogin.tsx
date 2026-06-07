@@ -24,13 +24,17 @@ export function MatriculaLogin({ perfil, rotuloPerfil, titulo }: Props) {
     setMatricula(apenasDigitos);
   }
 
+  const destinos: Partial<Record<typeof perfil, string>> = {
+    MEDICO_VETERINARIO: "/medico",
+  };
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setErro(null);
     setEnviando(true);
     try {
       await login(perfil, matricula, senha);
-      navigate("/staff");
+      navigate(destinos[perfil] ?? "/staff");
     } catch (err) {
       setErro((err as Error).message);
     } finally {

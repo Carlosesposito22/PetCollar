@@ -13,6 +13,9 @@ import { Dashboard } from "./pages/Dashboard";
 import { TutorLayout } from "./pages/tutor/TutorLayout";
 import { RecepcionistaLayout } from "./pages/recepcionista/RecepcionistaLayout";
 import { AdminLayout } from "./pages/admin/AdminLayout";
+import { MedicoLayout } from "./pages/medico/MedicoLayout";
+import { MedicoPainel } from "./pages/medico/MedicoPainel";
+import { MedicoProntuario } from "./pages/medico/MedicoProntuario";
 import { TutorInicio } from "./pages/tutor/TutorInicio";
 import { TutorVacinacao } from "./pages/tutor/TutorVacinacao";
 import { TutorBeneficios } from "./pages/tutor/TutorBeneficios";
@@ -82,6 +85,19 @@ export function App() {
         {/* F-03 — Protocolo de inacessibilidade: recepção (operacional) */}
         <Route path="protocolos" element={<PainelProtocolosAtivosPage />} />
         <Route path="protocolos/:protocoloId" element={<DetalheProtocoloPage />} />
+      </Route>
+
+      {/* Área do Médico Veterinário */}
+      <Route
+        path="/medico"
+        element={
+          <ProtectedRoute perfil="MEDICO_VETERINARIO">
+            <MedicoLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<MedicoPainel />} />
+        <Route path="prontuario/:pacienteId" element={<MedicoProntuario />} />
       </Route>
 
       {/* Área do Admin */}
