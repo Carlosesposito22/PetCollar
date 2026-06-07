@@ -12,8 +12,6 @@ import br.com.cesar.petCollar.apresentacao.PortalTutor.Vacina;
 import br.com.cesar.petCollar.apresentacao.PortalTutor.VacinaJpa;
 import br.com.cesar.petCollar.apresentacao.PortalTutor.VacinaJpaRepository;
 import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.PlanosPadrao;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade.Especialidade;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade.EspecialidadeId;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.Cobranca;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.CobrancaId;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.Competencia;
@@ -33,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,20 +40,19 @@ import java.util.UUID;
  * exemplo usados para demonstrar os fluxos do sistema. Ativado pelo atalho
  * Shift+D no frontend.
  *
- * <p>Dados operacionais (Plano Básico Mensal, ConfiguracaoProtocolo) são
- * mantidos intactos — este serviço só toca dados de demonstração.
+ * <p>Dados operacionais (admin, plano, especialidades, ConfiguracaoProtocolo)
+ * são mantidos intactos — este serviço só toca dados de demonstração.
  */
 @Service
 public class DadosDemonstracaoService {
 
     private static final Logger log = LoggerFactory.getLogger(DadosDemonstracaoService.class);
 
-    private static final String ID_TUTOR_DEMO      = "tutor@petcollar.com";
-    private static final String ID_SUSPENSO_DEMO   = "suspenso@petcollar.com";
-    private static final String ID_ADMIN_DEMO      = "admin@petcollar.com";
-    private static final String ID_RECEPCAO_DEMO   = "100001";
-    private static final String ID_MEDICO_DEMO     = "200001";
-    private static final String SENHA_DEMO         = "petcollar123";
+    private static final String ID_TUTOR_DEMO    = "tutor@petcollar.com";
+    private static final String ID_SUSPENSO_DEMO = "suspenso@petcollar.com";
+    private static final String ID_RECEPCAO_DEMO = "100001";
+    private static final String ID_MEDICO_DEMO   = "200001";
+    private static final String SENHA_DEMO       = "petcollar123";
 
     private final UsuarioJpaRepository usuarios;
     private final PacienteJpaRepository pacientes;
@@ -70,12 +68,12 @@ public class DadosDemonstracaoService {
             EspecialidadeJpaRepository especialidades,
             CobrancaJpaRepository cobrancas,
             PasswordEncoder encoder) {
-        this.usuarios      = usuarios;
-        this.pacientes     = pacientes;
-        this.vacinas       = vacinas;
+        this.usuarios       = usuarios;
+        this.pacientes      = pacientes;
+        this.vacinas        = vacinas;
         this.especialidades = especialidades;
-        this.cobrancas     = cobrancas;
-        this.encoder       = encoder;
+        this.cobrancas      = cobrancas;
+        this.encoder        = encoder;
     }
 
     public boolean estaAtivo() {
@@ -92,7 +90,7 @@ public class DadosDemonstracaoService {
 
         String senha = encoder.encode(SENHA_DEMO);
         seedUsuarios(senha);
-        seedEspecialidades();
+        vincularMedicoAEspecialidades(ID_MEDICO_DEMO);
         seedPacientesEVacinas();
         seedCobrancas();
 
@@ -114,11 +112,11 @@ public class DadosDemonstracaoService {
         vacinas.deleteAll();
         pacientes.deleteAll();
 
-        // Especialidades (todas são demo)
-        especialidades.deleteAll();
+        // Especialidades: preservadas (seed operacional) — apenas desvincula o médico demo
+        desvincularMedicoDeEspecialidades(ID_MEDICO_DEMO);
 
-        // Usuários demo (por ID exato — preserva usuários reais se houver)
-        for (String id : List.of(ID_TUTOR_DEMO, ID_SUSPENSO_DEMO, ID_ADMIN_DEMO,
+        // Usuários demo (admin é seed operacional e NÃO é removido)
+        for (String id : List.of(ID_TUTOR_DEMO, ID_SUSPENSO_DEMO,
                                   ID_RECEPCAO_DEMO, ID_MEDICO_DEMO)) {
             usuarios.deleteById(id);
         }
@@ -129,10 +127,6 @@ public class DadosDemonstracaoService {
     // ── Seed helpers ──────────────────────────────────────────────────────────
 
     private void seedUsuarios(String senha) {
-        usuarios.save(UsuarioJpa.fromDomain(new UsuarioAutenticavel(
-                ID_ADMIN_DEMO, "Administrador Demo",
-                Perfil.ADMIN_CLINICA, senha, StatusConta.ATIVA)));
-
         usuarios.save(UsuarioJpa.fromDomain(new UsuarioAutenticavel(
                 ID_TUTOR_DEMO, "Tutor Demo",
                 Perfil.TUTOR, senha, StatusConta.ATIVA,
@@ -154,23 +148,27 @@ public class DadosDemonstracaoService {
                 Perfil.MEDICO_VETERINARIO, senha, StatusConta.ATIVA)));
     }
 
-    private void seedEspecialidades() {
-        MedicoId medicoDemo = MedicoId.de(ID_MEDICO_DEMO);
+    /** Adiciona {@code medicoId} à lista de médicos de todas as especialidades. */
+    private void vincularMedicoAEspecialidades(String medicoId) {
+        MedicoId medico = MedicoId.de(medicoId);
+        especialidades.findAll().forEach(esp -> {
+            List<MedicoId> lista = new ArrayList<>(esp.medicos());
+            if (!lista.contains(medico)) {
+                lista.add(medico);
+                especialidades.save(EspecialidadeJpa.fromDomain(esp.toDomain(), lista));
+            }
+        });
+    }
 
-        especialidades.save(EspecialidadeJpa.fromDomain(
-                new Especialidade(EspecialidadeId.gerar(), "Clínica Geral",
-                        "Consultas e diagnósticos gerais para cães e gatos"),
-                List.of(medicoDemo)));
-
-        especialidades.save(EspecialidadeJpa.fromDomain(
-                new Especialidade(EspecialidadeId.gerar(), "Ortopedia",
-                        "Fraturas, displasias e doenças articulares"),
-                List.of(medicoDemo)));
-
-        especialidades.save(EspecialidadeJpa.fromDomain(
-                new Especialidade(EspecialidadeId.gerar(), "Dermatologia",
-                        "Alergias, dermatites e doenças de pele"),
-                List.of()));
+    /** Remove {@code medicoId} da lista de médicos de todas as especialidades. */
+    private void desvincularMedicoDeEspecialidades(String medicoId) {
+        MedicoId medico = MedicoId.de(medicoId);
+        especialidades.findAll().forEach(esp -> {
+            List<MedicoId> lista = new ArrayList<>(esp.medicos());
+            if (lista.remove(medico)) {
+                especialidades.save(EspecialidadeJpa.fromDomain(esp.toDomain(), lista));
+            }
+        });
     }
 
     private void seedPacientesEVacinas() {
@@ -181,19 +179,19 @@ public class DadosDemonstracaoService {
         Paciente bob  = novoPaciente(ID_TUTOR_DEMO, "Bob",  "Cão",  "Beagle",   hoje.minusYears(5));
 
         // Rex — ciclo V10 em andamento + vacina em atraso
-        salvarVacina(rex.id(), "V10",         1, 3, true,  hoje.minusMonths(4), "Dr. Carlos Silva",    "L12345");
-        salvarVacina(rex.id(), "V10",         2, 3, true,  hoje.minusMonths(3), "Dr. Carlos Silva",    "L12346");
-        salvarVacina(rex.id(), "Antirrábica", null, null, true,  hoje.minusMonths(2), "Dra. Maria Santos", "R98765");
-        salvarVacina(rex.id(), "V10",         3, 3, false, hoje.plusMonths(1),  null, null);  // PENDENTE
-        salvarVacina(rex.id(), "Giardíase",   null, null, false, hoje.minusDays(20), null, null); // EM_ATRASO
+        salvarVacina(rex.id(), "V10",          1, 3, true,  hoje.minusMonths(4), "Dr. Carlos Silva",  "L12345");
+        salvarVacina(rex.id(), "V10",          2, 3, true,  hoje.minusMonths(3), "Dr. Carlos Silva",  "L12346");
+        salvarVacina(rex.id(), "Antirrábica",  null, null, true,  hoje.minusMonths(2), "Dra. Maria Santos", "R98765");
+        salvarVacina(rex.id(), "V10",          3, 3, false, hoje.plusMonths(1),  null, null);  // PENDENTE
+        salvarVacina(rex.id(), "Giardíase",    null, null, false, hoje.minusDays(20), null, null); // EM_ATRASO
 
         // Miau — vacina em atraso
-        salvarVacina(miau.id(), "Antirrábica",     null, null, true,  hoje.minusMonths(6), "Dra. Maria Santos", "R55501");
-        salvarVacina(miau.id(), "Quádrupla Felina", 1, 2, false, hoje.minusDays(10), null, null); // EM_ATRASO
+        salvarVacina(miau.id(), "Antirrábica",      null, null, true,  hoje.minusMonths(6), "Dra. Maria Santos", "R55501");
+        salvarVacina(miau.id(), "Quádrupla Felina",  1, 2, false, hoje.minusDays(10), null, null); // EM_ATRASO
 
         // Bob — tudo em dia
-        salvarVacina(bob.id(), "V10",         1, 1, true, hoje.minusMonths(8), "Dr. Carlos Silva",    "L20011");
-        salvarVacina(bob.id(), "Antirrábica", null, null, true, hoje.minusMonths(5), "Dra. Maria Santos", "R30022");
+        salvarVacina(bob.id(), "V10",          1, 1, true, hoje.minusMonths(8), "Dr. Carlos Silva",  "L20011");
+        salvarVacina(bob.id(), "Antirrábica",  null, null, true, hoje.minusMonths(5), "Dra. Maria Santos", "R30022");
     }
 
     private void seedCobrancas() {
@@ -239,8 +237,8 @@ public class DadosDemonstracaoService {
     private void salvarVacina(String pacienteId, String ciclo, Integer doseNum,
                                Integer totalDoses, boolean aplicada,
                                LocalDate data, String medico, String lote) {
-        String id = UUID.randomUUID().toString();
         vacinas.save(VacinaJpa.fromDomain(new Vacina(
-                id, pacienteId, ciclo, doseNum, totalDoses, aplicada, data, medico, lote)));
+                UUID.randomUUID().toString(), pacienteId, ciclo,
+                doseNum, totalDoses, aplicada, data, medico, lote)));
     }
 }
