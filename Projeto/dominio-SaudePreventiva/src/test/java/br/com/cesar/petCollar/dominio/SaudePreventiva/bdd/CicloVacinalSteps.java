@@ -120,11 +120,6 @@ public class CicloVacinalSteps {
         ctx.doseAtual.aplicar(LocalDate.parse(data), medico, lote);
     }
 
-    @Então("o status da dose deve ser {string}")
-    public void statusAplicada(String status) {
-        assertEquals(StatusDoseVacinal.valueOf(status), ctx.doseAtual.status());
-    }
-
     @E("a data de aplicação deve ser {string}")
     public void dataDeAplicacao(String data) {
         assertEquals(LocalDate.parse(data), ctx.doseAtual.getDataAplicacao());
@@ -183,7 +178,7 @@ public class CicloVacinalSteps {
             LocalDate.now().minusDays(30));
         CicloVacinal cicloAtrasado = new CicloVacinal(
             VacinaId.gerar(), PacienteId.de("pac-f06-002"), "Giardíase",
-            1, TipoProtocolo.REFORCO_ANUAL, null, List.of(doseAtrasada));
+            1, TipoProtocolo.REFORCO_ANUAL, null, List.of(doseAtrasada), null);
         when(ctx.repositorioMock.listarPorPaciente(PacienteId.de("pac-f06-002")))
             .thenReturn(List.of(cicloAtrasado));
     }

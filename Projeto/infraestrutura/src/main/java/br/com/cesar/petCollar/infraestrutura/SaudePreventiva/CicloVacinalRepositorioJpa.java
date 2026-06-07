@@ -19,9 +19,11 @@ import java.util.Optional;
 public class CicloVacinalRepositorioJpa implements ICicloVacinalRepositorio {
 
     private final CicloVacinalJpaRepository jpa;
+    private final DoseVacinalJpaRepository doseJpa;
 
-    public CicloVacinalRepositorioJpa(CicloVacinalJpaRepository jpa) {
-        this.jpa = jpa;
+    public CicloVacinalRepositorioJpa(CicloVacinalJpaRepository jpa, DoseVacinalJpaRepository doseJpa) {
+        this.jpa     = jpa;
+        this.doseJpa = doseJpa;
     }
 
     @Override
@@ -30,11 +32,13 @@ public class CicloVacinalRepositorioJpa implements ICicloVacinalRepositorio {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<CicloVacinal> buscarPorId(VacinaId id) {
         return jpa.findById(id.getValor()).map(CicloVacinalJpa::toDomain);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CicloVacinal> listarPorPaciente(PacienteId pacienteId) {
         return jpa.findByPacienteId(pacienteId.getValor()).stream()
                   .map(CicloVacinalJpa::toDomain)
@@ -42,9 +46,17 @@ public class CicloVacinalRepositorioJpa implements ICicloVacinalRepositorio {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<CicloVacinal> buscarPorPacienteENomeCiclo(PacienteId pacienteId, String nomeCiclo) {
         return jpa.findByPacienteIdAndNomeCicloIgnoreCase(pacienteId.getValor(), nomeCiclo)
                   .map(CicloVacinalJpa::toDomain);
+    }
+
+    @Override
+    @Transactional
+    public void remover(VacinaId id) {
+        doseJpa.deleteByCicloId(id.getValor());
+        jpa.deletarPorId(id.getValor());
     }
 
     @Override

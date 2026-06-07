@@ -116,11 +116,35 @@ public class CicloVacinalService {
     }
 
     /**
+     * Configura ou remove o lembrete automático de um ciclo vacinal.
+     * @param diasLembrete dias antes da próxima dose para lembrar; {@code null} desativa.
+     */
+    public void configurarLembrete(VacinaId cicloId, Integer diasLembrete) {
+        if (cicloId == null)
+            throw new IllegalArgumentException("Id do ciclo não pode ser nulo.");
+        CicloVacinal ciclo = repositorio.buscarPorId(cicloId)
+            .orElseThrow(() -> new IllegalArgumentException("Ciclo vacinal não encontrado: " + cicloId));
+        ciclo.configurarLembrete(diasLembrete);
+        repositorio.salvar(ciclo);
+    }
+
+    /**
      * Verifica se o paciente possui algum ciclo vacinal com dose em atraso (RN-077).
      */
     public boolean possuiVacinaEmAtraso(PacienteId pacienteId) {
         return listarPorPaciente(pacienteId).stream()
                                             .anyMatch(CicloVacinal::possuiDoseEmAtraso);
+    }
+
+    /**
+     * Remove um ciclo vacinal pelo id. Permite excluir doses pendentes ou ciclos importados errados.
+     */
+    public void removerCiclo(VacinaId cicloId) {
+        if (cicloId == null)
+            throw new IllegalArgumentException("Id do ciclo não pode ser nulo.");
+        repositorio.buscarPorId(cicloId)
+            .orElseThrow(() -> new IllegalArgumentException("Ciclo vacinal não encontrado: " + cicloId));
+        repositorio.remover(cicloId);
     }
 
     /**

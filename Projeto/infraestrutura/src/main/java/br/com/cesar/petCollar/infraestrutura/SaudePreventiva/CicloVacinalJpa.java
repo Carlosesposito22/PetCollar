@@ -39,6 +39,8 @@ public class CicloVacinalJpa {
 
     private Integer intervaloDias;
 
+    private Integer diasLembrete;
+
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "cicloId")
     @OrderBy("doseNumero ASC")
@@ -54,6 +56,7 @@ public class CicloVacinalJpa {
         jpa.totalDoses     = c.getTotalDoses();
         jpa.tipoProtocolo  = c.getTipoProtocolo().name();
         jpa.intervaloDias  = c.getIntervaloDias();
+        jpa.diasLembrete   = c.getDiasLembrete();
         jpa.doses          = c.getDoses().stream()
                               .map(d -> DoseVacinalJpa.fromDomain(d, jpa.id))
                               .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
@@ -71,7 +74,8 @@ public class CicloVacinalJpa {
             totalDoses,
             TipoProtocolo.valueOf(tipoProtocolo),
             intervaloDias,
-            dosesDeReconstrucao);
+            dosesDeReconstrucao,
+            diasLembrete);
     }
 
     public String getId()        { return id; }

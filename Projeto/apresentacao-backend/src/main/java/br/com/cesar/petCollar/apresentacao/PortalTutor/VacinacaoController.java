@@ -15,6 +15,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -82,6 +83,27 @@ public class VacinacaoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(CicloDTO.de(atualizado, sugerida));
     }
 
+    /** Remove um ciclo vacinal (doses pendentes ou registros importados incorretamente). */
+    @DeleteMapping("/{cicloId}")
+    public ResponseEntity<Void> removerCiclo(@PathVariable String pacienteId,
+                                              @PathVariable String cicloId,
+                                              Principal principal) {
+        obterPacienteDoTutor(pacienteId, principal);
+        cicloVacinalService.removerCiclo(VacinaId.de(cicloId));
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Configura ou remove o lembrete automático de próxima dose (tutor). */
+    @PatchMapping("/{cicloId}/lembrete")
+    public ResponseEntity<Void> configurarLembrete(@PathVariable String pacienteId,
+                                                    @PathVariable String cicloId,
+                                                    @RequestBody RequisicaoLembreteDTO req,
+                                                    Principal principal) {
+        obterPacienteDoTutor(pacienteId, principal);
+        cicloVacinalService.configurarLembrete(VacinaId.de(cicloId), req.diasLembrete());
+        return ResponseEntity.noContent().build();
+    }
+
     /** Confirma a aplicação de uma dose — exclusivo para médico veterinário (RN-078). */
     @PatchMapping("/{cicloId}/doses/{doseId}/aplicar")
     public ResponseEntity<CicloDTO> aplicarDose(@PathVariable String pacienteId,
@@ -144,6 +166,8 @@ public class VacinacaoController {
             LocalDate data
     ) {}
 
+    public record RequisicaoLembreteDTO(Integer diasLembrete) {}
+
     public record RequisicaoAplicarDose(
             @NotNull LocalDate dataAplicacao,
             @NotBlank String medico,
@@ -184,6 +208,8 @@ public class VacinacaoController {
             String tipoProtocolo,
             Integer intervaloDias,
             LocalDate dataProximaDoseSugerida,
+            Integer diasLembrete,
+            boolean lembreteAtivo,
             List<DoseDTO> doses
     ) {
         static CicloDTO de(CicloVacinal c, LocalDate sugerida) {
@@ -200,6 +226,8 @@ public class VacinacaoController {
                 c.getTipoProtocolo().name(),
                 c.getIntervaloDias(),
                 sugerida,
+                c.getDiasLembrete(),
+                c.lembreteAtivo(),
                 doses);
         }
     }
