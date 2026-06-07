@@ -6,7 +6,7 @@ Funcionalidade: Ciclo Vacinal — Carteira Digital de Vacinação (F-06)
 
   Cenário: Criar ciclo vacinal de filhote com primeira dose agendada
     Dado que existe um paciente com id "pac-f06-001"
-    Quando o médico cria o ciclo "V10" com 3 doses e protocolo "FILHOTE" para a data "2026-01-01"
+    Quando o médico cria o ciclo "V10" com 3 doses e protocolo "FILHOTE" para a data "2027-01-01"
     Então o ciclo deve ter 1 dose registrada
     E o número da primeira dose deve ser 1
     E o status da primeira dose deve ser "PENDENTE"

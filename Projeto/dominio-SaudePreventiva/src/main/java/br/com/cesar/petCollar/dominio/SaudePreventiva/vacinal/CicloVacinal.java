@@ -27,6 +27,7 @@ public class CicloVacinal {
     private final int totalDoses;
     private final TipoProtocolo tipoProtocolo;
     private final Integer intervaloDias;
+    private Integer diasLembrete;
     private final List<DoseVacinal> doses;
 
     /** Construtor de criação — ciclo recém-criado pelo veterinário. */
@@ -57,7 +58,7 @@ public class CicloVacinal {
     // Construtor de RECONSTRUÇÃO — usado pela infraestrutura ao recarregar do banco.
     public CicloVacinal(VacinaId id, PacienteId pacienteId, String nomeCiclo,
                         int totalDoses, TipoProtocolo tipoProtocolo, Integer intervaloDias,
-                        List<DoseVacinal> doses) {
+                        List<DoseVacinal> doses, Integer diasLembrete) {
         if (id == null)
             throw new IllegalArgumentException("Id do ciclo vacinal não pode ser nulo.");
         if (pacienteId == null)
@@ -74,6 +75,7 @@ public class CicloVacinal {
         this.totalDoses    = totalDoses;
         this.tipoProtocolo = tipoProtocolo;
         this.intervaloDias = intervaloDias;
+        this.diasLembrete  = diasLembrete;
         this.doses         = doses != null ? new ArrayList<>(doses) : new ArrayList<>();
     }
 
@@ -132,6 +134,34 @@ public class CicloVacinal {
                         "Nenhuma dose registrada no ciclo para calcular a próxima data."));
     }
 
+    /**
+     * Define ou remove o lembrete automático de dose próxima (RN-lembrete).
+     * @param diasLembrete dias antes da próxima dose para ativar o lembrete; {@code null} desativa.
+     */
+    public void configurarLembrete(Integer diasLembrete) {
+        if (diasLembrete != null && diasLembrete <= 0)
+            throw new IllegalArgumentException("Dias de lembrete deve ser maior que zero.");
+        this.diasLembrete = diasLembrete;
+    }
+
+    /**
+     * Retorna {@code true} se hoje está dentro do período de lembrete da próxima dose pendente.
+     * O período é: [dataProximaDose - diasLembrete, dataProximaDose].
+     */
+    public boolean lembreteAtivo() {
+        if (diasLembrete == null || diasLembrete <= 0) return false;
+        LocalDate hoje = LocalDate.now();
+        return doses.stream()
+            .filter(d -> !d.estaAplicada())
+            .map(DoseVacinal::getDataAgendada)
+            .min(LocalDate::compareTo)
+            .map(proxData -> {
+                LocalDate inicio = proxData.minusDays(diasLembrete);
+                return !hoje.isBefore(inicio) && !hoje.isAfter(proxData);
+            })
+            .orElse(false);
+    }
+
     public boolean possuiDoseEmAtraso() {
         return doses.stream().anyMatch(DoseVacinal::estaEmAtraso);
     }
@@ -158,4 +188,5 @@ public class CicloVacinal {
     public int getTotalDoses()           { return totalDoses; }
     public TipoProtocolo getTipoProtocolo() { return tipoProtocolo; }
     public Integer getIntervaloDias()    { return intervaloDias; }
+    public Integer getDiasLembrete()     { return diasLembrete; }
 }

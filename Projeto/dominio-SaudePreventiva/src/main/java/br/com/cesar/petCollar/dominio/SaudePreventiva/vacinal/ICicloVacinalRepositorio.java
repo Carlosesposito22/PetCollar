@@ -19,5 +19,7 @@ public interface ICicloVacinalRepositorio {
 
     Optional<CicloVacinal> buscarPorPacienteENomeCiclo(PacienteId pacienteId, String nomeCiclo);
 
+    void remover(VacinaId id);
+
     void removerPorPaciente(PacienteId pacienteId);
 }
