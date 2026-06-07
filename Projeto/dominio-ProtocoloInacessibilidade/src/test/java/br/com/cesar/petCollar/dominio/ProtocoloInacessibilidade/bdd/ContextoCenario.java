@@ -18,12 +18,13 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResultadoC
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.TentativaContato;
-import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.AcionamentoResponsavelSecundarioService;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.EtapaContatoResponsaveisSecundariosService;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.EtapaContatoTutorService;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.EtapaEscalonamentoService;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.OrquestradorEtapasProtocolo;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.AtivacaoProtocoloService;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.ConsultaDiretivaConsentimentoService;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.ConsultaStatusProtocoloService;
-import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.EscalonamentoService;
-import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.ExecucaoTentativaContatoService;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.VisaoProtocolo;
 
 import java.util.List;
@@ -57,12 +58,17 @@ public class ContextoCenario {
     // ── Serviços de domínio (reais) ───────────────────────────────────────────
     public final AtivacaoProtocoloService ativacaoService =
         new AtivacaoProtocoloService(protocoloRepositorio, configuracaoRepositorio, atendimentos, notificacao);
-    public final ExecucaoTentativaContatoService execucaoService =
-        new ExecucaoTentativaContatoService(protocoloRepositorio, configuracaoRepositorio, canalContato, notificacao);
-    public final AcionamentoResponsavelSecundarioService acionamentoService =
-        new AcionamentoResponsavelSecundarioService(protocoloRepositorio, responsaveis, canalContato, notificacao);
-    public final EscalonamentoService escalonamentoService =
-        new EscalonamentoService(protocoloRepositorio, configuracaoRepositorio, notificacao);
+
+    // Template Method — uma etapa concreta por fase do protocolo, mais o orquestrador.
+    public final EtapaContatoTutorService etapaTutor =
+        new EtapaContatoTutorService(protocoloRepositorio, notificacao, configuracaoRepositorio, canalContato);
+    public final EtapaContatoResponsaveisSecundariosService etapaSecundarios =
+        new EtapaContatoResponsaveisSecundariosService(protocoloRepositorio, notificacao, responsaveis, canalContato);
+    public final EtapaEscalonamentoService etapaEscalonamento =
+        new EtapaEscalonamentoService(protocoloRepositorio, notificacao, configuracaoRepositorio);
+    public final OrquestradorEtapasProtocolo orquestrador =
+        new OrquestradorEtapasProtocolo(etapaTutor, etapaSecundarios, etapaEscalonamento);
+
     public final ConsultaDiretivaConsentimentoService diretivaService =
         new ConsultaDiretivaConsentimentoService(diretivas);
     public final ConsultaStatusProtocoloService statusService =
@@ -78,6 +84,7 @@ public class ContextoCenario {
     public ProtocoloInacessibilidade protocolo;
     public TentativaContato ultimaTentativa;
     public List<TentativaContato> tentativasResultantes;
+    public br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.ResultadoEtapa resultadoEtapa;
     public VisaoProtocolo visao;
     public Boolean autorizacaoConduta;
     public Exception excecao;

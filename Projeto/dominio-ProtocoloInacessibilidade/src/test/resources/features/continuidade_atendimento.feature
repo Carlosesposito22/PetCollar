@@ -6,5 +6,5 @@ Funcionalidade: Continuidade do atendimento clínico (RN 8)
   Cenário: O protocolo não altera o estado do atendimento clínico
     Dado uma configuração de protocolo vigente
     E um atendimento clínico em andamento
-    Quando o sistema ativa o protocolo e executa 2 tentativas de contato
+    Quando o sistema ativa o protocolo e executa a etapa de contato com o tutor
     Então o atendimento deve permanecer em andamento

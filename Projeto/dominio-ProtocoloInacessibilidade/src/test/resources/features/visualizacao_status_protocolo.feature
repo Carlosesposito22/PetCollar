@@ -7,7 +7,7 @@ Funcionalidade: Visualização do status do protocolo pelo tutor (RN 15)
     Dado uma configuração de protocolo vigente
     E um protocolo ativado para o atendimento
     E o tutor não responde em nenhum canal
-    Quando o sistema executa 2 tentativas de contato seguidas
+    Quando o sistema executa a etapa de contato com o tutor
     E o tutor consulta a situação do protocolo
-    Então a visão deve apresentar o status "EM_TENTATIVA_TUTOR"
-    E a visão deve conter 2 tentativas no histórico
+    Então a visão deve apresentar o status "EM_TENTATIVA_SECUNDARIOS"
+    E a visão deve conter 6 tentativas no histórico

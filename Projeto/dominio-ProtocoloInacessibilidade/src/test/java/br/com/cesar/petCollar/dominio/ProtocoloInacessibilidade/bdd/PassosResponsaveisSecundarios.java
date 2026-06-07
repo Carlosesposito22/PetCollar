@@ -20,6 +20,10 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Passos da etapa de acionamento dos responsáveis secundários — exercitando a
+ * subclasse {@code EtapaContatoResponsaveisSecundariosService} do Template Method.
+ */
 public class PassosResponsaveisSecundarios {
 
     private final ContextoCenario contexto;
@@ -50,11 +54,23 @@ public class PassosResponsaveisSecundarios {
             .thenReturn(ResultadoContato.sucesso("Responsável atendeu."));
     }
 
+    @E("o primeiro responsável secundário responde e há um segundo cadastrado")
+    public void primeiroRespondeSegundoCadastrado() {
+        ResponsavelSecundario primeiro = new ResponsavelSecundario(
+            ResponsavelSecundarioId.gerar(), "Primeiro responsável", 1, List.of(CanalContato.TELEFONE));
+        ResponsavelSecundario segundo = new ResponsavelSecundario(
+            ResponsavelSecundarioId.gerar(), "Segundo responsável", 2, List.of(CanalContato.TELEFONE));
+        when(contexto.responsaveis.listarPorPaciente(contexto.pacienteId))
+            .thenReturn(List.of(primeiro, segundo));
+        when(contexto.canalContato.contatar(eq(CanalContato.TELEFONE), any(), any()))
+            .thenReturn(ResultadoContato.sucesso("Responsável atendeu."));
+    }
+
     @Quando("o sistema aciona todos os responsáveis secundários")
     public void acionaTodos() {
         try {
-            contexto.tentativasResultantes =
-                contexto.acionamentoService.acionarTodos(contexto.protocolo.getId());
+            contexto.resultadoEtapa = contexto.etapaSecundarios.executar(contexto.protocolo.getId());
+            contexto.tentativasResultantes = contexto.resultadoEtapa.getTentativas();
         } catch (Exception e) {
             contexto.excecao = e;
         }
@@ -63,7 +79,7 @@ public class PassosResponsaveisSecundarios {
     @Quando("o sistema tenta iniciar o escalonamento")
     public void tentaIniciarEscalonamento() {
         try {
-            contexto.escalonamentoService.iniciarEscalonamento(contexto.protocolo.getId());
+            contexto.etapaEscalonamento.executar(contexto.protocolo.getId());
         } catch (Exception e) {
             contexto.excecao = e;
         }

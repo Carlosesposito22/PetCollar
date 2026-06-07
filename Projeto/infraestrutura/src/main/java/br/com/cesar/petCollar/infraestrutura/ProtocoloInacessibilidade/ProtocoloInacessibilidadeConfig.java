@@ -7,12 +7,13 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.IResponsav
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.IServicoCanalContato;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.IServicoNotificacao;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.IProtocoloInacessibilidadeRepositorio;
-import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.AcionamentoResponsavelSecundarioService;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.EtapaContatoResponsaveisSecundariosService;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.EtapaContatoTutorService;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.EtapaEscalonamentoService;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.OrquestradorEtapasProtocolo;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.AtivacaoProtocoloService;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.ConsultaDiretivaConsentimentoService;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.ConsultaStatusProtocoloService;
-import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.EscalonamentoService;
-import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.ExecucaoTentativaContatoService;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,30 +40,42 @@ public class ProtocoloInacessibilidadeConfig {
             atendimentos, notificacao);
     }
 
+    // ── Etapas do protocolo via Template Method (uma subclasse por fase) ──────
+
     @Bean
-    public ExecucaoTentativaContatoService execucaoTentativaContatoService(
+    public EtapaContatoTutorService etapaContatoTutorService(
             IProtocoloInacessibilidadeRepositorio protocoloRepositorio,
+            IServicoNotificacao notificacao,
             IConfiguracaoProtocoloRepositorio configuracaoRepositorio,
-            IServicoCanalContato servicoCanalContato, IServicoNotificacao notificacao) {
-        return new ExecucaoTentativaContatoService(protocoloRepositorio, configuracaoRepositorio,
-            servicoCanalContato, notificacao);
+            IServicoCanalContato servicoCanalContato) {
+        return new EtapaContatoTutorService(protocoloRepositorio, notificacao,
+            configuracaoRepositorio, servicoCanalContato);
     }
 
     @Bean
-    public AcionamentoResponsavelSecundarioService acionamentoResponsavelSecundarioService(
+    public EtapaContatoResponsaveisSecundariosService etapaContatoResponsaveisSecundariosService(
             IProtocoloInacessibilidadeRepositorio protocoloRepositorio,
+            IServicoNotificacao notificacao,
             IResponsavelSecundarioRepositorio responsaveis,
-            IServicoCanalContato servicoCanalContato, IServicoNotificacao notificacao) {
-        return new AcionamentoResponsavelSecundarioService(protocoloRepositorio, responsaveis,
-            servicoCanalContato, notificacao);
+            IServicoCanalContato servicoCanalContato) {
+        return new EtapaContatoResponsaveisSecundariosService(protocoloRepositorio, notificacao,
+            responsaveis, servicoCanalContato);
     }
 
     @Bean
-    public EscalonamentoService escalonamentoService(
+    public EtapaEscalonamentoService etapaEscalonamentoService(
             IProtocoloInacessibilidadeRepositorio protocoloRepositorio,
-            IConfiguracaoProtocoloRepositorio configuracaoRepositorio,
-            IServicoNotificacao notificacao) {
-        return new EscalonamentoService(protocoloRepositorio, configuracaoRepositorio, notificacao);
+            IServicoNotificacao notificacao,
+            IConfiguracaoProtocoloRepositorio configuracaoRepositorio) {
+        return new EtapaEscalonamentoService(protocoloRepositorio, notificacao, configuracaoRepositorio);
+    }
+
+    @Bean
+    public OrquestradorEtapasProtocolo orquestradorEtapasProtocolo(
+            EtapaContatoTutorService etapaTutor,
+            EtapaContatoResponsaveisSecundariosService etapaSecundarios,
+            EtapaEscalonamentoService etapaEscalonamento) {
+        return new OrquestradorEtapasProtocolo(etapaTutor, etapaSecundarios, etapaEscalonamento);
     }
 
     @Bean

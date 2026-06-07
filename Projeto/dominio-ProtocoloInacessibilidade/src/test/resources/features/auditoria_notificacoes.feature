@@ -8,5 +8,5 @@ Funcionalidade: Auditabilidade das notificações (RN 16)
     Dado uma configuração de protocolo vigente
     E um protocolo ativado para o atendimento
     E o tutor não responde em nenhum canal
-    Quando o sistema executa 2 tentativas de contato seguidas
-    Então o serviço de notificação deve ter sido acionado 2 vezes
+    Quando o sistema executa a etapa de contato com o tutor
+    Então o serviço de notificação deve ter sido acionado 6 vezes

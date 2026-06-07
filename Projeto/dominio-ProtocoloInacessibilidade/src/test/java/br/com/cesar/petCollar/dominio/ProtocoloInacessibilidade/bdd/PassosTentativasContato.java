@@ -19,6 +19,11 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Passos da etapa de contato com o tutor — agora exercitando a subclasse
+ * {@code EtapaContatoTutorService} do Template Method, que executa toda a etapa
+ * (todos os canais, até o limite por canal) em uma única chamada.
+ */
 public class PassosTentativasContato {
 
     private final ContextoCenario contexto;
@@ -38,49 +43,27 @@ public class PassosTentativasContato {
             .thenReturn(ResultadoContato.sucesso("Tutor atendeu."));
     }
 
-    @E("todos os canais de contato com o tutor foram esgotados")
-    public void canaisEsgotados() {
-        int totalTentativas = contexto.configuracao.getCanaisHabilitados().size()
-            * contexto.configuracao.getQuantidadeMaximaTentativasPorCanal();
-        for (int i = 0; i < totalTentativas; i++) {
-            contexto.execucaoService.executarProximoCanal(contexto.protocolo.getId());
-        }
-    }
-
-    @Quando("o sistema executa a próxima tentativa de contato")
-    public void executaProximaTentativa() {
+    @Quando("o sistema executa a etapa de contato com o tutor")
+    public void executaEtapaContatoTutor() {
         try {
-            contexto.ultimaTentativa =
-                contexto.execucaoService.executarProximoCanal(contexto.protocolo.getId());
+            contexto.resultadoEtapa = contexto.etapaTutor.executar(contexto.protocolo.getId());
         } catch (Exception e) {
             contexto.excecao = e;
         }
     }
 
-    @Quando("o sistema executa {int} tentativas de contato seguidas")
-    public void executaVariasTentativas(int quantidade) {
-        try {
-            for (int i = 0; i < quantidade; i++) {
-                contexto.ultimaTentativa =
-                    contexto.execucaoService.executarProximoCanal(contexto.protocolo.getId());
-            }
-        } catch (Exception e) {
-            contexto.excecao = e;
-        }
-    }
-
-    @Quando("o sistema tenta executar mais uma tentativa de contato")
-    public void tentaMaisUmaTentativa() {
-        executaProximaTentativa();
-    }
-
-    @Entao("uma tentativa deve ser registrada com status {string}")
-    public void tentativaRegistradaComStatus(String status) {
+    @Entao("o protocolo deve conter {int} tentativa(s) de contato")
+    public void protocoloContemTentativas(int quantidade) {
         assertNull(contexto.excecao, "Não deveria ter lançado exceção: " + contexto.excecao);
-        assertNotNull(contexto.ultimaTentativa, "Nenhuma tentativa registrada.");
-        assertEquals(StatusTentativa.valueOf(status), contexto.ultimaTentativa.getStatus());
-        assertTrue(contexto.protocolo.getTentativas().contains(contexto.ultimaTentativa),
-            "A tentativa deveria estar registrada no agregado.");
+        assertEquals(quantidade, contexto.protocolo.getTentativas().size());
+    }
+
+    @Entao("todas as tentativas devem ter status {string}")
+    public void todasTentativasComStatus(String status) {
+        StatusTentativa esperado = StatusTentativa.valueOf(status);
+        assertFalse(contexto.protocolo.getTentativas().isEmpty(), "Nenhuma tentativa registrada.");
+        assertTrue(contexto.protocolo.getTentativas().stream().allMatch(t -> t.getStatus() == esperado),
+            "Todas as tentativas deveriam ter status " + esperado + ".");
     }
 
     @Entao("os canais utilizados nas tentativas devem ser {string}")

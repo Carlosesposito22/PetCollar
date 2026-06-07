@@ -7,6 +7,11 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato.NivelEsc
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Passos da etapa de escalonamento — exercitando a subclasse
+ * {@code EtapaEscalonamentoService} do Template Method (cada execução avança um
+ * nível ou esgota) e o {@code OrquestradorEtapasProtocolo}.
+ */
 public class PassosEscalonamento {
 
     private final ContextoCenario contexto;
@@ -18,7 +23,7 @@ public class PassosEscalonamento {
     @Quando("o sistema inicia o escalonamento")
     public void iniciaEscalonamento() {
         try {
-            contexto.escalonamentoService.iniciarEscalonamento(contexto.protocolo.getId());
+            contexto.etapaEscalonamento.executar(contexto.protocolo.getId());
         } catch (Exception e) {
             contexto.excecao = e;
         }
@@ -27,7 +32,7 @@ public class PassosEscalonamento {
     @Quando("o sistema avança o nível de escalonamento")
     public void avancaNivel() {
         try {
-            contexto.escalonamentoService.avancarNivel(contexto.protocolo.getId());
+            contexto.etapaEscalonamento.executar(contexto.protocolo.getId());
         } catch (Exception e) {
             contexto.excecao = e;
         }
@@ -37,8 +42,17 @@ public class PassosEscalonamento {
     public void avancaVariasVezes(int vezes) {
         try {
             for (int i = 0; i < vezes; i++) {
-                contexto.escalonamentoService.avancarNivel(contexto.protocolo.getId());
+                contexto.etapaEscalonamento.executar(contexto.protocolo.getId());
             }
+        } catch (Exception e) {
+            contexto.excecao = e;
+        }
+    }
+
+    @Quando("o sistema executa a próxima etapa do protocolo")
+    public void executaProximaEtapa() {
+        try {
+            contexto.resultadoEtapa = contexto.orquestrador.executarProximaEtapa(contexto.protocolo);
         } catch (Exception e) {
             contexto.excecao = e;
         }

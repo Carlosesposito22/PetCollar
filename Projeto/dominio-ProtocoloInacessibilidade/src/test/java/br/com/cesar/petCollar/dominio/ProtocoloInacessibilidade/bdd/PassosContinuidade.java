@@ -30,14 +30,12 @@ public class PassosContinuidade {
         when(contexto.atendimentos.listarEmAndamento()).thenReturn(List.of(resumo));
     }
 
-    @Quando("o sistema ativa o protocolo e executa {int} tentativas de contato")
-    public void ativaEExecutaTentativas(int tentativas) {
+    @Quando("o sistema ativa o protocolo e executa a etapa de contato com o tutor")
+    public void ativaEExecutaEtapaContato() {
         try {
             contexto.ativacaoService.verificarEAtivar(contexto.atendimentoId)
                 .ifPresent(p -> contexto.protocolo = p);
-            for (int i = 0; i < tentativas; i++) {
-                contexto.execucaoService.executarProximoCanal(contexto.protocolo.getId());
-            }
+            contexto.etapaTutor.executar(contexto.protocolo.getId());
         } catch (Exception e) {
             contexto.excecao = e;
         }
