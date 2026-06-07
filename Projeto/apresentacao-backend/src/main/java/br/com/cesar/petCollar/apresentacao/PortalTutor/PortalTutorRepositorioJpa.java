@@ -1,5 +1,7 @@
 package br.com.cesar.petCollar.apresentacao.PortalTutor;
 
+import br.com.cesar.petCollar.infraestrutura.SaudePreventiva.CicloVacinalJpaRepository;
+
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -8,19 +10,20 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Adapter JPA de {@link PortalTutorRepositorio}. Substitui
- * {@link PortalTutorRepositorioEmMemoria} quando o banco está ativo.
+ * Adapter JPA de {@link PortalTutorRepositorio} para Pacientes.
+ * Ao remover um paciente, realiza cascade nos ciclos vacinais via
+ * {@link CicloVacinalJpaRepository}.
  */
 @Repository
 public class PortalTutorRepositorioJpa implements PortalTutorRepositorio {
 
     private final PacienteJpaRepository pacientes;
-    private final VacinaJpaRepository vacinas;
+    private final CicloVacinalJpaRepository ciclosVacinais;
 
     public PortalTutorRepositorioJpa(PacienteJpaRepository pacientes,
-                                     VacinaJpaRepository vacinas) {
-        this.pacientes = pacientes;
-        this.vacinas   = vacinas;
+                                      CicloVacinalJpaRepository ciclosVacinais) {
+        this.pacientes      = pacientes;
+        this.ciclosVacinais = ciclosVacinais;
     }
 
     @Override
@@ -44,25 +47,8 @@ public class PortalTutorRepositorioJpa implements PortalTutorRepositorio {
     @Override
     @Transactional
     public void removerPaciente(String id) {
-        vacinas.deleteByPacienteId(id);
+        ciclosVacinais.deleteByPacienteId(id);
         pacientes.deleteById(id);
-    }
-
-    @Override
-    public List<Vacina> listarVacinasDoPaciente(String pacienteId) {
-        return vacinas.findByPacienteId(pacienteId).stream()
-                .map(VacinaJpa::toDomain)
-                .sorted((a, b) -> {
-                    if (a.data() == null) return 1;
-                    if (b.data() == null) return -1;
-                    return a.data().compareTo(b.data());
-                })
-                .toList();
-    }
-
-    @Override
-    public void salvarVacina(Vacina vacina) {
-        vacinas.save(VacinaJpa.fromDomain(vacina));
     }
 
     @Override

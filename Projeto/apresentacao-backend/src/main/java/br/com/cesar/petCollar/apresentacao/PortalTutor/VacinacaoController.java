@@ -1,10 +1,15 @@
 package br.com.cesar.petCollar.apresentacao.PortalTutor;
 
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.CicloVacinal;
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.CicloVacinalService;
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.DoseVacinal;
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.StatusDoseVacinal;
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.TipoProtocolo;
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.VacinaId;
+import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
+
 import java.security.Principal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,101 +32,79 @@ import jakarta.validation.constraints.NotNull;
 @RequestMapping("/api/tutor/pacientes/{pacienteId}/vacinas")
 public class VacinacaoController {
 
-    private final PortalTutorRepositorio repositorio;
+    private final PortalTutorRepositorio portalRepositorio;
+    private final CicloVacinalService cicloVacinalService;
 
-    public VacinacaoController(PortalTutorRepositorio repositorio) {
-        this.repositorio = repositorio;
+    public VacinacaoController(PortalTutorRepositorio portalRepositorio,
+                                CicloVacinalService cicloVacinalService) {
+        this.portalRepositorio   = portalRepositorio;
+        this.cicloVacinalService = cicloVacinalService;
     }
 
+    /** Retorna a carteira completa de vacinação do paciente (RN-072). */
     @GetMapping
     public CarteiraDTO carteira(@PathVariable String pacienteId, Principal principal) {
         Paciente paciente = obterPacienteDoTutor(pacienteId, principal);
-        List<CicloDTO> ciclos = agruparEmCiclos(repositorio.listarVacinasDoPaciente(pacienteId));
-        return new CarteiraDTO(paciente.nome(), paciente.especie(), paciente.raca(), ciclos);
+        List<CicloVacinal> ciclos = cicloVacinalService.listarPorPaciente(PacienteId.de(pacienteId));
+        List<CicloDTO> ciclosDTO = ciclos.stream().map(c -> {
+            LocalDate sugerida = c.podeAgendarProximaDose()
+                ? calcularSugerida(c) : null;
+            return CicloDTO.de(c, sugerida);
+        }).toList();
+        return new CarteiraDTO(paciente.nome(), paciente.especie(), paciente.raca(), ciclosDTO);
     }
 
-    /** Agenda uma vacina nova (cria um novo ciclo a partir da dose 1). */
+    /** Cria um novo ciclo vacinal com a primeira dose (RN-075). */
     @PostMapping
-    public ResponseEntity<DoseDTO> agendarNova(@PathVariable String pacienteId,
-                                               @Valid @RequestBody RequisicaoNovaVacina req,
-                                               Principal principal) {
+    public ResponseEntity<CicloDTO> agendarNova(@PathVariable String pacienteId,
+                                                 @Valid @RequestBody RequisicaoNovaVacina req,
+                                                 Principal principal) {
         obterPacienteDoTutor(pacienteId, principal);
-
-        int total = (req.totalDoses() == null || req.totalDoses() < 1) ? 1 : req.totalDoses();
-        Integer doseNumero = total > 1 ? 1 : null;
-        Integer totalDoses = total > 1 ? total : null;
-
-        Vacina nova = new Vacina(repositorio.novoId(), pacienteId,
-                req.ciclo().trim(), doseNumero, totalDoses, false, req.data(), null, null);
-        repositorio.salvarVacina(nova);
-        return ResponseEntity.status(HttpStatus.CREATED).body(DoseDTO.de(nova));
+        TipoProtocolo protocolo = resolverProtocolo(req.tipoProtocolo());
+        CicloVacinal ciclo = cicloVacinalService.criarCicloComPrimeiraDose(
+            PacienteId.de(pacienteId), req.ciclo(), protocolo,
+            req.totalDoses() != null && req.totalDoses() > 0 ? req.totalDoses() : 1,
+            req.intervaloDias(), req.data());
+        LocalDate sugerida = ciclo.podeAgendarProximaDose() ? calcularSugerida(ciclo) : null;
+        return ResponseEntity.status(HttpStatus.CREATED).body(CicloDTO.de(ciclo, sugerida));
     }
 
-    /** Agenda a próxima dose de um ciclo existente, numerando automaticamente. */
+    /** Agenda a próxima dose de um ciclo existente; usa a estratégia do protocolo se data omitida (RN-075). */
     @PostMapping("/proxima-dose")
-    public ResponseEntity<DoseDTO> agendarProximaDose(@PathVariable String pacienteId,
-                                                      @Valid @RequestBody RequisicaoProximaDose req,
-                                                      Principal principal) {
+    public ResponseEntity<CicloDTO> agendarProximaDose(@PathVariable String pacienteId,
+                                                        @Valid @RequestBody RequisicaoProximaDose req,
+                                                        Principal principal) {
         obterPacienteDoTutor(pacienteId, principal);
-
-        List<Vacina> doses = repositorio.listarVacinasDoPaciente(pacienteId).stream()
-                .filter(v -> v.ciclo().equalsIgnoreCase(req.ciclo().trim()))
-                .toList();
-
-        if (doses.isEmpty()) {
-            throw new AgendamentoInvalidoException("Ciclo inexistente. Use 'Agendar nova vacina'.");
-        }
-
-        int total = totalDoCiclo(doses);
-        int registradas = doses.size();
-        if (total <= 1 || registradas >= total) {
-            throw new AgendamentoInvalidoException("Este ciclo já tem todas as doses planejadas.");
-        }
-
-        int proximo = registradas + 1;
-        Vacina nova = new Vacina(repositorio.novoId(), pacienteId,
-                doses.get(0).ciclo(), proximo, total, false, req.data(), null, null);
-        repositorio.salvarVacina(nova);
-        return ResponseEntity.status(HttpStatus.CREATED).body(DoseDTO.de(nova));
+        CicloVacinal ciclo = cicloVacinalService.buscarCicloPorNome(
+            PacienteId.de(pacienteId), req.ciclo());
+        CicloVacinal atualizado = cicloVacinalService.agendarProximaDose(ciclo.getId(), req.data());
+        LocalDate sugerida = atualizado.podeAgendarProximaDose() ? calcularSugerida(atualizado) : null;
+        return ResponseEntity.status(HttpStatus.CREATED).body(CicloDTO.de(atualizado, sugerida));
     }
 
-    // ── Agrupamento ──────────────────────────────────────────────────────────
-
-    private List<CicloDTO> agruparEmCiclos(List<Vacina> vacinas) {
-        Map<String, List<Vacina>> porCiclo = new LinkedHashMap<>();
-        for (Vacina v : vacinas) {
-            porCiclo.computeIfAbsent(v.ciclo(), k -> new ArrayList<>()).add(v);
-        }
-
-        List<CicloDTO> ciclos = new ArrayList<>();
-        for (Map.Entry<String, List<Vacina>> e : porCiclo.entrySet()) {
-            List<Vacina> doses = new ArrayList<>(e.getValue());
-            doses.sort(Comparator.comparingInt(VacinacaoController::numeroOrdinal));
-
-            int total = totalDoCiclo(doses);
-            int registradas = doses.size();
-            int aplicadas = (int) doses.stream().filter(Vacina::aplicada).count();
-            boolean podeAgendarProxima = total > 1 && registradas < total;
-
-            List<DoseDTO> doseDTOs = doses.stream().map(DoseDTO::de).toList();
-            ciclos.add(new CicloDTO(e.getKey(), total, aplicadas, registradas, podeAgendarProxima, doseDTOs));
-        }
-        return ciclos;
+    /** Confirma a aplicação de uma dose — exclusivo para médico veterinário (RN-078). */
+    @PatchMapping("/{cicloId}/doses/{doseId}/aplicar")
+    public ResponseEntity<CicloDTO> aplicarDose(@PathVariable String pacienteId,
+                                                 @PathVariable String cicloId,
+                                                 @PathVariable String doseId,
+                                                 @Valid @RequestBody RequisicaoAplicarDose req,
+                                                 Principal principal) {
+        obterPacienteDoTutor(pacienteId, principal);
+        cicloVacinalService.aplicarDose(
+            VacinaId.de(cicloId), VacinaId.de(doseId),
+            req.dataAplicacao(), req.medico(), req.lote());
+        CicloVacinal ciclo = cicloVacinalService.listarPorPaciente(PacienteId.de(pacienteId))
+            .stream()
+            .filter(c -> c.getId().getValor().equals(cicloId))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Ciclo não encontrado."));
+        return ResponseEntity.ok(CicloDTO.de(ciclo, null));
     }
 
-    private static int totalDoCiclo(List<Vacina> doses) {
-        int declarado = doses.stream()
-                .map(v -> v.totalDoses() == null ? 1 : v.totalDoses())
-                .max(Integer::compareTo).orElse(1);
-        return Math.max(declarado, doses.size());
-    }
-
-    private static int numeroOrdinal(Vacina v) {
-        return v.doseNumero() == null ? 1 : v.doseNumero();
-    }
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private Paciente obterPacienteDoTutor(String pacienteId, Principal principal) {
-        Paciente p = repositorio.buscarPaciente(pacienteId)
+        Paciente p = portalRepositorio.buscarPaciente(pacienteId)
                 .orElseThrow(PacienteController.PacienteNaoEncontradoException::new);
         if (!p.tutorId().equalsIgnoreCase(principal.getName())) {
             throw new PacienteController.PacienteNaoEncontradoException();
@@ -128,62 +112,125 @@ public class VacinacaoController {
         return p;
     }
 
+    private TipoProtocolo resolverProtocolo(String valor) {
+        if (valor == null || valor.isBlank()) return TipoProtocolo.PERSONALIZADO;
+        try {
+            return TipoProtocolo.valueOf(valor.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return TipoProtocolo.PERSONALIZADO;
+        }
+    }
+
+    private LocalDate calcularSugerida(CicloVacinal ciclo) {
+        try {
+            return cicloVacinalService.calcularProximaDataSugerida(ciclo);
+        } catch (IllegalStateException e) {
+            return null;
+        }
+    }
+
     // ── DTOs ─────────────────────────────────────────────────────────────────
 
     public record RequisicaoNovaVacina(
             @NotBlank String ciclo,
             Integer totalDoses,
-            @NotNull LocalDate data
+            @NotNull LocalDate data,
+            String tipoProtocolo,
+            Integer intervaloDias
     ) {}
 
     public record RequisicaoProximaDose(
             @NotBlank String ciclo,
-            @NotNull LocalDate data
+            LocalDate data
+    ) {}
+
+    public record RequisicaoAplicarDose(
+            @NotNull LocalDate dataAplicacao,
+            @NotBlank String medico,
+            @NotBlank String lote
     ) {}
 
     public record DoseDTO(
-            String id, String ciclo, String rotulo,
-            Integer doseNumero, Integer totalDoses,
-            StatusVacina status, LocalDate data, String medico, String lote
+            String id,
+            String ciclo,
+            String rotulo,
+            int doseNumero,
+            int totalDoses,
+            String status,
+            LocalDate data,
+            String medico,
+            String lote
     ) {
-        static DoseDTO de(Vacina v) {
-            return new DoseDTO(v.id(), v.ciclo(), v.rotulo(),
-                    v.doseNumero(), v.totalDoses(),
-                    v.status(), v.data(), v.medico(), v.lote());
+        static DoseDTO de(DoseVacinal d, String nomeCiclo, int totalDoses) {
+            String rotulo = totalDoses > 1
+                ? nomeCiclo + " - Dose " + d.getDoseNumero() + "/" + totalDoses
+                : nomeCiclo;
+            return new DoseDTO(
+                d.getId().getValor(), nomeCiclo, rotulo,
+                d.getDoseNumero(), totalDoses,
+                d.status().name(),
+                d.getDataAgendada(),
+                d.getMedico(), d.getLote());
         }
     }
 
     public record CicloDTO(
+            String id,
             String ciclo,
             int totalDoses,
             int aplicadas,
             int registradas,
             boolean podeAgendarProxima,
+            String tipoProtocolo,
+            Integer intervaloDias,
+            LocalDate dataProximaDoseSugerida,
             List<DoseDTO> doses
-    ) {}
+    ) {
+        static CicloDTO de(CicloVacinal c, LocalDate sugerida) {
+            List<DoseDTO> doses = c.getDoses().stream()
+                .map(d -> DoseDTO.de(d, c.getNomeCiclo(), c.getTotalDoses()))
+                .toList();
+            return new CicloDTO(
+                c.getId().getValor(),
+                c.getNomeCiclo(),
+                c.getTotalDoses(),
+                c.quantidadeAplicadas(),
+                c.getDoses().size(),
+                c.podeAgendarProximaDose(),
+                c.getTipoProtocolo().name(),
+                c.getIntervaloDias(),
+                sugerida,
+                doses);
+        }
+    }
 
     public record CarteiraDTO(
-            String pacienteNome, String especie, String raca,
+            String pacienteNome,
+            String especie,
+            String raca,
             List<CicloDTO> ciclos
     ) {}
 
-    public static class AgendamentoInvalidoException extends RuntimeException {
-        public AgendamentoInvalidoException(String msg) { super(msg); }
-    }
+    // ── Handlers ─────────────────────────────────────────────────────────────
 
     @ExceptionHandler(PacienteController.PacienteNaoEncontradoException.class)
     public ResponseEntity<Map<String, String>> naoEncontrado(PacienteController.PacienteNaoEncontradoException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                 "status", "PACIENTE_NAO_ENCONTRADO",
-                "mensagem", e.getMessage()
-        ));
+                "mensagem", e.getMessage()));
     }
 
-    @ExceptionHandler(AgendamentoInvalidoException.class)
-    public ResponseEntity<Map<String, String>> agendamentoInvalido(AgendamentoInvalidoException e) {
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> argumentoInvalido(IllegalArgumentException e) {
         return ResponseEntity.badRequest().body(Map.of(
                 "status", "AGENDAMENTO_INVALIDO",
-                "mensagem", e.getMessage()
-        ));
+                "mensagem", e.getMessage()));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, String>> conflito(IllegalStateException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "status", "CONFLITO",
+                "mensagem", e.getMessage()));
     }
 }
