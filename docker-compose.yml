@@ -17,7 +17,10 @@ services:
       POSTGRES_USER: petcollar
       POSTGRES_PASSWORD: petcollar
     ports:
-      - "5432:5432"
+      # Host remapeado para 5433 — a porta 5432 já está em uso por outro
+      # projeto/serviço local. O backend acessa via rede interna do Docker
+      # em "db:5432", então este remapeamento não afeta a aplicação.
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

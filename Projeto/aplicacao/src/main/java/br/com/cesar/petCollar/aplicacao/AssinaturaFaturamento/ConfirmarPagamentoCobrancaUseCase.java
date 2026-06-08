@@ -4,19 +4,30 @@ import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.Cobranca;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.CobrancaId;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.ICobrancaRepositorio;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
+import br.com.cesar.petCollar.dominio.compartilhado.eventos.PublicadorDeEventosDoTutor;
 
 /**
  * Caso de uso de confirmação de pagamento de uma cobrança. Reforça a
- * propriedade: a cobrança deve pertencer ao tutor que a requisita.
+ * propriedade: a cobrança deve pertencer ao tutor que a requisita. Publica o
+ * evento "pagamento_confirmado" (padrão Observer) — quem reage a isso, como a
+ * Gamificação avaliando badges de fidelidade, é decidido no wiring da infra,
+ * não aqui.
  */
 public class ConfirmarPagamentoCobrancaUseCase {
 
-    private final ICobrancaRepositorio cobrancaRepositorio;
+    public static final String EVENTO_PAGAMENTO_CONFIRMADO = "pagamento_confirmado";
 
-    public ConfirmarPagamentoCobrancaUseCase(ICobrancaRepositorio cobrancaRepositorio) {
+    private final ICobrancaRepositorio cobrancaRepositorio;
+    private final PublicadorDeEventosDoTutor publicadorDeEventos;
+
+    public ConfirmarPagamentoCobrancaUseCase(ICobrancaRepositorio cobrancaRepositorio,
+                                             PublicadorDeEventosDoTutor publicadorDeEventos) {
         if (cobrancaRepositorio == null)
             throw new IllegalArgumentException("ICobrancaRepositorio é obrigatório.");
+        if (publicadorDeEventos == null)
+            throw new IllegalArgumentException("PublicadorDeEventosDoTutor é obrigatório.");
         this.cobrancaRepositorio = cobrancaRepositorio;
+        this.publicadorDeEventos = publicadorDeEventos;
     }
 
     public Cobranca executar(TutorId tutorId, CobrancaId cobrancaId) {
@@ -34,6 +45,7 @@ public class ConfirmarPagamentoCobrancaUseCase {
 
         cobranca.registrarPagamento(); // idempotência protegida pela própria entidade
         cobrancaRepositorio.salvar(cobranca);
+        publicadorDeEventos.publicar(tutorId, EVENTO_PAGAMENTO_CONFIRMADO);
         return cobranca;
     }
 }

@@ -16,6 +16,7 @@ import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.Plano;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.ValorMensalidade;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.servico.ClassificacaoInadimplenciaService;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.servico.ConsolidacaoQuitacaoService;
+import br.com.cesar.petCollar.dominio.compartilhado.eventos.PublicadorDeEventosDoTutor;
 /**
  * Wiring canônico (§6.5) dos services de domínio e use cases de F-07 como beans.
  * Spring resolve as interfaces {@code IXxxRepositorio} para os adapters JPA
@@ -55,8 +56,9 @@ public class AssinaturaFaturamentoConfig {
 
     @Bean
     public ConfirmarPagamentoCobrancaUseCase confirmarPagamentoCobrancaUseCase(
-            ICobrancaRepositorio cobrancaRepositorio) {
-        return new ConfirmarPagamentoCobrancaUseCase(cobrancaRepositorio);
+            ICobrancaRepositorio cobrancaRepositorio,
+            PublicadorDeEventosDoTutor publicadorDeEventosDoTutor) {
+        return new ConfirmarPagamentoCobrancaUseCase(cobrancaRepositorio, publicadorDeEventosDoTutor);
     }
 
     @Bean
