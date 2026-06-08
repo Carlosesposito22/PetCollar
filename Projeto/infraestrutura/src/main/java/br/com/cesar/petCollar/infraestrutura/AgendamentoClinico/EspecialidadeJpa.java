@@ -8,6 +8,7 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
@@ -33,7 +34,9 @@ public class EspecialidadeJpa {
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
-    @ElementCollection
+    // EAGER: a lista de médicos por especialidade é pequena (poucos itens) e é lida
+    // fora de transação (seed/listagem com open-in-view=false), evitando LazyInit.
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "especialidade_medicos", joinColumns = @JoinColumn(name = "especialidade_id"))
     @Column(name = "medico_id")
     private List<String> medicoIds = new ArrayList<>();

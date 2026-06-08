@@ -116,10 +116,9 @@ export function MedicoPainel() {
         {/* ── Painel direito: Atendimentos do Dia ─────────────────────────── */}
         <section className="card flex flex-col p-0 overflow-hidden">
           <div className="border-b border-ink-200/60 px-6 py-4">
-            <h2 className="text-base font-semibold text-ink-900">Atendimentos do Dia</h2>
+            <h2 className="text-base font-semibold text-ink-900">Consultas Agendadas</h2>
             <p className="mt-0.5 text-xs text-ink-500">
-              {/* TODO: remover aviso quando endpoint real for implementado */}
-              Dados de exemplo — endpoint GET /api/medico/atendimentos pendente (F-05)
+              Consultas que os tutores agendaram com você
             </p>
           </div>
 
@@ -133,7 +132,7 @@ export function MedicoPainel() {
             ) : atendimentos.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                 <span className="mb-2 text-3xl">📋</span>
-                <p className="text-sm text-ink-500">Nenhum atendimento agendado para hoje.</p>
+                <p className="text-sm text-ink-500">Nenhuma consulta agendada.</p>
               </div>
             ) : (
               <table className="w-full text-sm">

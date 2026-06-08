@@ -1,5 +1,6 @@
 package br.com.cesar.petCollar.apresentacao.IdentidadeAcesso;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,13 +46,25 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/demo/**").permitAll()
                 .requestMatchers("/api/tutores/contratar").permitAll()
                 .requestMatchers("/api/tutores/*/simular-pagamento").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
+                // Dados de catálogo: especialidades e disponibilidade são públicos para o fluxo de agendamento
+                .requestMatchers("/api/especialidades/**").permitAll()
+                .requestMatchers("/api/medicos/*/horarios-disponiveis").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN_CLINICA")
                 .requestMatchers("/api/tutor/**").hasRole("TUTOR")
+                .requestMatchers("/api/medico/**").hasRole("MEDICO_VETERINARIO")
                 .anyRequest().authenticated()
+            )
+            // Retorna 401 (não 403) para requisições sem autenticação válida,
+            // permitindo que o frontend redirecione ao login ao detectar token expirado.
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((req, res, e) -> {
+                    res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    res.setContentType("application/json;charset=UTF-8");
+                    res.getWriter().write("{\"mensagem\":\"Não autenticado.\"}");
+                })
             )
             .addFilterBefore(filtro, UsernamePasswordAuthenticationFilter.class);
 

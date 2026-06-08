@@ -57,13 +57,21 @@ export type TriagemResumoDTO = {
   pesoTotal: number;
 };
 
-/**
- * TODO: substituir pelo DTO real quando o endpoint de agendamentos do médico for implementado.
- * Endpoint esperado: GET /api/medico/atendimentos?data=YYYY-MM-DD
- * Funcionalidade relacionada: F-05 (Agendamento Clínico) — filtro por medicoId ainda não existe
- */
+/** Consulta agendada com o médico — vem de GET /api/medico/atendimentos (F-05). */
+export type AtendimentoMedicoDTO = {
+  consultaId: string;
+  pacienteId: string;
+  pacienteNome: string;
+  tutorNome: string;
+  tipo: "INICIAL" | "RETORNO";
+  status: string; // StatusConsulta do backend
+  inicio: string; // ISO LocalDateTime
+  fim: string;
+};
+
+/** Forma já normalizada para a tabela do painel do médico. */
 export type AtendimentoDoDiaDTO = {
-  horario: string; // HH:mm
+  horario: string; // "dd/MM HH:mm"
   nomePet: string;
   nomeTutor: string;
   status: "AGUARDANDO" | "EM_ATENDIMENTO" | "CONCLUIDO";
@@ -99,31 +107,45 @@ export function criarMedicoService(apiFetch: ApiFetch) {
     },
 
     /**
-     * Lista os atendimentos agendados do médico para o dia de hoje.
-     *
-     * TODO: endpoint não implementado. Quando F-05 (Agendamento Clínico) suportar
-     * filtro por medicoId + data, substituir pelo endpoint real:
-     *   GET /api/medico/atendimentos?data=YYYY-MM-DD
-     * O AgendamentoController atual só aceita filtro por pacienteId.
-     * Remover também os dados hardcoded de ATENDIMENTOS_STUB abaixo.
+     * Lista as consultas agendadas com o médico autenticado (hoje em diante).
+     * Endpoint real: GET /api/medico/atendimentos (filtra por Principal = medicoId).
      */
-    listarAtendimentosDoDia: (): Promise<AtendimentoDoDiaDTO[]> =>
-      Promise.resolve(ATENDIMENTOS_STUB),
+    listarAtendimentosDoDia: async (): Promise<AtendimentoDoDiaDTO[]> => {
+      const lista = await json<AtendimentoMedicoDTO[]>(apiFetch("/api/medico/atendimentos"));
+      return lista.map((a) => ({
+        horario: formatarQuando(a.inicio),
+        nomePet: a.pacienteNome,
+        nomeTutor: a.tutorNome,
+        status: mapearStatus(a.status),
+        pacienteId: a.pacienteId,
+      }));
+    },
   };
+}
+
+function mapearStatus(status: string): AtendimentoDoDiaDTO["status"] {
+  switch (status) {
+    case "REALIZADA":
+    case "AGUARDANDO_RETORNO":
+    case "EXAMES_SOLICITADOS":
+      return "CONCLUIDO";
+    default: // AGENDADA, CONFIRMADA
+      return "AGUARDANDO";
+  }
+}
+
+function formatarQuando(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+  });
 }
 
 export type MedicoService = ReturnType<typeof criarMedicoService>;
 
 // ── Stubs ─────────────────────────────────────────────────────────────────────
 // TODO: remover estes stubs quando os endpoints reais forem implementados.
-
-const ATENDIMENTOS_STUB: AtendimentoDoDiaDTO[] = [
-  { horario: "08:00", nomePet: "Rex",  nomeTutor: "Tutor Demo",  status: "CONCLUIDO",      pacienteId: "stub-1" },
-  { horario: "09:30", nomePet: "Miau", nomeTutor: "Tutor Demo",  status: "EM_ATENDIMENTO", pacienteId: "stub-2" },
-  { horario: "11:00", nomePet: "Bob",  nomeTutor: "Tutor Demo",  status: "AGUARDANDO",     pacienteId: "stub-3" },
-  { horario: "14:00", nomePet: "Luna", nomeTutor: "Ana Costa",   status: "AGUARDANDO",     pacienteId: "stub-4" },
-  { horario: "15:30", nomePet: "Thor", nomeTutor: "Marcos Silva",status: "AGUARDANDO",     pacienteId: "stub-5" },
-];
 
 const PRONTUARIOS_STUB: Record<string, ProntuarioDTO> = {};
 

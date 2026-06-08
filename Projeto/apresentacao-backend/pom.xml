@@ -92,7 +92,7 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- compile (não runtime) para que DadosDemonstracaoService acesse repos JPA da infra -->
+        <!-- compile (não runtime) para que o SeedInicial e os controllers acessem os repos JPA da infra -->
         <dependency>
             <groupId>br.com.cesar</groupId>
             <artifactId>petCollar-infraestrutura</artifactId>

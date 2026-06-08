@@ -1,6 +1,4 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { useModoDemo } from "./utils/useModoDemo";
-import { DemoBanner } from "./components/DemoBanner";
 import { ProfileSelect } from "./pages/ProfileSelect";
 import { TutorLogin } from "./pages/TutorLogin";
 import { RecepcionistaLogin } from "./pages/RecepcionistaLogin";
@@ -34,11 +32,7 @@ import { ConfiguracaoProtocoloPage } from "./features/protocolo-inacessibilidade
 import { HistoricoConfiguracaoPage } from "./features/protocolo-inacessibilidade/pages/administrador/HistoricoConfiguracaoPage";
 
 export function App() {
-  const { ativo, carregando } = useModoDemo();
-
   return (
-    <>
-      {(ativo || carregando) && <DemoBanner carregando={carregando} />}
     <Routes>
       <Route path="/" element={<ProfileSelect />} />
       <Route path="/login/tutor" element={<TutorLogin />} />
@@ -117,6 +111,5 @@ export function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-    </>
   );
 }

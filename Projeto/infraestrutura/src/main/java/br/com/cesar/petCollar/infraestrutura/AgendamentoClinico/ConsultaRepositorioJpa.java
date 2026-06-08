@@ -20,8 +20,13 @@ import java.util.Optional;
  * Adapter JPA da interface de domínio {@link IConsultaRepositorio}. Traduz domínio
  * ↔ entidade via {@code fromDomain}/{@code toDomain} e aplica os filtros da agenda
  * do tutor (RN 17) sobre o resultado.
+ *
+ * <p>{@code @Transactional(readOnly = true)} na classe mantém a sessão aberta durante
+ * o {@code toDomain()} (que inicializa as coleções LAZY de histórico/eventos), já que
+ * {@code open-in-view} está desligado; {@code salvar} sobrescreve para leitura-escrita.
  */
 @Repository
+@Transactional(readOnly = true)
 public class ConsultaRepositorioJpa implements IConsultaRepositorio {
 
     private static final List<String> STATUS_ELEGIVEIS_RETORNO = List.of(

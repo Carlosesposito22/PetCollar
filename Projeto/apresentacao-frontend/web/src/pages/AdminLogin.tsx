@@ -78,7 +78,7 @@ export function AdminLogin() {
       </div>
 
       <p className="mt-4 text-center text-xs text-ink-500">
-        Dica de demo: <code className="rounded bg-ink-100 px-1.5 py-0.5">admin@petcollar.com</code>
+        Acesso padrão: <code className="rounded bg-ink-100 px-1.5 py-0.5">admin@petcollar.com</code>
         {" / "}
         <code className="rounded bg-ink-100 px-1.5 py-0.5">petcollar123</code>
       </p>
