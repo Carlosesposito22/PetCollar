@@ -19,23 +19,15 @@ async function json<T>(entrada: Response | Promise<Response>): Promise<T> {
   return (await lancarSeErro(await entrada)).json() as Promise<T>;
 }
 
-// ── Tipos retornados pela API real ────────────────────────────────────────────
+// ── Tipos da fila e agenda ────────────────────────────────────────────────────
 
-/** Item da fila de atendimento — vem de GET /api/recepcao/fila */
 export type FilaItemDTO = {
   pacienteId: string;
   triagemId: string;
   corDeRisco: "VERMELHO" | "AMARELO" | "VERDE";
-  finalizadaEm: string; // ISO LocalDateTime
+  finalizadaEm: string;
 };
 
-// ── Tipos stub (sem endpoint implementado ainda) ──────────────────────────────
-
-/**
- * TODO: substituir pelo DTO real quando o endpoint de prontuário for implementado.
- * Endpoint esperado: GET /api/medico/pacientes/:pacienteId/prontuario
- * Funcionalidade relacionada: F-01 (Prontuário Unificado) e F-10 (Relatório Clínico Evolutivo)
- */
 export type ProntuarioDTO = {
   pacienteId: string;
   nomePet: string;
@@ -51,65 +43,87 @@ export type ProntuarioDTO = {
 };
 
 export type TriagemResumoDTO = {
-  data: string; // ISO LocalDate
+  data: string;
   motivo: string;
   corDeRisco: "VERMELHO" | "AMARELO" | "VERDE";
   pesoTotal: number;
 };
 
-/** Consulta agendada com o médico — vem de GET /api/medico/atendimentos (F-05). */
 export type AtendimentoMedicoDTO = {
   consultaId: string;
   pacienteId: string;
   pacienteNome: string;
   tutorNome: string;
   tipo: "INICIAL" | "RETORNO";
-  status: string; // StatusConsulta do backend
-  inicio: string; // ISO LocalDateTime
+  status: string;
+  inicio: string;
   fim: string;
 };
 
-/** Forma já normalizada para a tabela do painel do médico. */
 export type AtendimentoDoDiaDTO = {
-  horario: string; // "dd/MM HH:mm"
+  horario: string;
   nomePet: string;
   nomeTutor: string;
   status: "AGUARDANDO" | "EM_ATENDIMENTO" | "CONCLUIDO";
   pacienteId: string;
 };
 
+// ── Tipos do Relatório Clínico Evolutivo (F-10) ───────────────────────────────
+
+export type TipoRelatorio = "ROTINEIRO" | "CIRURGICO" | "PREVENTIVO";
+
+export type RelatorioDTO = {
+  id: string;
+  atendimentoId: string;
+  pacienteId: string;
+  medicoId: string;
+  tipoRelatorio: TipoRelatorio;
+  diagnosticoTecnico: string | null;
+  orientacoesManejo: string | null;
+  resumoParaTutor: string | null;
+  cuidadosPosOperatorios: string | null;
+  tempoRecuperacaoEstimado: string | null;
+  medicamentosPrescritos: string[];
+  pesoKg: number;
+  temperaturaCelsius: number;
+  imutavel: boolean;
+  criadoEm: string | null;
+  assinadoEm: string | null;
+};
+
+export type RegistroHistoricoDTO = {
+  data: string;
+  pesoKg: number;
+  temperaturaCelsius: number;
+};
+
+export type RequisicaoIniciarRelatorioDTO = {
+  atendimentoId: string;
+  pacienteId: string;
+  medicoId: string;
+  tipoRelatorio: TipoRelatorio;
+};
+
+export type RequisicaoConteudoDTO = {
+  diagnosticoTecnico?: string;
+  resumoParaTutor?: string;
+  orientacoesManejo?: string;
+  cuidadosPosOperatorios?: string;
+  tempoRecuperacaoEstimado?: string;
+};
+
 // ── Fábrica do serviço ────────────────────────────────────────────────────────
 
 export function criarMedicoService(apiFetch: ApiFetch) {
   return {
-    /**
-     * Lista a fila de espera dinâmica do consultório.
-     * Endpoint real: GET /api/recepcao/fila
-     *
-     * TODO (consultório): o backend ainda não filtra por consultório do médico.
-     * Quando F-02/F-10 estiver integrado, passar ?consultorioId= para filtrar.
-     * Por ora retorna toda a fila.
-     */
     listarFilaDeEspera: (): Promise<FilaItemDTO[]> =>
       json<FilaItemDTO[]>(apiFetch("/api/recepcao/fila")),
 
-    /**
-     * Busca o prontuário completo de um paciente para o médico.
-     *
-     * TODO: endpoint não implementado. Quando F-10 (Relatório Clínico Evolutivo) for
-     * desenvolvido, substituir esta implementação stub pela chamada real:
-     *   GET /api/medico/pacientes/:pacienteId/prontuario
-     * Remover também os dados hardcoded de PRONTUARIOS_STUB abaixo.
-     */
     buscarProntuario: (pacienteId: string): Promise<ProntuarioDTO> => {
       const stub = PRONTUARIOS_STUB[pacienteId] ?? gerarProntuarioStub(pacienteId);
       return Promise.resolve(stub);
     },
 
-    /**
-     * Lista as consultas agendadas com o médico autenticado (hoje em diante).
-     * Endpoint real: GET /api/medico/atendimentos (filtra por Principal = medicoId).
-     */
     listarAtendimentosDoDia: async (): Promise<AtendimentoDoDiaDTO[]> => {
       const lista = await json<AtendimentoMedicoDTO[]>(apiFetch("/api/medico/atendimentos"));
       return lista.map((a) => ({
@@ -120,6 +134,56 @@ export function criarMedicoService(apiFetch: ApiFetch) {
         pacienteId: a.pacienteId,
       }));
     },
+
+    iniciarRelatorio: (req: RequisicaoIniciarRelatorioDTO): Promise<RelatorioDTO> =>
+      json<RelatorioDTO>(
+        apiFetch("/api/medico/relatorio/iniciar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(req),
+        })
+      ),
+
+    buscarRelatorio: (relatorioId: string): Promise<RelatorioDTO> =>
+      json<RelatorioDTO>(apiFetch(`/api/medico/relatorio/${relatorioId}`)),
+
+    registrarSinaisVitais: (
+      relatorioId: string,
+      pesoKg: number,
+      temperaturaCelsius: number
+    ): Promise<RelatorioDTO> =>
+      json<RelatorioDTO>(
+        apiFetch(`/api/medico/relatorio/${relatorioId}/sinais-vitais`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pesoKg, temperaturaCelsius, frequenciaCardiacaBpm: 80 }),
+        })
+      ),
+
+    atualizarConteudo: (
+      relatorioId: string,
+      conteudo: RequisicaoConteudoDTO
+    ): Promise<RelatorioDTO> =>
+      json<RelatorioDTO>(
+        apiFetch(`/api/medico/relatorio/${relatorioId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(conteudo),
+        })
+      ),
+
+    assinarRelatorio: (relatorioId: string): Promise<RelatorioDTO> =>
+      json<RelatorioDTO>(
+        apiFetch(`/api/medico/relatorio/${relatorioId}/assinar`, { method: "POST" })
+      ),
+
+    listarRelatoriosPorPaciente: (pacienteId: string): Promise<RelatorioDTO[]> =>
+      json<RelatorioDTO[]>(apiFetch(`/api/medico/relatorio/paciente/${pacienteId}`)),
+
+    buscarHistoricoComparativo: (pacienteId: string): Promise<RegistroHistoricoDTO[]> =>
+      json<RegistroHistoricoDTO[]>(
+        apiFetch(`/api/medico/relatorio/paciente/${pacienteId}/historico`)
+      ),
   };
 }
 
@@ -129,7 +193,7 @@ function mapearStatus(status: string): AtendimentoDoDiaDTO["status"] {
     case "AGUARDANDO_RETORNO":
     case "EXAMES_SOLICITADOS":
       return "CONCLUIDO";
-    default: // AGENDADA, CONFIRMADA
+    default:
       return "AGUARDANDO";
   }
 }
@@ -145,12 +209,57 @@ function formatarQuando(iso: string): string {
 export type MedicoService = ReturnType<typeof criarMedicoService>;
 
 // ── Stubs ─────────────────────────────────────────────────────────────────────
-// TODO: remover estes stubs quando os endpoints reais forem implementados.
 
-const PRONTUARIOS_STUB: Record<string, ProntuarioDTO> = {};
+const PRONTUARIOS_STUB: Record<string, ProntuarioDTO> = {
+  "pac-max": {
+    pacienteId: "pac-max",
+    nomePet: "Max",
+    nomeTutor: "Ana Costa",
+    especie: "Cão",
+    raca: "Labrador",
+    idadeAnos: 3,
+    pesoKg: 32,
+    sexo: "Macho",
+    alergias: ["Penicilina", "Dipirona"],
+    tags: [
+      { rotulo: "Adulto", alerta: false },
+      { rotulo: "Porte Grande", alerta: false },
+      { rotulo: "Alerta Comportamental", alerta: true },
+    ],
+    triagens: [
+      { data: "2026-04-28", motivo: "Vômitos frequentes", corDeRisco: "AMARELO", pesoTotal: 5 },
+      { data: "2026-03-15", motivo: "Check-up preventivo", corDeRisco: "VERDE", pesoTotal: 0 },
+    ],
+  },
+  "pac-luna": {
+    pacienteId: "pac-luna",
+    nomePet: "Luna",
+    nomeTutor: "Pedro Souza",
+    especie: "Cão",
+    raca: "Golden Retriever",
+    idadeAnos: 2,
+    pesoKg: 28,
+    sexo: "Fêmea",
+    alergias: [],
+    tags: [{ rotulo: "Adulto", alerta: false }],
+    triagens: [
+      { data: "2026-04-28", motivo: "Apatia e recusa alimentar", corDeRisco: "VERMELHO", pesoTotal: 12 },
+    ],
+  },
+};
+
+export const HISTORICO_STUB: RegistroHistoricoDTO[] = [
+  { data: "2026-03-15", pesoKg: 32, temperaturaCelsius: 38.5 },
+  { data: "2026-02-10", pesoKg: 31.5, temperaturaCelsius: 38.3 },
+  { data: "2026-01-05", pesoKg: 30, temperaturaCelsius: 38.4 },
+];
+
+export const MEDICAMENTOS_STUB = [
+  "Omeprazol 20mg — 1x ao dia por 7 dias",
+  "Metoclopramida 10mg — 2x ao dia por 5 dias",
+];
 
 function gerarProntuarioStub(pacienteId: string): ProntuarioDTO {
-  // TODO: remover quando GET /api/medico/pacientes/:pacienteId/prontuario for implementado
   return {
     pacienteId,
     nomePet: "Paciente",

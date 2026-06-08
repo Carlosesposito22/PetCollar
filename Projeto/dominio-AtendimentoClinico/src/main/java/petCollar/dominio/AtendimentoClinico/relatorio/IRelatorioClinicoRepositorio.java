@@ -4,11 +4,13 @@ import br.com.cesar.petCollar.dominio.compartilhado.AtendimentoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface IRelatorioClinicoRepositorio {
-    void save(RelatorioClinico relatorio);
-    RelatorioClinico findById(RelatorioClinicoId id);
-    List<RelatorioClinico> findByAtendimentoId(AtendimentoId atendimentoId);
-    List<RelatorioClinico> findByPacienteId(PacienteId pacienteId);
-    boolean existsByAtendimentoId(AtendimentoId atendimentoId);
+    void salvar(RelatorioClinico relatorio);
+    Optional<RelatorioClinico> buscarPorId(RelatorioClinicoId id);
+    List<RelatorioClinico> listarPorPaciente(PacienteId pacienteId);
+    List<RelatorioClinico> listarPorAtendimento(AtendimentoId atendimentoId);
+    boolean existePorAtendimento(AtendimentoId atendimentoId);
+    List<RelatorioClinico> buscarUltimos3PorPaciente(PacienteId pacienteId);
 }

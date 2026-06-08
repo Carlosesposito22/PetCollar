@@ -14,6 +14,7 @@ import { AdminLayout } from "./pages/admin/AdminLayout";
 import { MedicoLayout } from "./pages/medico/MedicoLayout";
 import { MedicoPainel } from "./pages/medico/MedicoPainel";
 import { MedicoProntuario } from "./pages/medico/MedicoProntuario";
+import { MedicoRelatorio } from "./pages/medico/MedicoRelatorio";
 import { TutorInicio } from "./pages/tutor/TutorInicio";
 import { TutorVacinacao } from "./pages/tutor/TutorVacinacao";
 import { TutorBeneficios } from "./pages/tutor/TutorBeneficios";
@@ -92,6 +93,7 @@ export function App() {
       >
         <Route index element={<MedicoPainel />} />
         <Route path="prontuario/:pacienteId" element={<MedicoProntuario />} />
+        <Route path="prontuario/:pacienteId/relatorio" element={<MedicoRelatorio />} />
       </Route>
 
       {/* Área do Admin */}

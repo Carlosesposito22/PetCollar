@@ -15,24 +15,25 @@ public class RelatorioClinico {
     private final AtendimentoId atendimentoId;
     private final PacienteId pacienteId;
     private final MedicoId medicoId;
+    private final TipoRelatorio tipoRelatorio;
 
     private SinaisVitais sinaisVitais;
     private EvolucaoComparativa evolucaoComparativa;
     private String diagnosticoTecnico;
     private String orientacoesManejo;
     private String resumoParaTutor;
+    private String cuidadosPosOperatorios;
+    private String tempoRecuperacaoEstimado;
 
     private final List<AnexoRelatorio> anexos;
+    private final List<String> medicamentosPrescritos;
 
     private boolean imutavel;
     private final LocalDateTime criadoEm;
     private LocalDateTime assinadoEm;
 
-    // Construtor de CRIAÇÃO
-    public RelatorioClinico(RelatorioClinicoId id,
-                            AtendimentoId atendimentoId,
-                            PacienteId pacienteId,
-                            MedicoId medicoId) {
+    public RelatorioClinico(RelatorioClinicoId id, AtendimentoId atendimentoId,
+                            PacienteId pacienteId, MedicoId medicoId, TipoRelatorio tipoRelatorio) {
         if (id == null)
             throw new IllegalArgumentException("Id do relatório não pode ser nulo.");
         if (atendimentoId == null)
@@ -41,40 +42,41 @@ public class RelatorioClinico {
             throw new IllegalArgumentException("PacienteId não pode ser nulo.");
         if (medicoId == null)
             throw new IllegalArgumentException("MedicoId não pode ser nulo.");
-
         this.id = id;
         this.atendimentoId = atendimentoId;
         this.pacienteId = pacienteId;
         this.medicoId = medicoId;
+        this.tipoRelatorio = tipoRelatorio != null ? tipoRelatorio : TipoRelatorio.ROTINEIRO;
         this.anexos = new ArrayList<>();
+        this.medicamentosPrescritos = new ArrayList<>();
         this.imutavel = false;
         this.criadoEm = LocalDateTime.now();
     }
 
     // Construtor de RECONSTRUÇÃO
-    public RelatorioClinico(RelatorioClinicoId id,
-                            AtendimentoId atendimentoId,
-                            PacienteId pacienteId,
-                            MedicoId medicoId,
-                            SinaisVitais sinaisVitais,
-                            EvolucaoComparativa evolucaoComparativa,
-                            String diagnosticoTecnico,
-                            String orientacoesManejo,
-                            String resumoParaTutor,
-                            List<AnexoRelatorio> anexos,
-                            boolean imutavel,
-                            LocalDateTime criadoEm,
-                            LocalDateTime assinadoEm) {
+    public RelatorioClinico(RelatorioClinicoId id, AtendimentoId atendimentoId,
+                            PacienteId pacienteId, MedicoId medicoId, TipoRelatorio tipoRelatorio,
+                            SinaisVitais sinaisVitais, EvolucaoComparativa evolucaoComparativa,
+                            String diagnosticoTecnico, String orientacoesManejo,
+                            String resumoParaTutor, String cuidadosPosOperatorios,
+                            String tempoRecuperacaoEstimado, List<AnexoRelatorio> anexos,
+                            List<String> medicamentosPrescritos, boolean imutavel,
+                            LocalDateTime criadoEm, LocalDateTime assinadoEm) {
         this.id = id;
         this.atendimentoId = atendimentoId;
         this.pacienteId = pacienteId;
         this.medicoId = medicoId;
+        this.tipoRelatorio = tipoRelatorio != null ? tipoRelatorio : TipoRelatorio.ROTINEIRO;
         this.sinaisVitais = sinaisVitais;
         this.evolucaoComparativa = evolucaoComparativa;
         this.diagnosticoTecnico = diagnosticoTecnico;
         this.orientacoesManejo = orientacoesManejo;
         this.resumoParaTutor = resumoParaTutor;
+        this.cuidadosPosOperatorios = cuidadosPosOperatorios;
+        this.tempoRecuperacaoEstimado = tempoRecuperacaoEstimado;
         this.anexos = anexos != null ? new ArrayList<>(anexos) : new ArrayList<>();
+        this.medicamentosPrescritos = medicamentosPrescritos != null
+            ? new ArrayList<>(medicamentosPrescritos) : new ArrayList<>();
         this.imutavel = imutavel;
         this.criadoEm = criadoEm;
         this.assinadoEm = assinadoEm;
@@ -117,21 +119,38 @@ public class RelatorioClinico {
         this.resumoParaTutor = resumoParaTutor;
     }
 
+    public void preencherCuidadosPosOperatorios(String cuidados) {
+        verificarImutabilidade();
+        if (cuidados == null || cuidados.isBlank())
+            throw new IllegalArgumentException("Cuidados pós-operatórios não podem ser vazios.");
+        this.cuidadosPosOperatorios = cuidados;
+    }
+
+    public void preencherTempoRecuperacaoEstimado(String tempo) {
+        verificarImutabilidade();
+        if (tempo == null || tempo.isBlank())
+            throw new IllegalArgumentException("Tempo de recuperação estimado não pode ser vazio.");
+        this.tempoRecuperacaoEstimado = tempo;
+    }
+
     public void adicionarAnexo(AnexoRelatorio anexo) {
         verificarImutabilidade();
         if (anexo == null)
             throw new IllegalArgumentException("Anexo não pode ser nulo.");
+        if (anexos.size() >= 4)
+            throw new IllegalStateException("O relatório já atingiu o limite de 4 anexos (RN-119).");
         this.anexos.add(anexo);
+    }
+
+    public void adicionarMedicamentoPrescrito(String medicamento) {
+        verificarImutabilidade();
+        if (medicamento == null || medicamento.isBlank())
+            throw new IllegalArgumentException("Nome do medicamento não pode ser vazio.");
+        this.medicamentosPrescritos.add(medicamento);
     }
 
     public void assinarDigitalmente() {
         verificarImutabilidade();
-        if (diagnosticoTecnico == null || diagnosticoTecnico.isBlank())
-            throw new IllegalStateException(
-                    "O diagnóstico técnico é obrigatório para assinar o relatório.");
-        if (orientacoesManejo == null || orientacoesManejo.isBlank())
-            throw new IllegalStateException(
-                    "As orientações de manejo são obrigatórias para assinar o relatório.");
         this.imutavel = true;
         this.assinadoEm = LocalDateTime.now();
     }
@@ -141,7 +160,7 @@ public class RelatorioClinico {
     private void verificarImutabilidade() {
         if (this.imutavel)
             throw new IllegalStateException(
-                    "O relatório já foi assinado digitalmente e não pode ser modificado.");
+                "O relatório já foi assinado digitalmente e não pode ser modificado.");
     }
 
     // ── Getters ───────────────────────────────────────────────────────────────
@@ -150,12 +169,16 @@ public class RelatorioClinico {
     public AtendimentoId getAtendimentoId()              { return atendimentoId; }
     public PacienteId getPacienteId()                    { return pacienteId; }
     public MedicoId getMedicoId()                        { return medicoId; }
+    public TipoRelatorio getTipoRelatorio()              { return tipoRelatorio; }
     public SinaisVitais getSinaisVitais()                { return sinaisVitais; }
     public EvolucaoComparativa getEvolucaoComparativa()  { return evolucaoComparativa; }
     public String getDiagnosticoTecnico()                { return diagnosticoTecnico; }
     public String getOrientacoesManejo()                 { return orientacoesManejo; }
     public String getResumoParaTutor()                   { return resumoParaTutor; }
+    public String getCuidadosPosOperatorios()            { return cuidadosPosOperatorios; }
+    public String getTempoRecuperacaoEstimado()          { return tempoRecuperacaoEstimado; }
     public List<AnexoRelatorio> getAnexos()              { return Collections.unmodifiableList(anexos); }
+    public List<String> getMedicamentosPrescritos()      { return Collections.unmodifiableList(medicamentosPrescritos); }
     public boolean isImutavel()                          { return imutavel; }
     public LocalDateTime getCriadoEm()                   { return criadoEm; }
     public LocalDateTime getAssinadoEm()                 { return assinadoEm; }

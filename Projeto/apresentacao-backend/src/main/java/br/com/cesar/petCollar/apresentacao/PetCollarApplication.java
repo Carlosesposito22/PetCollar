@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @ComponentScan(basePackages = {
         "br.com.cesar.petCollar.apresentacao",
+    "br.com.cesar.petCollar.infraestrutura.AtendimentoClinico",
         "br.com.cesar.petCollar.infraestrutura.AssinaturaFaturamento",
         "br.com.cesar.petCollar.infraestrutura.AgendamentoClinico",
         "br.com.cesar.petCollar.infraestrutura.ProtocoloInacessibilidade",

@@ -1,51 +1,57 @@
 package petCollar.dominio.AtendimentoClinico.relatorio;
 
+import petCollar.dominio.AtendimentoClinico.estrategia.FabricaDeValidadorRelatorio;
+import petCollar.dominio.AtendimentoClinico.estrategia.IValidadorRelatorioStrategy;
+
 public class AssinaturaDigitalService {
 
     private final IRelatorioClinicoRepositorio repositorio;
 
     public AssinaturaDigitalService(IRelatorioClinicoRepositorio repositorio) {
+        if (repositorio == null)
+            throw new IllegalArgumentException("Repositório de relatório clínico não pode ser nulo.");
         this.repositorio = repositorio;
     }
 
     /**
-     * Assina digitalmente o relatório, tornando-o imutável (RN-118).
-     * Exige que diagnóstico técnico e orientações de manejo estejam preenchidos (RN-120).
+     * Assina digitalmente o relatório, tornando-o imutável (RN-120).
+     *
+     * <p>Padrão Strategy: delega a validação de completude à estratégia selecionada
+     * pela {@link FabricaDeValidadorRelatorio} com base no {@link TipoRelatorio} do
+     * relatório. Cada tipo (Rotineiro, Cirúrgico, Preventivo) define seus próprios
+     * campos obrigatórios antes da assinatura (RN-117, RN-118, RN-124).
      */
     public RelatorioClinico assinarRelatorio(RelatorioClinicoId relatorioId) {
-        RelatorioClinico relatorio = repositorio.findById(relatorioId);
-        if (relatorio == null)
-            throw new IllegalArgumentException("Relatório clínico não encontrado com o id informado.");
+        if (relatorioId == null)
+            throw new IllegalArgumentException("Id do relatório não pode ser nulo.");
+        RelatorioClinico relatorio = repositorio.buscarPorId(relatorioId)
+            .orElseThrow(() -> new IllegalArgumentException("Relatório clínico não encontrado com o id informado."));
+
+        IValidadorRelatorioStrategy estrategia = FabricaDeValidadorRelatorio.criar(relatorio.getTipoRelatorio());
+        estrategia.validarParaAssinatura(relatorio);
 
         relatorio.assinarDigitalmente();
-        repositorio.save(relatorio);
+        repositorio.salvar(relatorio);
         return relatorio;
     }
 
-    /**
-     * Tenta modificar o diagnóstico técnico após a assinatura — deve lançar IllegalStateException (RN-118).
-     */
-    public RelatorioClinico atualizarDiagnostico(RelatorioClinicoId relatorioId,
-                                                   String diagnosticoTecnico) {
-        RelatorioClinico relatorio = repositorio.findById(relatorioId);
-        if (relatorio == null)
-            throw new IllegalArgumentException("Relatório clínico não encontrado com o id informado.");
-
+    public RelatorioClinico atualizarDiagnostico(RelatorioClinicoId relatorioId, String diagnosticoTecnico) {
+        if (relatorioId == null)
+            throw new IllegalArgumentException("Id do relatório não pode ser nulo.");
+        RelatorioClinico relatorio = repositorio.buscarPorId(relatorioId)
+            .orElseThrow(() -> new IllegalArgumentException("Relatório clínico não encontrado com o id informado."));
         relatorio.preencherDiagnosticoTecnico(diagnosticoTecnico);
-        repositorio.save(relatorio);
+        repositorio.salvar(relatorio);
         return relatorio;
     }
 
-    /**
-     * Adiciona um anexo ao relatório (RN-119).
-     */
     public RelatorioClinico adicionarAnexo(RelatorioClinicoId relatorioId, AnexoRelatorio anexo) {
-        RelatorioClinico relatorio = repositorio.findById(relatorioId);
-        if (relatorio == null)
-            throw new IllegalArgumentException("Relatório clínico não encontrado com o id informado.");
-
+        if (relatorioId == null)
+            throw new IllegalArgumentException("Id do relatório não pode ser nulo.");
+        RelatorioClinico relatorio = repositorio.buscarPorId(relatorioId)
+            .orElseThrow(() -> new IllegalArgumentException("Relatório clínico não encontrado com o id informado."));
         relatorio.adicionarAnexo(anexo);
-        repositorio.save(relatorio);
+        repositorio.salvar(relatorio);
         return relatorio;
     }
 }
