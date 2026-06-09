@@ -1,0 +1,244 @@
+import { useState, useCallback } from "react";
+import { useAuth } from "../../../auth/AuthContext";
+
+export interface PacienteDTO {
+  id: string;
+  tutorId: string;
+  nome: string;
+  especie: string;
+  raca: string;
+  nascimento: string | null;
+  infectocontagiosoRecente: boolean;
+}
+
+export interface TutorDTO {
+  id: string;
+  nome: string;
+  cpf: string;
+  telefone: string;
+  email: string;
+  alertaEpidemiologico: boolean;
+  pacientes: PacienteDTO[];
+}
+
+export interface SintomaDTO {
+  codigo: string;
+  descricao: string;
+  peso: number;
+}
+
+export interface FilaItemDTO {
+  pacienteId: string;
+  triagemId: string;
+  corDeRisco: "VERMELHO" | "AMARELO" | "VERDE";
+  finalizadaEm: string;
+  nomePaciente: string;
+  tutorId: string;
+}
+
+export function useRecepcao() {
+  const { apiFetch } = useAuth();
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const buscarTutorPorCpf = useCallback(async (cpf: string): Promise<TutorDTO | null> => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const cpfLimpo = cpf.replace(/\D/g, "");
+      const res = await apiFetch(`/api/recepcao/tutores?cpf=${cpfLimpo}`);
+      if (res.status === 404) return null;
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.mensagem || "Erro ao buscar tutor.");
+      }
+      return res.json();
+    } catch (e: any) {
+      setErro(e.message);
+      return null;
+    } finally {
+      setCarregando(false);
+    }
+  }, [apiFetch]);
+
+  const cadastrarTutor = useCallback(async (dados: {
+    cpf: string; nome: string; telefone: string; email: string;
+  }): Promise<TutorDTO | null> => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const res = await apiFetch("/api/recepcao/tutores", {
+        method: "POST",
+        body: JSON.stringify(dados),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.mensagem || "Erro ao cadastrar tutor.");
+      }
+      return res.json();
+    } catch (e: any) {
+      setErro(e.message);
+      return null;
+    } finally {
+      setCarregando(false);
+    }
+  }, [apiFetch]);
+
+  const editarTutor = useCallback(async (
+    id: string,
+    dados: { nome: string; telefone: string; email: string }
+  ): Promise<TutorDTO | null> => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const res = await apiFetch(`/api/recepcao/tutores/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(dados),
+      });
+      if (!res.ok) throw new Error("Erro ao editar tutor.");
+      return res.json();
+    } catch (e: any) {
+      setErro(e.message);
+      return null;
+    } finally {
+      setCarregando(false);
+    }
+  }, [apiFetch]);
+
+  const excluirTutor = useCallback(async (id: string): Promise<boolean> => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const res = await apiFetch(`/api/recepcao/tutores/${id}`, { method: "DELETE" });
+      return res.ok;
+    } catch (e: any) {
+      setErro(e.message);
+      return false;
+    } finally {
+      setCarregando(false);
+    }
+  }, [apiFetch]);
+
+  const cadastrarPaciente = useCallback(async (
+    tutorId: string,
+    dados: { nome: string; especie: string; raca: string; nascimento: string }
+  ): Promise<PacienteDTO | null> => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const res = await apiFetch(`/api/recepcao/tutores/${tutorId}/pacientes`, {
+        method: "POST",
+        body: JSON.stringify(dados),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.mensagem || "Erro ao cadastrar paciente.");
+      }
+      return res.json();
+    } catch (e: any) {
+      setErro(e.message);
+      return null;
+    } finally {
+      setCarregando(false);
+    }
+  }, [apiFetch]);
+
+  const editarPaciente = useCallback(async (
+    tutorId: string,
+    pacienteId: string,
+    dados: { nome: string; especie: string; raca: string; nascimento: string }
+  ): Promise<PacienteDTO | null> => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const res = await apiFetch(
+        `/api/recepcao/tutores/${tutorId}/pacientes/${pacienteId}`,
+        { method: "PUT", body: JSON.stringify(dados) }
+      );
+      if (!res.ok) throw new Error("Erro ao editar paciente.");
+      return res.json();
+    } catch (e: any) {
+      setErro(e.message);
+      return null;
+    } finally {
+      setCarregando(false);
+    }
+  }, [apiFetch]);
+
+  const excluirPaciente = useCallback(async (
+    tutorId: string,
+    pacienteId: string
+  ): Promise<boolean> => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const res = await apiFetch(
+        `/api/recepcao/tutores/${tutorId}/pacientes/${pacienteId}`,
+        { method: "DELETE" }
+      );
+      return res.ok;
+    } catch (e: any) {
+      setErro(e.message);
+      return false;
+    } finally {
+      setCarregando(false);
+    }
+  }, [apiFetch]);
+
+  const listarSintomas = useCallback(async (): Promise<SintomaDTO[]> => {
+    try {
+      const res = await apiFetch("/api/recepcao/sintomas");
+      if (!res.ok) return [];
+      return res.json();
+    } catch {
+      return [];
+    }
+  }, [apiFetch]);
+
+  const criarTriagem = useCallback(async (
+    tutorId: string,
+    pacienteId: string,
+    codigosSintomas: string[]
+  ): Promise<boolean> => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const res = await apiFetch(
+        `/api/recepcao/tutores/${tutorId}/pacientes/${pacienteId}/triagens`,
+        { method: "POST", body: JSON.stringify({ codigosSintomas }) }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.mensagem || "Erro ao criar triagem.");
+      }
+      return true;
+    } catch (e: any) {
+      setErro(e.message);
+      return false;
+    } finally {
+      setCarregando(false);
+    }
+  }, [apiFetch]);
+
+  const listarFila = useCallback(async (): Promise<FilaItemDTO[]> => {
+    try {
+      const res = await apiFetch("/api/recepcao/fila");
+      if (!res.ok) return [];
+      return res.json();
+    } catch {
+      return [];
+    }
+  }, [apiFetch]);
+
+  const removerDaFila = useCallback(async (triagemId: string): Promise<void> => {
+    await apiFetch(`/api/recepcao/fila/${triagemId}`, { method: "DELETE" });
+  }, [apiFetch]);
+
+  return {
+    carregando, erro, setErro,
+    buscarTutorPorCpf, cadastrarTutor, editarTutor, excluirTutor,
+    cadastrarPaciente, editarPaciente, excluirPaciente,
+    listarSintomas, criarTriagem,
+    listarFila, removerDaFila,
+  };
+}

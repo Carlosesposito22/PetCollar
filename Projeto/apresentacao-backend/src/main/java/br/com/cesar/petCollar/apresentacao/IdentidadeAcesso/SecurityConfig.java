@@ -57,6 +57,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("ADMIN_CLINICA")
                 .requestMatchers("/api/tutor/**").hasRole("TUTOR")
                 .requestMatchers("/api/medico/**").hasRole("MEDICO_VETERINARIO")
+                .requestMatchers("/api/recepcao/**").hasAnyRole("RECEPCIONISTA", "ADMIN_CLINICA")
                 .anyRequest().authenticated()
             )
             // Retorna 401 (não 403) para requisições sem autenticação válida,
