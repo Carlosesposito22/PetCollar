@@ -49,6 +49,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/tutores/contratar").permitAll()
                 .requestMatchers("/api/tutores/*/simular-pagamento").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
+                // Catálogo de planos: público para o fluxo de contratação
+                .requestMatchers("/api/planos").permitAll()
                 // Dados de catálogo: especialidades e disponibilidade são públicos para o fluxo de agendamento
                 .requestMatchers("/api/especialidades/**").permitAll()
                 .requestMatchers("/api/medicos/*/horarios-disponiveis").permitAll()

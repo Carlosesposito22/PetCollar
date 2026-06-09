@@ -12,26 +12,59 @@ type Usuario = {
   telefone?: string | null;
 };
 
-type Aba = "funcionarios" | "tutores";
+type PeriodoRenovacao = "MENSAL" | "TRIMESTRAL" | "ANUAL";
+
+type Beneficio = {
+  nome: string;
+  periodoRenovacao: PeriodoRenovacao;
+  limiteUsosPorPeriodo: number;
+  carenciaDias: number;
+};
+
+type Plano = {
+  id: string;
+  nome: string;
+  valorMensalidade: number;
+  beneficios: Beneficio[];
+};
+
+// Benefícios padrão de todo plano (a princípio: Consulta e Vacinação).
+const BENEFICIOS_PADRAO: Beneficio[] = [
+  { nome: "Consulta", periodoRenovacao: "TRIMESTRAL", limiteUsosPorPeriodo: 4, carenciaDias: 30 },
+  { nome: "Vacinação", periodoRenovacao: "ANUAL", limiteUsosPorPeriodo: 1, carenciaDias: 90 },
+];
+
+const PERIODO_OPCOES: { valor: PeriodoRenovacao; label: string }[] = [
+  { valor: "MENSAL", label: "Mensal" },
+  { valor: "TRIMESTRAL", label: "Trimestral" },
+  { valor: "ANUAL", label: "Anual" },
+];
+
+type Aba = "funcionarios" | "tutores" | "planos";
 
 export function AdminPanel() {
   const { apiFetch } = useAuth();
   const [aba, setAba] = useState<Aba>("funcionarios");
   const [funcionarios, setFuncionarios] = useState<Usuario[]>([]);
   const [tutores, setTutores] = useState<Usuario[]>([]);
+  const [planos, setPlanos] = useState<Plano[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [criandoAberto, setCriandoAberto] = useState(false);
+  const [planoModalAberto, setPlanoModalAberto] = useState(false);
+  const [planoEditando, setPlanoEditando] = useState<Plano | null>(null);
 
   const recarregar = useCallback(async () => {
     setErro(null);
     try {
-      const [f, t] = await Promise.all([
+      const [f, t, p] = await Promise.all([
         apiFetch("/api/admin/funcionarios").then(asJson<Usuario[]>),
         apiFetch("/api/admin/tutores").then(asJson<Usuario[]>),
+        apiFetch("/api/admin/planos").then(asJson<Plano[]>),
       ]);
       setFuncionarios(f);
       setTutores(t);
+      setPlanos(p);
     } catch (err) {
       setErro((err as Error).message);
     }
@@ -62,12 +95,17 @@ export function AdminPanel() {
           <div>
             <h1 className="text-2xl font-bold text-ink-900">Gestão da clínica</h1>
             <p className="text-sm text-ink-500">
-              Cadastre funcionários e gerencie tutores. Matrículas são geradas automaticamente.
+              Cadastre funcionários, gerencie tutores e configure os planos de saúde.
             </p>
           </div>
           {aba === "funcionarios" && (
             <button onClick={() => setCriandoAberto(true)} className="btn-primary w-auto">
               + Cadastrar funcionário
+            </button>
+          )}
+          {aba === "planos" && (
+            <button onClick={() => { setPlanoEditando(null); setPlanoModalAberto(true); }} className="btn-primary w-auto">
+              + Novo plano
             </button>
           )}
         </div>
@@ -78,6 +116,9 @@ export function AdminPanel() {
           </TabBtn>
           <TabBtn ativo={aba === "tutores"} onClick={() => setAba("tutores")}>
             Tutores ({tutores.length})
+          </TabBtn>
+          <TabBtn ativo={aba === "planos"} onClick={() => setAba("planos")}>
+            Planos ({planos.length})
           </TabBtn>
         </div>
 
@@ -104,7 +145,7 @@ export function AdminPanel() {
               `/api/admin/funcionarios/${encodeURIComponent(u.identificador)}/reativar`,
             )}
           />
-        ) : (
+        ) : aba === "tutores" ? (
           <TabelaTutores
             dados={tutores}
             onSuspender={t => executar(
@@ -120,8 +161,14 @@ export function AdminPanel() {
               `/api/admin/tutores/${encodeURIComponent(t.identificador)}/confirmar-pagamento`,
             )}
           />
+        ) : (
+          <TabelaPlanos
+            dados={planos}
+            onEditar={p => { setPlanoEditando(p); setPlanoModalAberto(true); }}
+          />
         )}
     </main>
+
     {criandoAberto && (
       <CriarFuncionarioModal
         apiFetch={apiFetch}
@@ -129,6 +176,19 @@ export function AdminPanel() {
         onCriado={novo => {
           setAviso(`Funcionário criado · matrícula ${novo.identificador}`);
           setCriandoAberto(false);
+          void recarregar();
+        }}
+      />
+    )}
+
+    {planoModalAberto && (
+      <PlanoModal
+        apiFetch={apiFetch}
+        plano={planoEditando}
+        onFechar={() => setPlanoModalAberto(false)}
+        onSalvo={msg => {
+          setAviso(msg);
+          setPlanoModalAberto(false);
           void recarregar();
         }}
       />
@@ -402,6 +462,240 @@ function CriarFuncionarioModal({
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+function TabelaPlanos({
+  dados, onEditar,
+}: {
+  dados: Plano[];
+  onEditar: (p: Plano) => void;
+}) {
+  if (dados.length === 0) {
+    return <Vazio mensagem="Nenhum plano cadastrado ainda." />;
+  }
+  return (
+    <div className="card overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-ink-100 text-xs uppercase tracking-wide text-ink-500">
+          <tr>
+            <Th>Nome</Th><Th>Mensalidade</Th><Th>Benefícios</Th><Th className="text-right">Ações</Th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-ink-300/40">
+          {dados.map(p => (
+            <tr key={p.id}>
+              <Td><span className="font-medium text-ink-900">{p.nome}</span></Td>
+              <Td>
+                <span className="font-mono">
+                  R$ {Number(p.valorMensalidade).toFixed(2).replace(".", ",")}
+                </span>
+                <span className="ml-1 text-ink-400">/mês</span>
+              </Td>
+              <Td>
+                {p.beneficios.length === 0 ? (
+                  <span className="text-ink-400">—</span>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {p.beneficios.map(b => (
+                      <span
+                        key={b.nome}
+                        className="inline-flex items-center rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 ring-1 ring-brand-100"
+                        title={`${b.limiteUsosPorPeriodo}x/${b.periodoRenovacao.toLowerCase()} · carência ${b.carenciaDias}d`}
+                      >
+                        {b.nome}: {b.limiteUsosPorPeriodo}x
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </Td>
+              <Td className="text-right">
+                <button onClick={() => onEditar(p)} className="btn-ghost ring-1 ring-ink-300">
+                  Editar
+                </button>
+              </Td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PlanoModal({
+  apiFetch, plano, onFechar, onSalvo,
+}: {
+  apiFetch: (input: string, init?: RequestInit) => Promise<Response>;
+  plano: Plano | null;
+  onFechar: () => void;
+  onSalvo: (msg: string) => void;
+}) {
+  const editando = plano !== null;
+  const [nome, setNome] = useState(plano?.nome ?? "");
+  const [valor, setValor] = useState(
+    plano ? String(Number(plano.valorMensalidade).toFixed(2)) : ""
+  );
+  // Parte dos benefícios fixos (Consulta, Vacinação). Em edição, mescla os
+  // valores já configurados sobre os padrões para preservar nomes/ordem.
+  const [beneficios, setBeneficios] = useState<Beneficio[]>(() =>
+    BENEFICIOS_PADRAO.map(padrao => {
+      const existente = plano?.beneficios.find(
+        b => b.nome.toLowerCase() === padrao.nome.toLowerCase()
+      );
+      return existente ?? padrao;
+    })
+  );
+  const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  function atualizarBeneficio(idx: number, patch: Partial<Beneficio>) {
+    setBeneficios(prev => prev.map((b, i) => (i === idx ? { ...b, ...patch } : b)));
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErro(null);
+    const valorNum = parseFloat(valor.replace(",", "."));
+    if (isNaN(valorNum) || valorNum <= 0) {
+      setErro("Informe um valor de mensalidade válido e maior que zero.");
+      return;
+    }
+    if (beneficios.some(b => b.limiteUsosPorPeriodo < 0 || b.carenciaDias < 0)) {
+      setErro("Usos e carência não podem ser negativos.");
+      return;
+    }
+    setEnviando(true);
+    try {
+      const url = editando ? `/api/admin/planos/${plano.id}` : "/api/admin/planos";
+      const method = editando ? "PUT" : "POST";
+      const res = await apiFetch(url, {
+        method,
+        body: JSON.stringify({ nome, valorMensalidade: valorNum, beneficios }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({} as { mensagem?: string }));
+        throw new Error(body?.mensagem ?? `Falha (HTTP ${res.status}).`);
+      }
+      onSalvo(editando ? `Plano "${nome}" atualizado` : `Plano "${nome}" criado`);
+    } catch (err) {
+      setErro((err as Error).message);
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onFechar}>
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto card p-6" onClick={e => e.stopPropagation()}>
+        <header className="mb-5">
+          <h3 className="text-lg font-bold text-ink-900">
+            {editando ? "Editar plano" : "Novo plano"}
+          </h3>
+          <p className="text-sm text-ink-500">
+            {editando
+              ? "Altere a mensalidade e o que cada benefício oferece. Tutores ativos têm os limites sincronizados automaticamente."
+              : "Defina a mensalidade e o que cada benefício oferece. O plano fica disponível para novas contratações."}
+          </p>
+        </header>
+
+        {erro && (
+          <div role="alert" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            {erro}
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} className="grid gap-4">
+          <div>
+            <label className="label" htmlFor="p-nome">Nome do plano</label>
+            <input
+              id="p-nome" required className="input"
+              placeholder="Ex.: Plano Premium Anual"
+              value={nome} onChange={e => setNome(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="p-valor">Mensalidade (R$)</label>
+            <input
+              id="p-valor" required className="input font-mono"
+              placeholder="0,00"
+              value={valor} onChange={e => setValor(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-ink-500">Use ponto ou vírgula como separador decimal.</p>
+          </div>
+
+          <div className="space-y-3">
+            <p className="label mb-0">Benefícios do plano</p>
+            {beneficios.map((b, idx) => (
+              <BeneficioEditor
+                key={b.nome}
+                beneficio={b}
+                onChange={patch => atualizarBeneficio(idx, patch)}
+              />
+            ))}
+          </div>
+
+          <div className="mt-2 flex justify-end gap-2">
+            <button type="button" onClick={onFechar} className="btn-ghost ring-1 ring-ink-300">
+              Cancelar
+            </button>
+            <button type="submit" disabled={enviando} className="btn-primary w-auto">
+              {enviando ? "Salvando…" : editando ? "Salvar alterações" : "Criar plano"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function BeneficioEditor({
+  beneficio, onChange,
+}: {
+  beneficio: Beneficio;
+  onChange: (patch: Partial<Beneficio>) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-ink-300/60 p-4">
+      <p className="mb-3 text-sm font-semibold text-ink-800">{beneficio.nome}</p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div>
+          <label className="label text-xs">Usos por período</label>
+          <input
+            type="number" min={0} required className="input"
+            value={beneficio.limiteUsosPorPeriodo}
+            onChange={e => onChange({ limiteUsosPorPeriodo: Number(e.target.value) })}
+          />
+        </div>
+        <div>
+          <label className="label text-xs">Renovação</label>
+          <select
+            className="input"
+            value={beneficio.periodoRenovacao}
+            onChange={e => onChange({ periodoRenovacao: e.target.value as PeriodoRenovacao })}
+          >
+            {PERIODO_OPCOES.map(o => (
+              <option key={o.valor} value={o.valor}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label text-xs">Carência (dias)</label>
+          <input
+            type="number" min={0} required className="input"
+            value={beneficio.carenciaDias}
+            onChange={e => onChange({ carenciaDias: Number(e.target.value) })}
+          />
+        </div>
+      </div>
+      <p className="mt-2 text-xs text-ink-500">
+        {beneficio.limiteUsosPorPeriodo} uso(s) a cada{" "}
+        {beneficio.periodoRenovacao === "MENSAL" ? "mês"
+          : beneficio.periodoRenovacao === "TRIMESTRAL" ? "trimestre" : "ano"}
+        {beneficio.carenciaDias > 0
+          ? `, liberado ${beneficio.carenciaDias} dia(s) após a contratação.`
+          : ", liberado imediatamente."}
+      </p>
     </div>
   );
 }

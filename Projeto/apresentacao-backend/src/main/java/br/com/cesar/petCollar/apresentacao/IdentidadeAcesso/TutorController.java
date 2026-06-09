@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.ContratarPlanoUseCase;
 import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.PlanosPadrao;
+import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ProvisionarBeneficiosDoTutorUseCase;
+import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -27,13 +29,16 @@ public class TutorController {
     private final UsuarioRepositorio repositorio;
     private final PasswordEncoder encoder;
     private final ContratarPlanoUseCase contratarPlano;
+    private final ProvisionarBeneficiosDoTutorUseCase provisionarBeneficios;
 
     public TutorController(UsuarioRepositorio repositorio,
                            PasswordEncoder encoder,
-                           ContratarPlanoUseCase contratarPlano) {
+                           ContratarPlanoUseCase contratarPlano,
+                           ProvisionarBeneficiosDoTutorUseCase provisionarBeneficios) {
         this.repositorio = repositorio;
         this.encoder = encoder;
         this.contratarPlano = contratarPlano;
+        this.provisionarBeneficios = provisionarBeneficios;
     }
 
     @PostMapping("/contratar")
@@ -41,6 +46,10 @@ public class TutorController {
         if (repositorio.buscarPorEmail(req.email()).isPresent()) {
             throw new EmailJaCadastradoException();
         }
+
+        String planoIdEscolhido = (req.planoId() != null && !req.planoId().isBlank())
+                ? req.planoId()
+                : PlanosPadrao.ID_PLANO_BASICO_MENSAL.getValor();
 
         UsuarioAutenticavel novo = new UsuarioAutenticavel(
                 req.email(),
@@ -51,7 +60,8 @@ public class TutorController {
                 req.cpf(),
                 req.telefone(),
                 req.endereco(),
-                req.email()
+                req.email(),
+                planoIdEscolhido
         );
         repositorio.salvar(novo);
 
@@ -80,9 +90,15 @@ public class TutorController {
 
         // Boleto inicial confirmado: dispara o caso de uso de contratação que
         // cria a primeira Cobrança já como PAGA (idempotente).
-        contratarPlano.executar(
-                TutorId.de(tutor.identificador()),
-                PlanosPadrao.ID_PLANO_BASICO_MENSAL);
+        PlanoId planoId =
+                (tutor.planoId() != null && !tutor.planoId().isBlank())
+                        ? PlanoId.de(tutor.planoId())
+                        : PlanosPadrao.ID_PLANO_BASICO_MENSAL;
+        TutorId tutorId = TutorId.de(tutor.identificador());
+        contratarPlano.executar(tutorId, planoId);
+        // Provisiona os benefícios do plano (Consulta, Vacinação) respeitando a
+        // carência de cada um — idempotente em reconfirmações.
+        provisionarBeneficios.executar(tutorId, planoId);
 
         return ResponseEntity.ok(new RespostaContratacao(
                 tutor.identificador(), tutor.nome(), tutor.email(),
@@ -102,7 +118,8 @@ public class TutorController {
             @NotBlank String telefone,
             @NotBlank @Email String email,
             @NotBlank String endereco,
-            @NotBlank @Size(min = 6, max = 64) String senha
+            @NotBlank @Size(min = 6, max = 64) String senha,
+            String planoId
     ) {}
 
     public record RespostaContratacao(

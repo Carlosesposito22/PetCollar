@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.PlanosPadrao;
+import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ProvisionarBeneficiosDoTutorUseCase;
+import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
+import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -25,10 +29,14 @@ public class AdminController {
 
     private final UsuarioRepositorio repositorio;
     private final PasswordEncoder encoder;
+    private final ProvisionarBeneficiosDoTutorUseCase provisionarBeneficios;
 
-    public AdminController(UsuarioRepositorio repositorio, PasswordEncoder encoder) {
+    public AdminController(UsuarioRepositorio repositorio,
+                           PasswordEncoder encoder,
+                           ProvisionarBeneficiosDoTutorUseCase provisionarBeneficios) {
         this.repositorio = repositorio;
         this.encoder = encoder;
+        this.provisionarBeneficios = provisionarBeneficios;
     }
 
     // ── Funcionários (Recepcionista + Médico) ───────────────────────────────
@@ -100,7 +108,15 @@ public class AdminController {
 
     @PostMapping("/tutores/{identificador}/confirmar-pagamento")
     public ResumoUsuario confirmarPagamento(@PathVariable String identificador) {
-        return mudarStatusTutor(identificador, StatusConta.ATIVA);
+        ResumoUsuario resumo = mudarStatusTutor(identificador, StatusConta.ATIVA);
+        UsuarioAutenticavel tutor = repositorio.buscar(Perfil.TUTOR, identificador)
+                .orElseThrow(UsuarioNaoEncontradoException::new);
+        PlanoId planoId = (tutor.planoId() != null && !tutor.planoId().isBlank())
+                ? PlanoId.de(tutor.planoId())
+                : PlanosPadrao.ID_PLANO_BASICO_MENSAL;
+        // Provisiona os benefícios do plano do tutor (idempotente).
+        provisionarBeneficios.executar(TutorId.de(identificador), planoId);
+        return resumo;
     }
 
     private ResumoUsuario mudarStatusTutor(String identificador, StatusConta novo) {

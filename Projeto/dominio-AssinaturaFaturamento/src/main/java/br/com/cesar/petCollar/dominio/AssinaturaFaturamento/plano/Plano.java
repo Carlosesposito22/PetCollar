@@ -10,8 +10,8 @@ import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 public class Plano {
 
     private final PlanoId id;
-    private final String nome;
-    private final ValorMensalidade mensalidade;
+    private String nome;
+    private ValorMensalidade mensalidade;
 
     public Plano(PlanoId id, String nome, ValorMensalidade mensalidade) {
         if (id == null)
@@ -21,6 +21,15 @@ public class Plano {
         if (mensalidade == null)
             throw new IllegalArgumentException("Mensalidade do plano não pode ser nula.");
         this.id = id;
+        this.nome = nome;
+        this.mensalidade = mensalidade;
+    }
+
+    public void alterar(String nome, ValorMensalidade mensalidade) {
+        if (nome == null || nome.isBlank())
+            throw new IllegalArgumentException("Nome do plano não pode ser vazio.");
+        if (mensalidade == null)
+            throw new IllegalArgumentException("Mensalidade do plano não pode ser nula.");
         this.nome = nome;
         this.mensalidade = mensalidade;
     }

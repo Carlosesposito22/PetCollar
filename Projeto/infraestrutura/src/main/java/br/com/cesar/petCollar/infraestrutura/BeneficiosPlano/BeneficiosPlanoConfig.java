@@ -6,8 +6,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
+import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConfigurarBeneficiosDoPlanoUseCase;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsultarBeneficiosTutorUseCase;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.GerarTicketBeneficioUseCase;
+import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ProvisionarBeneficiosDoTutorUseCase;
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.CalculoStatusBeneficioService;
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.ExpiracaoTicketService;
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.GeracaoTicketService;
@@ -86,6 +88,24 @@ public class BeneficiosPlanoConfig {
             CalculoStatusBeneficioService calculoStatusBeneficioService) {
         return new ConsultarBeneficiosTutorUseCase(
                 beneficioTutorRepositorio, beneficioCatalogoRepositorio, calculoStatusBeneficioService);
+    }
+
+    // ── Casos de uso de administração de benefícios do plano (F-08) ──────────
+
+    @Bean
+    public ConfigurarBeneficiosDoPlanoUseCase configurarBeneficiosDoPlanoUseCase(
+            IBeneficioCatalogoRepositorio beneficioCatalogoRepositorio,
+            PublicadorDeAlteracoesBeneficio publicadorDeAlteracoesBeneficio) {
+        return new ConfigurarBeneficiosDoPlanoUseCase(
+                beneficioCatalogoRepositorio, publicadorDeAlteracoesBeneficio);
+    }
+
+    @Bean
+    public ProvisionarBeneficiosDoTutorUseCase provisionarBeneficiosDoTutorUseCase(
+            IBeneficioCatalogoRepositorio beneficioCatalogoRepositorio,
+            IBeneficioTutorRepositorio beneficioTutorRepositorio) {
+        return new ProvisionarBeneficiosDoTutorUseCase(
+                beneficioCatalogoRepositorio, beneficioTutorRepositorio);
     }
 
     @Bean
