@@ -22,6 +22,7 @@ import { TutorConquistas } from "./pages/tutor/TutorConquistas";
 import { TutorFinanceiro } from "./pages/tutor/TutorFinanceiro";
 import { TutorFinanceiroPagamento } from "./pages/tutor/TutorFinanceiroPagamento";
 import { TutorIndicacoes } from "./pages/tutor/TutorIndicacoes";
+import { LandingIndicacao } from "./pages/LandingIndicacao";
 import { AgendamentoHub } from "./pages/tutor/agendamento/AgendamentoHub";
 import { NovaConsultaPage } from "./pages/tutor/agendamento/NovaConsultaPage";
 import { AgendamentoRetornoPage } from "./pages/tutor/agendamento/AgendamentoRetornoPage";
@@ -43,6 +44,7 @@ export function App() {
       <Route path="/login/medico" element={<MedicoLogin />} />
       <Route path="/login/admin" element={<AdminLogin />} />
       <Route path="/contratar-plano" element={<ContratarPlano />} />
+      <Route path="/indicacao/:codigo" element={<LandingIndicacao />} />
       <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
 
       {/* Área do Tutor */}

@@ -36,7 +36,18 @@ public class ContratarPlanoUseCase {
         this.cobrancaRepositorio = cobrancaRepositorio;
     }
 
+    /** Contrata o plano sem desconto de indicação. */
     public Cobranca executar(TutorId tutorId, PlanoId planoId) {
+        return executar(tutorId, planoId, null);
+    }
+
+    /**
+     * Contrata o plano aplicando opcionalmente o desconto de indicação (RN-3).
+     *
+     * @param percentualDesconto fração do valor a descontar (ex.: {@code 0.30} para 30%),
+     *                           ou {@code null} para sem desconto.
+     */
+    public Cobranca executar(TutorId tutorId, PlanoId planoId, BigDecimal percentualDesconto) {
         if (tutorId == null) throw new IllegalArgumentException("TutorId é obrigatório.");
         if (planoId == null) throw new IllegalArgumentException("PlanoId é obrigatório.");
 
@@ -50,11 +61,14 @@ public class ContratarPlanoUseCase {
 
         LocalDate hoje = LocalDate.now();
         BigDecimal valor = plano.getMensalidade().getValor();
+        BigDecimal descontoAbsoluto = (percentualDesconto != null && percentualDesconto.signum() > 0)
+                ? valor.multiply(percentualDesconto)
+                : null;
 
         Cobranca inicial = new Cobranca(
                 CobrancaId.gerar(), tutorId, plano.getId(),
                 Competencia.de(YearMonth.from(hoje)),
-                valor, null,
+                valor, descontoAbsoluto,
                 hoje
         );
         inicial.registrarPagamento(); // boleto inicial entra já pago

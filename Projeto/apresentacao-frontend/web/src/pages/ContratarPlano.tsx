@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "../components/AuthLayout";
 import { PasswordInput } from "../components/PasswordInput";
 
@@ -47,11 +47,17 @@ const inicial: Form = {
 
 export function ContratarPlano() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const codigoViaUrl = searchParams.get("indicacao") ?? "";
+
   const [form, setForm] = useState<Form>(inicial);
+  const [codigoManual, setCodigoManual] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [carregandoPlanos, setCarregandoPlanos] = useState(true);
+
+  const codigoIndicacao = codigoViaUrl || codigoManual;
 
   useEffect(() => {
     fetch("/api/planos")
@@ -94,6 +100,10 @@ export function ContratarPlano() {
       setErro("Selecione um plano para continuar.");
       return;
     }
+    if (form.cpf.replace(/\D/g, "").length !== 11) {
+      setErro("CPF inválido. Informe os 11 dígitos completos.");
+      return;
+    }
     if (form.senha !== form.confirmacao) {
       setErro("As senhas não coincidem.");
       return;
@@ -116,6 +126,7 @@ export function ContratarPlano() {
           endereco: form.endereco,
           senha: form.senha,
           planoId: form.planoId,
+          codigoIndicacao: codigoIndicacao || null,
         }),
       });
 
@@ -167,6 +178,19 @@ export function ContratarPlano() {
           </p>
         </header>
 
+        {/* Banner de indicação quando há código na URL */}
+        {codigoViaUrl && (
+          <div className="mb-5 rounded-xl border border-green-200 bg-green-50 p-4">
+            <p className="text-sm font-semibold text-green-800">
+              Indicação aplicada automaticamente
+            </p>
+            <p className="mt-0.5 text-xs text-green-700">
+              Você receberá <strong>30% de desconto</strong> na primeira mensalidade graças ao convite de um tutor petCollar.
+            </p>
+            <p className="mt-1 text-xs text-green-600 font-mono">Código: {codigoViaUrl}</p>
+          </div>
+        )}
+
         {erro && (
           <div role="alert" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             {erro}
@@ -174,6 +198,23 @@ export function ContratarPlano() {
         )}
 
         <form onSubmit={onSubmit} noValidate className="grid gap-4">
+
+          {/* Campo de código de indicação manual (só exibe quando não veio pela URL) */}
+          {!codigoViaUrl && (
+            <Campo label="Código de indicação (opcional)" htmlFor="indicacao">
+              <input
+                id="indicacao"
+                className="input"
+                placeholder="Ex.: AB12CD34"
+                maxLength={8}
+                value={codigoManual}
+                onChange={e => setCodigoManual(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+              />
+              <p className="mt-0.5 text-xs text-ink-400">
+                Recebeu um link de indicação? Cole o código aqui para ganhar desconto.
+              </p>
+            </Campo>
+          )}
 
           {/* Seleção de plano */}
           <div>

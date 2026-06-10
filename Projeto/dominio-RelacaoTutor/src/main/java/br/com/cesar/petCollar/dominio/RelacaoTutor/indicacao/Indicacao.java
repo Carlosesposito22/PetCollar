@@ -70,6 +70,19 @@ public class Indicacao {
     }
 
     /**
+     * Registra o desconto do indicador quando ele é aplicado após a conversão (RN-5).
+     * Usado quando não havia fatura pendente no momento da conversão e o Tutor resgata
+     * manualmente o crédito depois.
+     */
+    public void registrarDescontoIndicador(String cobrancaId) {
+        if (this.status != StatusIndicacao.CONVERTIDA)
+            throw new IllegalStateException("Só é possível registrar desconto em indicações CONVERTIDAS.");
+        if (this.cobrancaIndicadorId != null)
+            throw new IllegalStateException("Desconto do indicador já registrado na fatura " + this.cobrancaIndicadorId + ".");
+        this.cobrancaIndicadorId = cobrancaId;
+    }
+
+    /**
      * Invalida a indicação por fraude ou regra violada (RN-7, RN-8, RN-10).
      */
     public void invalidar(String motivo) {

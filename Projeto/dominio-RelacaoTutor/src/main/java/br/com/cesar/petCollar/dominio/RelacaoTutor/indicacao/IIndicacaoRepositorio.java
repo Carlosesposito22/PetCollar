@@ -19,4 +19,7 @@ public interface IIndicacaoRepositorio {
 
     /** Retorna o histórico de indicações realizadas por um Tutor (painel do indicador). */
     List<Indicacao> listarPorTutorIndicador(TutorId tutorId);
+
+    /** Busca indicação PENDENTE onde o CPF dado é o indicado (usado no fluxo de pagamento). */
+    Optional<Indicacao> buscarPendenteParaCpfIndicado(CPF cpfIndicado);
 }

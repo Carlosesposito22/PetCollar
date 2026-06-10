@@ -39,4 +39,10 @@ public class IndicacaoRepositorioJpa implements IIndicacaoRepositorio {
                   .map(IndicacaoJpa::toDomain)
                   .toList();
     }
+
+    @Override
+    public Optional<Indicacao> buscarPendenteParaCpfIndicado(CPF cpf) {
+        return jpa.findTopByCpfIndicadoAndStatus(cpf.getValor(), StatusIndicacao.PENDENTE)
+                  .map(IndicacaoJpa::toDomain);
+    }
 }

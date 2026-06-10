@@ -8,4 +8,5 @@ import java.util.List;
 public interface IndicacaoJpaRepository extends JpaRepository<IndicacaoJpa, String> {
     boolean existsByCpfIndicadoAndStatus(String cpfIndicado, StatusIndicacao status);
     List<IndicacaoJpa> findByTutorIndicadorId(String tutorIndicadorId);
+    java.util.Optional<IndicacaoJpa> findTopByCpfIndicadoAndStatus(String cpfIndicado, StatusIndicacao status);
 }

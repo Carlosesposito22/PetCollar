@@ -10,6 +10,7 @@ import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.StatusConta;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioRepositorio;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.Perfil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -33,13 +34,15 @@ import java.util.Map;
 @RequestMapping("/api/tutor/indicacao")
 public class IndicacaoController {
 
-    private static final String BASE_URL = "https://petcollar.app";
-
+    private final String baseUrl;
     private final ProgramaIndicacaoService programaIndicacao;
     private final UsuarioRepositorio usuarioRepositorio;
 
-    public IndicacaoController(ProgramaIndicacaoService programaIndicacao,
-                               UsuarioRepositorio usuarioRepositorio) {
+    public IndicacaoController(
+            @Value("${petcollar.indicacao.base-url:http://localhost:3000}") String baseUrl,
+            ProgramaIndicacaoService programaIndicacao,
+            UsuarioRepositorio usuarioRepositorio) {
+        this.baseUrl = baseUrl;
         this.programaIndicacao = programaIndicacao;
         this.usuarioRepositorio = usuarioRepositorio;
     }
@@ -51,7 +54,7 @@ public class IndicacaoController {
         TutorId tutorId = TutorId.de(principal.getName());
         boolean ativa = contaAtiva(tutorId);
         LinkIndicacao link = programaIndicacao.obterOuGerarLink(tutorId, ativa);
-        return LinkIndicacaoDTO.de(link, BASE_URL);
+        return LinkIndicacaoDTO.de(link, baseUrl);
     }
 
     // ── POST /api/tutor/indicacao/clique/{codigo} — público (sem auth) ────────
@@ -92,7 +95,28 @@ public class IndicacaoController {
         return ResponseEntity.ok().build();
     }
 
-    // ── POST /api/admin/indicacao/confirmacao-manual/{id} — admin only ────────
+    // ── POST /api/tutor/indicacao/{id}/resgatar-desconto — tutor resgata 15% ──
+
+    @PostMapping("/{indicacaoId}/resgatar-desconto")
+    public ResponseEntity<Map<String, Object>> resgatarDesconto(@PathVariable String indicacaoId,
+                                                                Principal principal) {
+        TutorId tutorId = TutorId.de(principal.getName());
+        java.util.Optional<String> cobId = programaIndicacao.resgatarDescontoIndicador(
+            IndicacaoId.de(indicacaoId), tutorId);
+
+        if (cobId.isPresent()) {
+            return ResponseEntity.ok(Map.of(
+                "cobrancaId", cobId.get(),
+                "mensagem", "Desconto de 15% aplicado com sucesso."
+            ));
+        }
+        return ResponseEntity.ok(Map.of(
+            "cobrancaId", "",
+            "mensagem", "Nenhuma fatura em aberto no momento. Tente novamente quando houver uma fatura pendente."
+        ));
+    }
+
+    // ── POST /api/tutor/indicacao/confirmacao-manual/{id} ────────────────────
 
     @PostMapping("/confirmacao-manual/{indicacaoId}")
     public ResponseEntity<Void> confirmacaoManual(@PathVariable String indicacaoId,

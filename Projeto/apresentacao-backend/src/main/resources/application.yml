@@ -25,6 +25,9 @@ spring:
     open-in-view: false
 
 petcollar:
+  indicacao:
+    # URL base do frontend. Sobrescreva em produção via env PETCOLLAR_INDICACAO_BASE_URL.
+    base-url: ${PETCOLLAR_INDICACAO_BASE_URL:http://localhost:3000}
   security:
     jwt:
       # HS256 — substitua em produção por variável de ambiente / secret manager.

@@ -49,13 +49,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/tutores/contratar").permitAll()
                 .requestMatchers("/api/tutores/*/simular-pagamento").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
-                // Catálogo de planos: público para o fluxo de contratação
                 .requestMatchers("/api/planos").permitAll()
-                // F-04: landing de indicação, clique e webhook são públicos (pré-login / gateway)
                 .requestMatchers("/api/tutor/indicacao/clique/**").permitAll()
                 .requestMatchers("/api/tutor/indicacao/inscricao").permitAll()
                 .requestMatchers("/api/tutor/indicacao/webhook/pagamento").permitAll()
-                // Dados de catálogo: especialidades e disponibilidade são públicos para o fluxo de agendamento
                 .requestMatchers("/api/especialidades/**").permitAll()
                 .requestMatchers("/api/medicos/*/horarios-disponiveis").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN_CLINICA")

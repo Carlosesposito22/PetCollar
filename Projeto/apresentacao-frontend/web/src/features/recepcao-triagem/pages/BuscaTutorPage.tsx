@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRecepcao, type TutorDTO, type PacienteDTO, type SintomaDTO } from "../hooks/useRecepcao";
 
@@ -162,8 +162,8 @@ function ModalPaciente({ paciente, onSalvar, onClose }: {
   );
 }
 
-function ModalTriagem({ paciente, tutorId, sintomas, onSalvar, onClose }: {
-  paciente: PacienteDTO; tutorId: string; sintomas: SintomaDTO[];
+function ModalTriagem({ paciente, sintomas, onSalvar, onClose }: {
+  paciente: PacienteDTO; sintomas: SintomaDTO[];
   onSalvar: (codigos: string[]) => Promise<void>;
   onClose: () => void;
 }) {
@@ -362,7 +362,7 @@ export function BuscaTutorPage() {
         </Modal>
       )}
       {modalTriagem && tutor && (
-        <ModalTriagem paciente={modalTriagem} tutorId={tutor.id} sintomas={sintomas}
+        <ModalTriagem paciente={modalTriagem} sintomas={sintomas}
           onClose={() => setModalTriagem(null)}
           onSalvar={async (codigos) => {
             const ok = await recepcao.criarTriagem(tutor.id, modalTriagem.id, codigos);

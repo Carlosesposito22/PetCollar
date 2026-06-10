@@ -230,6 +230,59 @@ public class ProgramaIndicacaoService {
         ).processar(indicacaoId, null);
     }
 
+    // ── Lookup de link (usado pela camada de apresentação na contratação) ────
+
+    /**
+     * Retorna o link de indicação pelo código, se existir.
+     * Permite que o fluxo de contratação recupere o TutorId do indicador.
+     */
+    public Optional<LinkIndicacao> buscarLinkPorCodigo(String codigo) {
+        if (codigo == null || codigo.isBlank()) return Optional.empty();
+        return linkRepositorio.buscarPorCodigo(CodigoIndicacao.de(codigo));
+    }
+
+    /**
+     * Retorna indicação PENDENTE onde o CPF dado é o indicado.
+     * Usado em {@code simularPagamento} para detectar se o novo Tutor foi indicado.
+     */
+    public Optional<Indicacao> buscarIndicacaoPendenteParaCpfIndicado(CPF cpfIndicado) {
+        if (cpfIndicado == null) return Optional.empty();
+        return indicacaoRepositorio.buscarPendenteParaCpfIndicado(cpfIndicado);
+    }
+
+    /**
+     * Resgata manualmente o crédito de 15% do indicador quando não havia fatura pendente
+     * no momento da conversão automática (RN-5). O Tutor só pode resgatar uma vez.
+     */
+    public Optional<String> resgatarDescontoIndicador(IndicacaoId indicacaoId, TutorId tutorId) {
+        if (indicacaoId == null) throw new IllegalArgumentException("Id da indicação não pode ser nulo.");
+        if (tutorId == null)     throw new IllegalArgumentException("TutorId não pode ser nulo.");
+
+        Indicacao ind = indicacaoRepositorio.buscarPorId(indicacaoId)
+            .orElseThrow(() -> new IllegalArgumentException("Indicação não encontrada: " + indicacaoId.getValor()));
+
+        if (!ind.getTutorIndicadorId().equals(tutorId))
+            throw new IllegalStateException("Esta indicação não pertence a este Tutor.");
+        if (ind.getStatus() != StatusIndicacao.CONVERTIDA)
+            throw new IllegalStateException("O indicado ainda não confirmou o pagamento (status: " + ind.getStatus() + ").");
+        if (ind.getCobrancaIndicadorId() != null)
+            throw new IllegalStateException("Desconto já aplicado à fatura " + ind.getCobrancaIndicadorId() + ".");
+
+        Optional<String> cobId = descontoFatura.aplicarDescontoProximaFatura(
+            tutorId, new java.math.BigDecimal("0.15"));
+        cobId.ifPresent(id -> {
+            ind.registrarDescontoIndicador(id);
+            indicacaoRepositorio.salvar(ind);
+            auditoriaRepositorio.salvar(new EventoAuditoria(
+                EventoAuditoriaId.gerar(),
+                TipoEventoAuditoria.DESCONTO_INDICADOR_APLICADO,
+                tutorId, indicacaoId,
+                "Desconto de 15% resgatado manualmente e aplicado na cobrança " + id + " (RN-5)."
+            ));
+        });
+        return cobId;
+    }
+
     // ── Painel do Tutor ──────────────────────────────────────────────────────
 
     /**

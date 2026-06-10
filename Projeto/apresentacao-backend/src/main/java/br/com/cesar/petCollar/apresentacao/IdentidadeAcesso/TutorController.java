@@ -15,30 +15,45 @@ import org.springframework.web.bind.annotation.RestController;
 import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.ContratarPlanoUseCase;
 import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.PlanosPadrao;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ProvisionarBeneficiosDoTutorUseCase;
+import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.CPF;
+import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.Indicacao;
+import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.LinkIndicacao;
+import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.ProgramaIndicacaoService;
 import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/tutores")
 public class TutorController {
 
+    private static final Logger log = LoggerFactory.getLogger(TutorController.class);
+
     private final UsuarioRepositorio repositorio;
     private final PasswordEncoder encoder;
     private final ContratarPlanoUseCase contratarPlano;
     private final ProvisionarBeneficiosDoTutorUseCase provisionarBeneficios;
+    private final ProgramaIndicacaoService programaIndicacaoService;
 
     public TutorController(UsuarioRepositorio repositorio,
                            PasswordEncoder encoder,
                            ContratarPlanoUseCase contratarPlano,
-                           ProvisionarBeneficiosDoTutorUseCase provisionarBeneficios) {
+                           ProvisionarBeneficiosDoTutorUseCase provisionarBeneficios,
+                           ProgramaIndicacaoService programaIndicacaoService) {
         this.repositorio = repositorio;
         this.encoder = encoder;
         this.contratarPlano = contratarPlano;
         this.provisionarBeneficios = provisionarBeneficios;
+        this.programaIndicacaoService = programaIndicacaoService;
     }
 
     @PostMapping("/contratar")
@@ -65,6 +80,14 @@ public class TutorController {
         );
         repositorio.salvar(novo);
 
+        if (req.codigoIndicacao() != null && !req.codigoIndicacao().isBlank()) {
+            try {
+                processarIndicacao(req.codigoIndicacao(), req.cpf());
+            } catch (Exception ex) {
+                log.warn("Falha ao processar indicação '{}': {}", req.codigoIndicacao(), ex.getMessage());
+            }
+        }
+
         return ResponseEntity.status(HttpStatus.CREATED).body(new RespostaContratacao(
                 novo.identificador(),
                 novo.nome(),
@@ -72,6 +95,17 @@ public class TutorController {
                 novo.status().name(),
                 gerarCodigoPix(novo.identificador())
         ));
+    }
+
+    private void processarIndicacao(String codigo, String cpfIndicado) {
+        programaIndicacaoService.registrarClique(codigo, CPF.de(cpfIndicado), LocalDateTime.now());
+        programaIndicacaoService.buscarLinkPorCodigo(codigo).ifPresent(link ->
+            repositorio.buscar(Perfil.TUTOR, link.getTutorId().getValor()).ifPresent(indicador ->
+                programaIndicacaoService.criarIndicacaoParaInscrito(
+                    CPF.de(cpfIndicado), CPF.de(indicador.cpf())
+                )
+            )
+        );
     }
 
     @PostMapping("/{identificador}/simular-pagamento")
@@ -88,17 +122,37 @@ public class TutorController {
         tutor.mudarStatus(StatusConta.ATIVA);
         repositorio.salvar(tutor);
 
-        // Boleto inicial confirmado: dispara o caso de uso de contratação que
-        // cria a primeira Cobrança já como PAGA (idempotente).
         PlanoId planoId =
                 (tutor.planoId() != null && !tutor.planoId().isBlank())
                         ? PlanoId.de(tutor.planoId())
                         : PlanosPadrao.ID_PLANO_BASICO_MENSAL;
         TutorId tutorId = TutorId.de(tutor.identificador());
-        contratarPlano.executar(tutorId, planoId);
-        // Provisiona os benefícios do plano (Consulta, Vacinação) respeitando a
-        // carência de cada um — idempotente em reconfirmações.
+
+        // Verifica se este tutor foi indicado para aplicar 30% na primeira fatura (RN-3)
+        Optional<Indicacao> indicacaoPendente = Optional.empty();
+        if (tutor.cpf() != null && !tutor.cpf().isBlank()) {
+            try {
+                indicacaoPendente = programaIndicacaoService
+                    .buscarIndicacaoPendenteParaCpfIndicado(CPF.de(tutor.cpf()));
+            } catch (Exception ex) {
+                log.warn("Não foi possível verificar indicação pendente para o tutor {}: {}",
+                         identificador, ex.getMessage());
+            }
+        }
+
+        BigDecimal descontoIndicacao = indicacaoPendente.isPresent() ? new BigDecimal("0.30") : null;
+        contratarPlano.executar(tutorId, planoId, descontoIndicacao);
         provisionarBeneficios.executar(tutorId, planoId);
+
+        // Confirma a conversão: aplica 15% de desconto na próxima fatura do indicador (RN-5)
+        indicacaoPendente.ifPresent(ind -> {
+            try {
+                programaIndicacaoService.confirmarConversaoManual(ind.getId());
+            } catch (Exception ex) {
+                log.warn("Falha ao confirmar conversão da indicação {}: {}",
+                         ind.getId().getValor(), ex.getMessage());
+            }
+        });
 
         return ResponseEntity.ok(new RespostaContratacao(
                 tutor.identificador(), tutor.nome(), tutor.email(),
@@ -119,7 +173,8 @@ public class TutorController {
             @NotBlank @Email String email,
             @NotBlank String endereco,
             @NotBlank @Size(min = 6, max = 64) String senha,
-            String planoId
+            String planoId,
+            String codigoIndicacao
     ) {}
 
     public record RespostaContratacao(

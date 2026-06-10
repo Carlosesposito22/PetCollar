@@ -103,7 +103,7 @@ export function TutorIndicacoes() {
             pendentes={pendentes}
           />
 
-          <TabelaHistorico indicacoes={historico} />
+          <TabelaHistorico indicacoes={historico} apiFetch={apiFetch} onRecarregar={carregar} />
 
           <Anotacao />
         </>
@@ -196,7 +196,35 @@ function Bloco({
   );
 }
 
-function TabelaHistorico({ indicacoes }: { indicacoes: Indicacao[] }) {
+function TabelaHistorico({
+  indicacoes,
+  apiFetch,
+  onRecarregar,
+}: {
+  indicacoes: Indicacao[];
+  apiFetch: (input: string, init?: RequestInit) => Promise<Response>;
+  onRecarregar: () => void;
+}) {
+  const [resgatando, setResgatando] = useState<string | null>(null);
+  const [feedbackResgatar, setFeedbackResgatar] = useState<Record<string, string>>({});
+
+  async function resgatar(indicacaoId: string) {
+    setResgatando(indicacaoId);
+    try {
+      const res = await apiFetch(`/api/tutor/indicacao/${indicacaoId}/resgatar-desconto`, {
+        method: "POST",
+      });
+      const body = await res.json().catch(() => ({ mensagem: "" })) as { mensagem: string };
+      if (!res.ok) throw new Error(body.mensagem || `Erro HTTP ${res.status}`);
+      setFeedbackResgatar(prev => ({ ...prev, [indicacaoId]: body.mensagem }));
+      onRecarregar();
+    } catch (e) {
+      setFeedbackResgatar(prev => ({ ...prev, [indicacaoId]: (e as Error).message }));
+    } finally {
+      setResgatando(null);
+    }
+  }
+
   if (indicacoes.length === 0) {
     return (
       <div className="card mb-6 px-6 py-10 text-center text-sm text-ink-500">
@@ -215,7 +243,7 @@ function TabelaHistorico({ indicacoes }: { indicacoes: Indicacao[] }) {
               <Th>Status</Th>
               <Th>Data do Clique</Th>
               <Th>Convertida em</Th>
-              <Th>Observação</Th>
+              <Th>Desconto de 15%</Th>
             </tr>
           </thead>
           <tbody className="divide-y divide-ink-300/40">
@@ -225,10 +253,27 @@ function TabelaHistorico({ indicacoes }: { indicacoes: Indicacao[] }) {
                 <Td><BadgeStatus status={ind.status} /></Td>
                 <Td>{formatarDataHora(ind.dataClique)}</Td>
                 <Td>{ind.convertidaEm ? formatarDataHora(ind.convertidaEm) : "—"}</Td>
-                <Td className="text-xs text-ink-400">
-                  {ind.status === "CONVERTIDA" && ind.cobrancaIndicadorId
-                    ? "Desconto aplicado na sua fatura"
-                    : ind.motivoInvalidacao ?? "—"}
+                <Td className="text-xs">
+                  {ind.status === "CONVERTIDA" && ind.cobrancaIndicadorId ? (
+                    <span className="text-brand-600 font-medium">Aplicado na fatura ✓</span>
+                  ) : ind.status === "CONVERTIDA" && !ind.cobrancaIndicadorId ? (
+                    <div className="flex flex-col gap-1">
+                      <button
+                        onClick={() => resgatar(ind.id)}
+                        disabled={resgatando === ind.id}
+                        className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                      >
+                        {resgatando === ind.id ? "Aplicando…" : "Resgatar 15%"}
+                      </button>
+                      {feedbackResgatar[ind.id] && (
+                        <span className="text-ink-500">{feedbackResgatar[ind.id]}</span>
+                      )}
+                    </div>
+                  ) : ind.status === "INVALIDA" ? (
+                    <span className="text-paw-500">{ind.motivoInvalidacao ?? "Inválida"}</span>
+                  ) : (
+                    <span className="text-ink-400">Aguardando pagamento do indicado</span>
+                  )}
                 </Td>
               </tr>
             ))}
