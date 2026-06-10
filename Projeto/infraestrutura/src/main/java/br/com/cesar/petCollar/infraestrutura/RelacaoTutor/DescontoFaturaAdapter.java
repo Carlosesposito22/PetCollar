@@ -2,6 +2,7 @@ package br.com.cesar.petCollar.infraestrutura.RelacaoTutor;
 
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.Cobranca;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.CobrancaId;
+import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.Competencia;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.ICobrancaRepositorio;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.StatusCobranca;
 import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.IDescontoFaturaPort;
@@ -11,7 +12,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -39,9 +43,15 @@ public class DescontoFaturaAdapter implements IDescontoFaturaPort {
             .min(Comparator.comparing(Cobranca::getVencimento));
 
         if (proxima.isEmpty()) {
-            log.warn("[DESCONTO-FATURA] Nenhuma fatura em aberto para o Tutor {} (RN-5).",
-                     tutorId.getValor());
-            return Optional.empty();
+            // Não há fatura pendente: cria a próxima mensalidade com base na última fatura do tutor
+            // para que o crédito de indicação possa ser aplicado imediatamente.
+            proxima = criarProximaFatura(tutorId);
+            if (proxima.isEmpty()) {
+                log.warn("[DESCONTO-FATURA] Nenhuma fatura encontrada para o Tutor {} — não foi possível aplicar desconto (RN-5).",
+                         tutorId.getValor());
+                return Optional.empty();
+            }
+            log.info("[DESCONTO-FATURA] Nova fatura criada para o Tutor {} para aplicação do desconto.", tutorId.getValor());
         }
 
         Cobranca cobranca = proxima.get();
@@ -62,6 +72,32 @@ public class DescontoFaturaAdapter implements IDescontoFaturaPort {
                  percentual.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString(),
                  id.getValor(), tutorId.getValor());
         return Optional.of(id.getValor());
+    }
+
+    /**
+     * Cria a próxima mensalidade do Tutor com base na última fatura registrada.
+     * Usado quando não há fatura pendente e o crédito de indicação precisa ser aplicado.
+     */
+    private Optional<Cobranca> criarProximaFatura(TutorId tutorId) {
+        List<Cobranca> historico = cobrancaRepositorio.listarPorTutor(tutorId);
+        if (historico.isEmpty()) return Optional.empty();
+
+        Cobranca ultima = historico.stream()
+            .max(Comparator.comparing(Cobranca::getVencimento))
+            .get();
+
+        LocalDate proximoVencimento = ultima.getVencimento().plusMonths(1);
+        Cobranca nova = new Cobranca(
+            CobrancaId.gerar(),
+            tutorId,
+            ultima.getPlanoId(),
+            Competencia.de(YearMonth.from(proximoVencimento)),
+            ultima.getValorOriginal(),
+            null,
+            proximoVencimento
+        );
+        cobrancaRepositorio.salvar(nova);
+        return Optional.of(nova);
     }
 
     @Override

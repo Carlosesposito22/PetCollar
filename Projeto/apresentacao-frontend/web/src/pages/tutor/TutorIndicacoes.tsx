@@ -214,10 +214,13 @@ function TabelaHistorico({
       const res = await apiFetch(`/api/tutor/indicacao/${indicacaoId}/resgatar-desconto`, {
         method: "POST",
       });
-      const body = await res.json().catch(() => ({ mensagem: "" })) as { mensagem: string };
+      const body = await res.json().catch(() => ({ cobrancaId: "", mensagem: "" })) as { cobrancaId: string; mensagem: string };
       if (!res.ok) throw new Error(body.mensagem || `Erro HTTP ${res.status}`);
       setFeedbackResgatar(prev => ({ ...prev, [indicacaoId]: body.mensagem }));
-      onRecarregar();
+      // Só recarrega se o desconto foi realmente aplicado numa fatura
+      if (body.cobrancaId) {
+        onRecarregar();
+      }
     } catch (e) {
       setFeedbackResgatar(prev => ({ ...prev, [indicacaoId]: (e as Error).message }));
     } finally {
