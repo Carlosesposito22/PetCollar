@@ -49,6 +49,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/tutores/contratar").permitAll()
                 .requestMatchers("/api/tutores/*/simular-pagamento").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
+                // F-04: clique de indicação é público (pré-login) e webhook é chamado pelo gateway
+                .requestMatchers("/api/tutor/indicacao/clique/**").permitAll()
+                .requestMatchers("/api/tutor/indicacao/inscricao").permitAll()
+                .requestMatchers("/api/tutor/indicacao/webhook/pagamento").permitAll()
                 // Dados de catálogo: especialidades e disponibilidade são públicos para o fluxo de agendamento
                 .requestMatchers("/api/especialidades/**").permitAll()
                 .requestMatchers("/api/medicos/*/horarios-disponiveis").permitAll()

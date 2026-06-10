@@ -20,7 +20,7 @@ import { TutorBeneficios } from "./pages/tutor/TutorBeneficios";
 import { TutorConquistas } from "./pages/tutor/TutorConquistas";
 import { TutorFinanceiro } from "./pages/tutor/TutorFinanceiro";
 import { TutorFinanceiroPagamento } from "./pages/tutor/TutorFinanceiroPagamento";
-import { EmBreve } from "./pages/tutor/EmBreve";
+import { TutorIndicacoes } from "./pages/tutor/TutorIndicacoes";
 import { AgendamentoHub } from "./pages/tutor/agendamento/AgendamentoHub";
 import { NovaConsultaPage } from "./pages/tutor/agendamento/NovaConsultaPage";
 import { AgendamentoRetornoPage } from "./pages/tutor/agendamento/AgendamentoRetornoPage";
@@ -60,7 +60,7 @@ export function App() {
         <Route path="agendamentos/nova-consulta" element={<NovaConsultaPage />} />
         <Route path="agendamentos/retorno" element={<AgendamentoRetornoPage />} />
         <Route path="conquistas" element={<TutorConquistas />} />
-        <Route path="indicacoes" element={<EmBreve titulo="Indicações" />} />
+        <Route path="indicacoes" element={<TutorIndicacoes />} />
         {/* F-03 — acompanhamento do protocolo pelo tutor (RN 15) */}
         <Route path="protocolos/:atendimentoId" element={<AcompanhamentoProtocoloPage />} />
       </Route>
