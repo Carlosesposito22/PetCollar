@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface TriagemJpaRepository extends JpaRepository<TriagemJpa, String> {
+    List<TriagemJpa> findByPacienteId(String pacienteId);
     List<TriagemJpa> findByPacienteIdAndStatus(String pacienteId, String status);
     List<TriagemJpa> findByTutorId(String tutorId);
 }

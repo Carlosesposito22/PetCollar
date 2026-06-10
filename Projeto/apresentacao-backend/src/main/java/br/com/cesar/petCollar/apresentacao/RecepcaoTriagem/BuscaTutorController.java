@@ -3,6 +3,8 @@ package br.com.cesar.petCollar.apresentacao.RecepcaoTriagem;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.Perfil;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.StatusConta;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioRepositorio;
+import br.com.cesar.petCollar.apresentacao.PortalTutor.Paciente;
+import br.com.cesar.petCollar.apresentacao.PortalTutor.PortalTutorRepositorio;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -42,17 +44,32 @@ public class BuscaTutorController {
     private final TriagemJpaRepository triagemRepo;
     private final FilaAtendimentoEmMemoria fila;
     private final UsuarioRepositorio usuarioRepositorio;
+    private final PortalTutorRepositorio portal;
 
     public BuscaTutorController(TutorRecepcaoJpaRepository tutorRepo,
                                 PacienteRecepcaoJpaRepository pacienteRepo,
                                 TriagemJpaRepository triagemRepo,
                                 FilaAtendimentoEmMemoria fila,
-                                UsuarioRepositorio usuarioRepositorio) {
+                                UsuarioRepositorio usuarioRepositorio,
+                                PortalTutorRepositorio portal) {
         this.tutorRepo          = tutorRepo;
         this.pacienteRepo       = pacienteRepo;
         this.triagemRepo        = triagemRepo;
         this.fila               = fila;
         this.usuarioRepositorio = usuarioRepositorio;
+        this.portal             = portal;
+    }
+
+    /**
+     * Chave única do tutor compartilhada entre a recepção e o portal do tutor.
+     * Usamos o e-mail (mesmo identificador de login do tutor no portal), de modo
+     * que o paciente cadastrado em qualquer um dos fluxos apareça nos dois.
+     * Sem e-mail, cai no id da recepção (visível só internamente).
+     */
+    private String chaveTutor(TutorRecepcaoJpa t) {
+        return (t.getEmail() != null && !t.getEmail().isBlank())
+            ? t.getEmail().trim()
+            : t.getId();
     }
 
     // ── F01: Busca tutor por CPF ──────────────────────────────────────────────
@@ -103,8 +120,8 @@ public class BuscaTutorController {
 
     @DeleteMapping("/tutores/{id}")
     public ResponseEntity<Void> excluirTutor(@PathVariable String id) {
-        if (!tutorRepo.existsById(id)) throw new TutorNaoEncontradoException();
-        pacienteRepo.findByTutorId(id).forEach(pacienteRepo::delete);
+        TutorRecepcaoJpa t = tutorRepo.findById(id).orElseThrow(TutorNaoEncontradoException::new);
+        portal.listarPacientesDoTutor(chaveTutor(t)).forEach(p -> portal.removerPaciente(p.id()));
         tutorRepo.deleteById(id);
         return ResponseEntity.noContent().build();
     }
@@ -113,7 +130,8 @@ public class BuscaTutorController {
 
     @GetMapping("/tutores/{tutorId}/pacientes")
     public List<PacienteDTO> listarPacientes(@PathVariable String tutorId) {
-        return pacienteRepo.findByTutorId(tutorId).stream()
+        TutorRecepcaoJpa t = tutorRepo.findById(tutorId).orElseThrow(TutorNaoEncontradoException::new);
+        return portal.listarPacientesDoTutor(chaveTutor(t)).stream()
             .map(PacienteDTO::de).toList();
     }
 
@@ -121,13 +139,13 @@ public class BuscaTutorController {
     public ResponseEntity<PacienteDTO> cadastrarPaciente(
             @PathVariable String tutorId,
             @Valid @RequestBody RequisicaoPaciente req) {
-        if (!tutorRepo.existsById(tutorId))
-            throw new TutorNaoEncontradoException();
-        PacienteRecepcaoJpa p = new PacienteRecepcaoJpa(
-            UUID.randomUUID().toString(), tutorId,
-            req.nome(), req.especie(), req.raca(), req.nascimento());
-        pacienteRepo.save(p);
-        return ResponseEntity.status(HttpStatus.CREATED).body(PacienteDTO.de(p));
+        TutorRecepcaoJpa t = tutorRepo.findById(tutorId).orElseThrow(TutorNaoEncontradoException::new);
+        Paciente novo = new Paciente(
+            portal.novoId(), chaveTutor(t),
+            req.nome(), req.especie(), req.raca(), req.nascimento(),
+            req.pesoKg(), req.sexo());
+        portal.salvarPaciente(novo);
+        return ResponseEntity.status(HttpStatus.CREATED).body(PacienteDTO.de(novo));
     }
 
     @PutMapping("/tutores/{tutorId}/pacientes/{pacienteId}")
@@ -135,14 +153,13 @@ public class BuscaTutorController {
             @PathVariable String tutorId,
             @PathVariable String pacienteId,
             @Valid @RequestBody RequisicaoPaciente req) {
-        PacienteRecepcaoJpa p = pacienteRepo.findById(pacienteId)
-            .filter(x -> x.getTutorId().equals(tutorId))
+        TutorRecepcaoJpa t = tutorRepo.findById(tutorId).orElseThrow(TutorNaoEncontradoException::new);
+        Paciente p = portal.buscarPaciente(pacienteId)
+            .filter(x -> x.tutorId().equalsIgnoreCase(chaveTutor(t)))
             .orElseThrow(() -> new RuntimeException("Paciente não encontrado."));
-        p.setNome(req.nome());
-        p.setEspecie(req.especie());
-        p.setRaca(req.raca());
-        p.setNascimento(req.nascimento());
-        pacienteRepo.save(p);
+        p.atualizar(req.nome(), req.especie(), req.raca(), req.nascimento(),
+            req.pesoKg(), req.sexo());
+        portal.salvarPaciente(p);
         return ResponseEntity.ok(PacienteDTO.de(p));
     }
 
@@ -150,10 +167,11 @@ public class BuscaTutorController {
     public ResponseEntity<Void> excluirPaciente(
             @PathVariable String tutorId,
             @PathVariable String pacienteId) {
-        PacienteRecepcaoJpa p = pacienteRepo.findById(pacienteId)
-            .filter(x -> x.getTutorId().equals(tutorId))
+        TutorRecepcaoJpa t = tutorRepo.findById(tutorId).orElseThrow(TutorNaoEncontradoException::new);
+        Paciente p = portal.buscarPaciente(pacienteId)
+            .filter(x -> x.tutorId().equalsIgnoreCase(chaveTutor(t)))
             .orElseThrow(() -> new RuntimeException("Paciente não encontrado."));
-        pacienteRepo.delete(p);
+        portal.removerPaciente(p.id());
         return ResponseEntity.noContent().build();
     }
 
@@ -173,8 +191,9 @@ public class BuscaTutorController {
             @Valid @RequestBody RequisicaoTriagem req,
             Principal principal) {
 
-        PacienteRecepcaoJpa paciente = pacienteRepo.findById(pacienteId)
-            .filter(x -> x.getTutorId().equals(tutorId))
+        TutorRecepcaoJpa t = tutorRepo.findById(tutorId).orElseThrow(TutorNaoEncontradoException::new);
+        Paciente paciente = portal.buscarPaciente(pacienteId)
+            .filter(x -> x.tutorId().equalsIgnoreCase(chaveTutor(t)))
             .orElseThrow(() -> new RuntimeException("Paciente não encontrado."));
 
         var emElaboracao = triagemRepo.findByPacienteIdAndStatus(pacienteId, "EM_ELABORACAO");
@@ -196,13 +215,13 @@ public class BuscaTutorController {
 
         fila.inserir(new FilaAtendimentoEmMemoria.ItemFila(
             pacienteId, triagem.getId(), cor, triagem.getFinalizadaEm(),
-            paciente.getNome(), tutorId));
+            paciente.nome(), tutorId));
 
         boolean grave = req.codigosSintomas().stream()
             .anyMatch(c -> List.of("S05", "S06", "S07", "S14").contains(c));
         if (score >= 10 || grave) {
-            paciente.setInfectocontagiosoRecente(true, LocalDateTime.now());
-            pacienteRepo.save(paciente);
+            paciente.marcarInfectocontagioso(true, LocalDateTime.now());
+            portal.salvarPaciente(paciente);
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(TriagemDTO.de(triagem));
@@ -256,11 +275,11 @@ public class BuscaTutorController {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private RespostaTutorDTO montarRespostaTutor(TutorRecepcaoJpa t) {
-        List<PacienteRecepcaoJpa> pacientes = pacienteRepo.findByTutorId(t.getId());
+        List<Paciente> pacientes = portal.listarPacientesDoTutor(chaveTutor(t));
         boolean alerta = pacientes.stream().anyMatch(p ->
-            p.isInfectocontagiosoRecente()
-            && p.getDataUltimoDiagnostico() != null
-            && p.getDataUltimoDiagnostico().isAfter(LocalDateTime.now().minusDays(40)));
+            p.infectocontagiosoRecente()
+            && p.dataUltimoDiagnostico() != null
+            && p.dataUltimoDiagnostico().isAfter(LocalDateTime.now().minusDays(40)));
         return new RespostaTutorDTO(
             t.getId(), t.getNome(), t.getCpf(), t.getTelefone(), t.getEmail(),
             alerta,
@@ -288,11 +307,13 @@ public class BuscaTutorController {
 
     public record PacienteDTO(
         String id, String tutorId, String nome, String especie,
-        String raca, LocalDate nascimento, boolean infectocontagiosoRecente) {
-        public static PacienteDTO de(PacienteRecepcaoJpa p) {
-            return new PacienteDTO(p.getId(), p.getTutorId(), p.getNome(),
-                p.getEspecie(), p.getRaca(), p.getNascimento(),
-                p.isInfectocontagiosoRecente());
+        String raca, LocalDate nascimento, Double pesoKg, String sexo,
+        boolean infectocontagiosoRecente) {
+        public static PacienteDTO de(Paciente p) {
+            return new PacienteDTO(p.id(), p.tutorId(), p.nome(),
+                p.especie(), p.raca(), p.nascimento(),
+                p.pesoKg(), p.sexo(),
+                p.infectocontagiosoRecente());
         }
     }
 
@@ -319,7 +340,8 @@ public class BuscaTutorController {
         String telefone, String email) {}
 
     public record RequisicaoPaciente(
-        @NotBlank String nome, String especie, String raca, LocalDate nascimento) {}
+        @NotBlank String nome, String especie, String raca, LocalDate nascimento,
+        Double pesoKg, String sexo) {}
 
     public record RequisicaoTriagem(List<String> codigosSintomas) {}
 

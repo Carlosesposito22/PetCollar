@@ -8,7 +8,18 @@ export interface PacienteDTO {
   especie: string;
   raca: string;
   nascimento: string | null;
+  pesoKg: number | null;
+  sexo: string | null;
   infectocontagiosoRecente: boolean;
+}
+
+export interface DadosPaciente {
+  nome: string;
+  especie: string;
+  raca: string;
+  nascimento: string;
+  pesoKg: number | null;
+  sexo: string;
 }
 
 export interface TutorDTO {
@@ -128,7 +139,7 @@ export function useRecepcao() {
 
   const cadastrarPaciente = useCallback(async (
     tutorId: string,
-    dados: { nome: string; especie: string; raca: string; nascimento: string }
+    dados: DadosPaciente
   ): Promise<PacienteDTO | null> => {
     setCarregando(true);
     setErro(null);
@@ -153,7 +164,7 @@ export function useRecepcao() {
   const editarPaciente = useCallback(async (
     tutorId: string,
     pacienteId: string,
-    dados: { nome: string; especie: string; raca: string; nascimento: string }
+    dados: DadosPaciente
   ): Promise<PacienteDTO | null> => {
     setCarregando(true);
     setErro(null);

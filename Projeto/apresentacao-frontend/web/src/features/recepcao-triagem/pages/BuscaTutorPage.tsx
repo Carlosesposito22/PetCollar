@@ -1,6 +1,27 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRecepcao, type TutorDTO, type PacienteDTO, type SintomaDTO } from "../hooks/useRecepcao";
+import { useRecepcao, type TutorDTO, type PacienteDTO, type SintomaDTO, type DadosPaciente } from "../hooks/useRecepcao";
+
+/** Idade legível a partir da data de nascimento (anos, ou meses se < 1 ano). */
+function calcularIdade(nascimento: string | null): string {
+  if (!nascimento) return "—";
+  const nasc = new Date(nascimento);
+  if (Number.isNaN(nasc.getTime())) return "—";
+  const hoje = new Date();
+  let meses = (hoje.getFullYear() - nasc.getFullYear()) * 12 + (hoje.getMonth() - nasc.getMonth());
+  if (hoje.getDate() < nasc.getDate()) meses--;
+  if (meses < 0) return "—";
+  if (meses < 1) return "< 1 mês";
+  if (meses < 12) return `${meses} ${meses === 1 ? "mês" : "meses"}`;
+  const anos = Math.floor(meses / 12);
+  return `${anos} ${anos === 1 ? "ano" : "anos"}`;
+}
+
+function labelSexo(sexo: string | null): string {
+  if (sexo === "MACHO") return "Macho";
+  if (sexo === "FEMEA") return "Fêmea";
+  return "";
+}
 
 function formatCpf(v: string) {
   const d = v.replace(/\D/g, "").slice(0, 11);
@@ -105,21 +126,30 @@ function ModalTutor({ tutor, cpfInicial, onSalvar, onClose }: {
 
 function ModalPaciente({ paciente, onSalvar, onClose }: {
   paciente?: PacienteDTO;
-  onSalvar: (d: { nome: string; especie: string; raca: string; nascimento: string }) => Promise<void>;
+  onSalvar: (d: DadosPaciente) => Promise<void>;
   onClose: () => void;
 }) {
   const [nome, setNome]   = useState(paciente?.nome || "");
   const [esp, setEsp]     = useState(paciente?.especie || "");
   const [raca, setRaca]   = useState(paciente?.raca || "");
   const [nasc, setNasc]   = useState(paciente?.nascimento?.slice(0, 10) || "");
+  const [peso, setPeso]   = useState(paciente?.pesoKg != null ? String(paciente.pesoKg) : "");
+  const [sexo, setSexo]   = useState(paciente?.sexo || "");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit() {
     if (!nome.trim()) return;
     setLoading(true);
-    await onSalvar({ nome, especie: esp, raca, nascimento: nasc });
+    const pesoNum = peso.trim() === "" ? null : Number(peso.replace(",", "."));
+    await onSalvar({
+      nome, especie: esp, raca, nascimento: nasc,
+      pesoKg: pesoNum != null && !Number.isNaN(pesoNum) ? pesoNum : null,
+      sexo,
+    });
     setLoading(false);
   }
+
+  const idadePreview = calcularIdade(nasc || null);
 
   return (
     <Modal titulo={paciente ? "Editar Paciente" : "Cadastrar Paciente"} onClose={onClose}>
@@ -145,10 +175,31 @@ function ModalPaciente({ paciente, onSalvar, onClose }: {
               className="w-full rounded-xl border border-ink-300 px-4 py-2.5 text-sm" />
           </div>
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-ink-700">Sexo</label>
+            <select value={sexo} onChange={e => setSexo(e.target.value)}
+              className="w-full rounded-xl border border-ink-300 px-4 py-2.5 text-sm">
+              <option value="">—</option>
+              <option value="MACHO">Macho</option>
+              <option value="FEMEA">Fêmea</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-ink-700">Peso (kg)</label>
+            <input value={peso} onChange={e => setPeso(e.target.value)}
+              type="number" step="0.1" min="0" inputMode="decimal"
+              className="w-full rounded-xl border border-ink-300 px-4 py-2.5 text-sm"
+              placeholder="0.0" />
+          </div>
+        </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-ink-700">Nascimento</label>
           <input type="date" value={nasc} onChange={e => setNasc(e.target.value)}
             className="w-full rounded-xl border border-ink-300 px-4 py-2.5 text-sm" />
+          {nasc && (
+            <p className="mt-1 text-xs text-ink-500">Idade calculada: <strong>{idadePreview}</strong></p>
+          )}
         </div>
         <div className="flex gap-3 pt-2">
           <button onClick={onClose} className="btn-ghost flex-1">Cancelar</button>
@@ -467,8 +518,12 @@ export function BuscaTutorPage() {
                         )}
                       </div>
                       <p className="mt-0.5 text-xs text-ink-500">
-                        {[p.especie, p.raca].filter(Boolean).join(" · ")}
-                        {p.nascimento && ` · Nasc: ${new Date(p.nascimento).toLocaleDateString("pt-BR")}`}
+                        {[
+                          [p.especie, p.raca].filter(Boolean).join(" "),
+                          labelSexo(p.sexo),
+                          p.pesoKg != null ? `${p.pesoKg} kg` : "",
+                          p.nascimento ? `${calcularIdade(p.nascimento)}` : "",
+                        ].filter(Boolean).join(" · ")}
                       </p>
                     </div>
                     <div className="flex gap-2">

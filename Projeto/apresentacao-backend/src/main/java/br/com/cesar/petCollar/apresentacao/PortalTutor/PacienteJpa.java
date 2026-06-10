@@ -6,6 +6,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "pacientes")
@@ -23,6 +24,10 @@ public class PacienteJpa {
     private String especie;
     private String raca;
     private LocalDate nascimento;
+    private Double pesoKg;
+    private String sexo;
+    private Boolean infectocontagiosoRecente;   // nullable: coluna adicionada a tabela com dados existentes
+    private LocalDateTime dataUltimoDiagnostico;
 
     protected PacienteJpa() {}
 
@@ -34,11 +39,16 @@ public class PacienteJpa {
         jpa.especie   = p.especie();
         jpa.raca      = p.raca();
         jpa.nascimento = p.nascimento();
+        jpa.pesoKg    = p.pesoKg();
+        jpa.sexo      = p.sexo();
+        jpa.infectocontagiosoRecente = p.infectocontagiosoRecente();
+        jpa.dataUltimoDiagnostico    = p.dataUltimoDiagnostico();
         return jpa;
     }
 
     public Paciente toDomain() {
-        return new Paciente(id, tutorId, nome, especie, raca, nascimento);
+        return new Paciente(id, tutorId, nome, especie, raca, nascimento, pesoKg, sexo,
+                Boolean.TRUE.equals(infectocontagiosoRecente), dataUltimoDiagnostico);
     }
 
     public String getId()     { return id; }

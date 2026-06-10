@@ -47,10 +47,22 @@ export type ProntuarioDTO = {
 };
 
 export type TriagemResumoDTO = {
+  id: string;
   data: string;
   motivo: string;
   corDeRisco: "VERMELHO" | "AMARELO" | "VERDE";
   pesoTotal: number;
+};
+
+export type VacinaPendenteDTO = {
+  cicloId: string;
+  doseId: string;
+  ciclo: string;
+  rotulo: string;
+  doseNumero: number;
+  totalDoses: number;
+  status: "PENDENTE" | "EM_ATRASO";
+  dataAgendada: string;
 };
 
 export type AtendimentoMedicoDTO = {
@@ -124,9 +136,12 @@ export function criarMedicoService(apiFetch: ApiFetch) {
     listarFilaDeEspera: (): Promise<FilaItemDTO[]> =>
       json<FilaItemDTO[]>(apiFetch("/api/medico/fila-encaminhada")),
 
-    buscarProntuario: (pacienteId: string): Promise<ProntuarioDTO> => {
-      const stub = PRONTUARIOS_STUB[pacienteId] ?? gerarProntuarioStub(pacienteId);
-      return Promise.resolve(stub);
+    buscarProntuario: async (pacienteId: string): Promise<ProntuarioDTO> => {
+      try {
+        return await json<ProntuarioDTO>(apiFetch(`/api/medico/pacientes/${pacienteId}`));
+      } catch {
+        return PRONTUARIOS_STUB[pacienteId] ?? gerarProntuarioStub(pacienteId);
+      }
     },
 
     listarAtendimentosDoDia: async (): Promise<AtendimentoDoDiaDTO[]> => {
@@ -189,6 +204,31 @@ export function criarMedicoService(apiFetch: ApiFetch) {
       json<RegistroHistoricoDTO[]>(
         apiFetch(`/api/medico/relatorio/paciente/${pacienteId}/historico`)
       ),
+
+    atualizarPesoPaciente: async (pacienteId: string, pesoKg: number): Promise<void> => {
+      await lancarSeErro(
+        await apiFetch(`/api/medico/pacientes/${pacienteId}/peso`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pesoKg }),
+        })
+      );
+    },
+
+    listarVacinasPendentes: (pacienteId: string): Promise<VacinaPendenteDTO[]> =>
+      json<VacinaPendenteDTO[]>(apiFetch(`/api/medico/pacientes/${pacienteId}/vacinas-pendentes`)),
+
+    aplicarVacina: async (
+      pacienteId: string, cicloId: string, doseId: string, lote: string
+    ): Promise<void> => {
+      await lancarSeErro(
+        await apiFetch(`/api/medico/pacientes/${pacienteId}/vacinas/aplicar`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cicloId, doseId, lote }),
+        })
+      );
+    },
   };
 }
 
@@ -232,8 +272,8 @@ const PRONTUARIOS_STUB: Record<string, ProntuarioDTO> = {
       { rotulo: "Alerta Comportamental", alerta: true },
     ],
     triagens: [
-      { data: "2026-04-28", motivo: "Vômitos frequentes", corDeRisco: "AMARELO", pesoTotal: 5 },
-      { data: "2026-03-15", motivo: "Check-up preventivo", corDeRisco: "VERDE", pesoTotal: 0 },
+      { id: "stub-max-1", data: "2026-04-28", motivo: "Vômitos frequentes", corDeRisco: "AMARELO", pesoTotal: 5 },
+      { id: "stub-max-2", data: "2026-03-15", motivo: "Check-up preventivo", corDeRisco: "VERDE", pesoTotal: 0 },
     ],
   },
   "pac-luna": {
@@ -248,7 +288,7 @@ const PRONTUARIOS_STUB: Record<string, ProntuarioDTO> = {
     alergias: [],
     tags: [{ rotulo: "Adulto", alerta: false }],
     triagens: [
-      { data: "2026-04-28", motivo: "Apatia e recusa alimentar", corDeRisco: "VERMELHO", pesoTotal: 12 },
+      { id: "stub-luna-1", data: "2026-04-28", motivo: "Apatia e recusa alimentar", corDeRisco: "VERMELHO", pesoTotal: 12 },
     ],
   },
 };

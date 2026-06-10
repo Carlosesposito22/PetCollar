@@ -8,10 +8,33 @@ export type Paciente = {
   raca: string;
   nascimento: string; // ISO date
   idade: number;
+  pesoKg: number | null;
+  sexo: string | null;
   vacinaEmAtraso: boolean;
 };
 
 const ESPECIES = ["Cão", "Gato", "Ave", "Roedor", "Réptil", "Outro"];
+
+/** Idade legível a partir da data de nascimento (anos, ou meses se < 1 ano). */
+function idadeLegivel(nascimento: string): string {
+  if (!nascimento) return "—";
+  const nasc = new Date(nascimento);
+  if (Number.isNaN(nasc.getTime())) return "—";
+  const hoje = new Date();
+  let meses = (hoje.getFullYear() - nasc.getFullYear()) * 12 + (hoje.getMonth() - nasc.getMonth());
+  if (hoje.getDate() < nasc.getDate()) meses--;
+  if (meses < 0) return "—";
+  if (meses < 1) return "< 1 mês";
+  if (meses < 12) return `${meses} ${meses === 1 ? "mês" : "meses"}`;
+  const anos = Math.floor(meses / 12);
+  return `${anos} ${anos === 1 ? "ano" : "anos"}`;
+}
+
+function labelSexo(sexo: string | null): string {
+  if (sexo === "MACHO") return "Macho";
+  if (sexo === "FEMEA") return "Fêmea";
+  return "—";
+}
 
 export function TutorInicio() {
   const { apiFetch } = useAuth();
@@ -132,7 +155,9 @@ function PacienteCard({
       <dl className="mt-3 space-y-1 text-sm text-ink-700">
         <Linha rotulo="Espécie" valor={paciente.especie} />
         <Linha rotulo="Raça" valor={paciente.raca} />
-        <Linha rotulo="Idade" valor={`${paciente.idade} ${paciente.idade === 1 ? "ano" : "anos"}`} />
+        <Linha rotulo="Sexo" valor={labelSexo(paciente.sexo)} />
+        <Linha rotulo="Peso" valor={paciente.pesoKg != null ? `${paciente.pesoKg} kg` : "—"} />
+        <Linha rotulo="Idade" valor={idadeLegivel(paciente.nascimento)} />
       </dl>
 
       {/* Botões fixados na base, alinhados entre todos os cards */}
@@ -177,6 +202,8 @@ function PacienteFormModal({
   const [especie, setEspecie] = useState(inicial?.especie ?? ESPECIES[0]);
   const [raca, setRaca] = useState(inicial?.raca ?? "");
   const [nascimento, setNascimento] = useState(inicial?.nascimento ?? "");
+  const [sexo, setSexo] = useState(inicial?.sexo ?? "");
+  const [peso, setPeso] = useState(inicial?.pesoKg != null ? String(inicial.pesoKg) : "");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -185,7 +212,12 @@ function PacienteFormModal({
     setErro(null);
     setEnviando(true);
     try {
-      const corpo = JSON.stringify({ nome, especie, raca, nascimento });
+      const pesoNum = peso.trim() === "" ? null : Number(peso.replace(",", "."));
+      const corpo = JSON.stringify({
+        nome, especie, raca, nascimento,
+        pesoKg: pesoNum != null && !Number.isNaN(pesoNum) ? pesoNum : null,
+        sexo,
+      });
       const res = inicial
         ? await apiFetch(`/api/tutor/pacientes/${inicial.id}`, { method: "PUT", body: corpo })
         : await apiFetch("/api/tutor/pacientes", { method: "POST", body: corpo });
@@ -222,10 +254,28 @@ function PacienteFormModal({
             <input id="raca" required className="input" value={raca} onChange={e => setRaca(e.target.value)} />
           </div>
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label" htmlFor="sexo">Sexo</label>
+            <select id="sexo" className="input" value={sexo} onChange={e => setSexo(e.target.value)}>
+              <option value="">—</option>
+              <option value="MACHO">Macho</option>
+              <option value="FEMEA">Fêmea</option>
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="peso">Peso (kg)</label>
+            <input id="peso" type="number" step="0.1" min="0" inputMode="decimal" className="input"
+                   value={peso} onChange={e => setPeso(e.target.value)} placeholder="0.0" />
+          </div>
+        </div>
         <div>
           <label className="label" htmlFor="nascimento">Data de nascimento</label>
           <input id="nascimento" type="date" required className="input" max={new Date().toISOString().slice(0, 10)}
                  value={nascimento} onChange={e => setNascimento(e.target.value)} />
+          {nascimento && (
+            <p className="mt-1 text-xs text-ink-500">Idade calculada: <strong>{idadeLegivel(nascimento)}</strong></p>
+          )}
         </div>
         <div className="mt-2 flex justify-end gap-2">
           <button type="button" onClick={onFechar} className="btn-ghost ring-1 ring-ink-300">Cancelar</button>

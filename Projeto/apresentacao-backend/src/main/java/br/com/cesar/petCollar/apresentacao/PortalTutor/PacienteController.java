@@ -48,7 +48,8 @@ public class PacienteController {
     public ResponseEntity<PacienteDTO> criar(@Valid @RequestBody RequisicaoPaciente req, Principal principal) {
         Paciente novo = new Paciente(
                 repositorio.novoId(), principal.getName(),
-                req.nome(), req.especie(), req.raca(), req.nascimento());
+                req.nome(), req.especie(), req.raca(), req.nascimento(),
+                req.pesoKg(), req.sexo());
         repositorio.salvarPaciente(novo);
         return ResponseEntity.status(HttpStatus.CREATED).body(PacienteDTO.de(novo, false));
     }
@@ -56,7 +57,8 @@ public class PacienteController {
     @PutMapping("/{id}")
     public PacienteDTO atualizar(@PathVariable String id, @Valid @RequestBody RequisicaoPaciente req, Principal principal) {
         Paciente p = obterDoTutor(id, principal);
-        p.atualizar(req.nome(), req.especie(), req.raca(), req.nascimento());
+        p.atualizar(req.nome(), req.especie(), req.raca(), req.nascimento(),
+                req.pesoKg(), req.sexo());
         repositorio.salvarPaciente(p);
         return PacienteDTO.de(p, cicloVacinalService.possuiVacinaEmAtraso(PacienteId.de(p.id())));
     }
@@ -81,16 +83,19 @@ public class PacienteController {
             @NotBlank String nome,
             @NotBlank String especie,
             @NotBlank String raca,
-            @NotNull LocalDate nascimento
+            @NotNull LocalDate nascimento,
+            Double pesoKg,
+            String sexo
     ) {}
 
     public record PacienteDTO(
             String id, String nome, String especie, String raca,
-            LocalDate nascimento, int idade, boolean vacinaEmAtraso
+            LocalDate nascimento, int idade, Double pesoKg, String sexo,
+            boolean vacinaEmAtraso
     ) {
         static PacienteDTO de(Paciente p, boolean vacinaEmAtraso) {
             return new PacienteDTO(p.id(), p.nome(), p.especie(), p.raca(),
-                    p.nascimento(), p.idadeEmAnos(), vacinaEmAtraso);
+                    p.nascimento(), p.idadeEmAnos(), p.pesoKg(), p.sexo(), vacinaEmAtraso);
         }
     }
 

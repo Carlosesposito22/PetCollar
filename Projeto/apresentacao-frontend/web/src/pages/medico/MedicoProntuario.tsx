@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { criarMedicoService, type ProntuarioDTO } from "./medicoService";
+import { gerarPdfRelatorio, listarRelatorios, type RelatorioSalvo } from "./relatorioStorage";
 
 export function MedicoProntuario() {
   const { pacienteId } = useParams<{ pacienteId: string }>();
@@ -12,9 +13,11 @@ export function MedicoProntuario() {
   const [prontuario, setProntuario] = useState<ProntuarioDTO | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [relatorios, setRelatorios] = useState<RelatorioSalvo[]>([]);
 
   useEffect(() => {
     if (!pacienteId) return;
+    setRelatorios(listarRelatorios(pacienteId));
     service
       .buscarProntuario(pacienteId)
       .then(setProntuario)
@@ -131,7 +134,15 @@ export function MedicoProntuario() {
         ) : (
           <div className="space-y-3">
             {prontuario.triagens.map((t, i) => (
-              <TriagemItem key={i} triagem={t} />
+              <TriagemItem
+                key={t.id ?? i}
+                triagem={t}
+                relatorio={relatorios.find((r) => r.triagemId === t.id) ?? null}
+                onBaixarRelatorio={(r) => gerarPdfRelatorio(r)}
+                onEmitirRelatorio={() =>
+                  navigate(`/medico/prontuario/${pacienteId}/relatorio?triagem=${t.id}`)
+                }
+              />
             ))}
           </div>
         )}
@@ -143,7 +154,14 @@ export function MedicoProntuario() {
         <div className="grid grid-cols-2 gap-3">
           <BotaoAcao
             titulo="Relatório Clínico"
-            onClick={() => navigate(`/medico/prontuario/${pacienteId}/relatorio`)}
+            onClick={() => {
+              const ultima = prontuario.triagens[0];
+              if (!ultima) {
+                alert("Nenhum atendimento (triagem) registrado. O relatório é emitido por atendimento.");
+                return;
+              }
+              navigate(`/medico/prontuario/${pacienteId}/relatorio?triagem=${ultima.id}`);
+            }}
             destaque
           />
           <BotaoAcao
@@ -179,9 +197,12 @@ function CampoInfo({ rotulo, valor }: { rotulo: string; valor: string }) {
 }
 
 function TriagemItem({
-  triagem,
+  triagem, relatorio, onBaixarRelatorio, onEmitirRelatorio,
 }: {
-  triagem: { data: string; motivo: string; corDeRisco: "VERMELHO" | "AMARELO" | "VERDE"; pesoTotal: number };
+  triagem: { id: string; data: string; motivo: string; corDeRisco: "VERMELHO" | "AMARELO" | "VERDE"; pesoTotal: number };
+  relatorio: RelatorioSalvo | null;
+  onBaixarRelatorio: (r: RelatorioSalvo) => void;
+  onEmitirRelatorio: () => void;
 }) {
   const corConfig = {
     VERMELHO: { bg: "bg-red-50",    ring: "ring-red-200",    text: "text-red-700",    ponto: "🔴", rotulo: "Vermelho" },
@@ -207,7 +228,7 @@ function TriagemItem({
           <span className="font-medium text-ink-700">Motivo:</span> {triagem.motivo}
         </p>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex flex-wrap items-center gap-2 shrink-0">
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${corConfig.bg} ${corConfig.ring} ${corConfig.text}`}
         >
@@ -216,6 +237,25 @@ function TriagemItem({
         <span className="text-xs text-ink-500">
           | PesoTotal: <strong className="text-ink-700">{triagem.pesoTotal}</strong>
         </span>
+        {relatorio ? (
+          <button
+            type="button"
+            onClick={() => onBaixarRelatorio(relatorio)}
+            className="inline-flex items-center gap-1 rounded-lg border border-brand-300 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition hover:bg-brand-100"
+            title="Ver/baixar o relatório clínico já emitido para este atendimento"
+          >
+            📄 Ver Relatório
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onEmitirRelatorio}
+            className="inline-flex items-center gap-1 rounded-lg border border-ink-300 bg-white px-2.5 py-1 text-xs font-medium text-ink-700 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
+            title="Emitir o relatório clínico deste atendimento"
+          >
+            ✍ Emitir Relatório
+          </button>
+        )}
       </div>
     </div>
   );
