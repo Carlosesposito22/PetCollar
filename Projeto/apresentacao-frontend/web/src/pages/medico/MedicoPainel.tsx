@@ -14,7 +14,7 @@ export function MedicoPainel() {
   const navigate = useNavigate();
   const service = useMemo(() => criarMedicoService(apiFetch), [apiFetch]);
 
-  // ── Fila de espera ─────────────────────────────────────────────────────────
+  // ── Fila de espera (pacientes encaminhados para este médico) ──────────────
   const [fila, setFila] = useState<FilaItemDTO[]>([]);
   const [carregandoFila, setCarregandoFila] = useState(true);
   const [erroFila, setErroFila] = useState<string | null>(null);
@@ -31,7 +31,6 @@ export function MedicoPainel() {
     }
   }, [service]);
 
-  // Polling da fila a cada 15 s
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     void carregarFila();
@@ -39,7 +38,7 @@ export function MedicoPainel() {
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [carregarFila]);
 
-  // ── Atendimentos do dia ────────────────────────────────────────────────────
+  // ── Consultas agendadas ───────────────────────────────────────────────────
   const [atendimentos, setAtendimentos] = useState<AtendimentoDoDiaDTO[]>([]);
   const [carregandoAtend, setCarregandoAtend] = useState(true);
 
@@ -49,17 +48,10 @@ export function MedicoPainel() {
       .finally(() => setCarregandoAtend(false));
   }, [service]);
 
-  // ── Consultório do médico ─────────────────────────────────────────────────
-  // TODO: buscar consultório vinculado ao médico via endpoint ainda não implementado.
-  // Endpoint esperado: GET /api/medico/me  (retorna { consultorioId, consultorioNome, ... })
-  // Funcionalidade relacionada: F-02 (Triagem) / F-10 (Relatório Clínico Evolutivo)
-  const nomeConsultorio = "1";
-
   const medicoNome = session?.user.nome ?? session?.user.identificador ?? "Médico";
 
   return (
     <div>
-      {/* Cabeçalho da página */}
       <div className="mb-6">
         <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-700">
           Painel do Médico Veterinário
@@ -67,16 +59,16 @@ export function MedicoPainel() {
         <h1 className="mt-1 text-2xl font-bold text-ink-900">{medicoNome}</h1>
       </div>
 
-      {/* Dois painéis lado a lado */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* ── Painel esquerdo: Pacientes Aguardando ───────────────────────── */}
+
+        {/* ── Painel esquerdo: Encaminhados pela recepção ─────────────────── */}
         <section className="card flex flex-col p-0 overflow-hidden">
           <div className="border-b border-ink-200/60 px-6 py-4">
             <h2 className="text-base font-semibold text-ink-900">
-              Pacientes Aguardando (Consultório {nomeConsultorio})
+              Pacientes Encaminhados
             </h2>
             <p className="mt-0.5 text-xs text-ink-500">
-              Atualizado automaticamente a cada 15 s
+              Encaminhados pela recepção · atualizado a cada 15 s
             </p>
           </div>
 
@@ -99,7 +91,9 @@ export function MedicoPainel() {
             ) : fila.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                 <span className="mb-2 text-3xl">🐾</span>
-                <p className="text-sm text-ink-500">Nenhum paciente aguardando no momento.</p>
+                <p className="text-sm text-ink-500">
+                  Nenhum paciente encaminhado no momento.
+                </p>
               </div>
             ) : (
               fila.map((item) => (
@@ -113,7 +107,7 @@ export function MedicoPainel() {
           </div>
         </section>
 
-        {/* ── Painel direito: Atendimentos do Dia ─────────────────────────── */}
+        {/* ── Painel direito: Consultas agendadas ─────────────────────────── */}
         <section className="card flex flex-col p-0 overflow-hidden">
           <div className="border-b border-ink-200/60 px-6 py-4">
             <h2 className="text-base font-semibold text-ink-900">Consultas Agendadas</h2>
@@ -160,38 +154,32 @@ export function MedicoPainel() {
         </section>
       </div>
 
-      {/* Nota informativa */}
       <div className="mt-8 rounded-3xl border border-dashed border-ink-300/70 bg-white/90 p-5 text-sm text-ink-600">
-        Lista de Pacientes filtrada automaticamente por Vínculo de Consultório do médico.
-        Atendimentos do dia atualizados em tempo real.
+        Painel esquerdo: pacientes encaminhados pela recepcionista para este médico.
+        Painel direito: consultas agendadas previamente pelos tutores.
       </div>
     </div>
   );
 }
 
-// ── Subcomponentes ─────────────────────────────────────────────────────────────
+// ── Subcomponentes ────────────────────────────────────────────────────────────
 
-function FilaItem({
-  item,
-  onAtender,
-}: {
-  item: FilaItemDTO;
-  onAtender: () => void;
-}) {
-  // TODO: substituir pacienteId pelo nome real do pet e tutor quando
-  // GET /api/medico/pacientes/:id estiver disponível (F-01 / F-10)
-  const nomePet = `Paciente #${item.pacienteId.slice(0, 8)}`;
-  const nomeTutor = "—";
-
+function FilaItem({ item, onAtender }: { item: FilaItemDTO; onAtender: () => void }) {
   return (
     <div className="flex items-center justify-between gap-4 px-6 py-4">
       <div className="min-w-0">
         <p className="font-semibold text-ink-900 truncate">
-          {nomePet}
-          <span className="font-normal text-ink-500"> - {nomeTutor}</span>
+          {item.nomePaciente || `Paciente #${item.pacienteId.slice(0, 8)}`}
         </p>
-        <div className="mt-1">
+        <div className="mt-1 flex flex-wrap items-center gap-2">
           <BadgeCorDeRisco cor={item.corDeRisco} />
+          {item.finalizadaEm && (
+            <span className="text-xs text-ink-400">
+              {new Date(item.finalizadaEm).toLocaleTimeString("pt-BR", {
+                hour: "2-digit", minute: "2-digit",
+              })}
+            </span>
+          )}
         </div>
       </div>
       <button
@@ -206,17 +194,13 @@ function FilaItem({
 
 function BadgeCorDeRisco({ cor }: { cor: "VERMELHO" | "AMARELO" | "VERDE" }) {
   const config = {
-    VERMELHO: { texto: "Risco Alto",      bg: "bg-red-50",    ring: "ring-red-200",    text: "text-red-700"    },
-    AMARELO:  { texto: "Risco Moderado",  bg: "bg-amber-50",  ring: "ring-amber-200",  text: "text-amber-700"  },
-    VERDE:    { texto: "Risco Baixo",     bg: "bg-green-50",  ring: "ring-green-200",  text: "text-green-700"  },
+    VERMELHO: { texto: "Risco Alto",     bg: "bg-red-50",   ring: "ring-red-200",   text: "text-red-700"   },
+    AMARELO:  { texto: "Risco Moderado", bg: "bg-amber-50", ring: "ring-amber-200", text: "text-amber-700" },
+    VERDE:    { texto: "Risco Baixo",    bg: "bg-green-50", ring: "ring-green-200", text: "text-green-700" },
   }[cor];
-
   const ponto = { VERMELHO: "🔴", AMARELO: "🟡", VERDE: "🟢" }[cor];
-
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${config.bg} ${config.ring} ${config.text}`}
-    >
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${config.bg} ${config.ring} ${config.text}`}>
       {ponto} {config.texto}
     </span>
   );
@@ -224,11 +208,10 @@ function BadgeCorDeRisco({ cor }: { cor: "VERMELHO" | "AMARELO" | "VERDE" }) {
 
 function AtendimentoLinha({ atendimento }: { atendimento: AtendimentoDoDiaDTO }) {
   const statusConfig = {
-    CONCLUIDO:       { texto: "Concluído",       cor: "#38A169" },
-    EM_ATENDIMENTO:  { texto: "Em Atendimento",  cor: "#D69E2E" },
-    AGUARDANDO:      { texto: "Aguardando",      cor: "#718096" },
+    CONCLUIDO:      { texto: "Concluído",      cor: "#38A169" },
+    EM_ATENDIMENTO: { texto: "Em Atendimento", cor: "#D69E2E" },
+    AGUARDANDO:     { texto: "Aguardando",     cor: "#718096" },
   }[atendimento.status];
-
   return (
     <tr className="hover:bg-ink-50/40 transition-colors">
       <td className="whitespace-nowrap px-6 py-3 font-medium text-ink-800">

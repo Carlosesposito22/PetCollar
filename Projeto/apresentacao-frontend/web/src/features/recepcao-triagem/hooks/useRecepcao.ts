@@ -27,6 +27,11 @@ export interface SintomaDTO {
   peso: number;
 }
 
+export interface MedicoDTO {
+  id: string;
+  nome: string;
+}
+
 export interface FilaItemDTO {
   pacienteId: string;
   triagemId: string;
@@ -34,6 +39,8 @@ export interface FilaItemDTO {
   finalizadaEm: string;
   nomePaciente: string;
   tutorId: string;
+  medicoId: string | null;
+  nomeMedico: string | null;
 }
 
 export function useRecepcao() {
@@ -234,11 +241,47 @@ export function useRecepcao() {
     await apiFetch(`/api/recepcao/fila/${triagemId}`, { method: "DELETE" });
   }, [apiFetch]);
 
+  const listarMedicos = useCallback(async (): Promise<MedicoDTO[]> => {
+    try {
+      const res = await apiFetch("/api/recepcao/medicos");
+      if (!res.ok) return [];
+      return res.json();
+    } catch {
+      return [];
+    }
+  }, [apiFetch]);
+
+  const encaminharParaMedico = useCallback(async (
+    triagemId: string,
+    medicoId: string,
+    nomeMedico: string
+  ): Promise<boolean> => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const res = await apiFetch(`/api/recepcao/fila/${triagemId}/encaminhar`, {
+        method: "POST",
+        body: JSON.stringify({ medicoId, nomeMedico }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.mensagem || "Erro ao encaminhar.");
+      }
+      return true;
+    } catch (e: any) {
+      setErro(e.message);
+      return false;
+    } finally {
+      setCarregando(false);
+    }
+  }, [apiFetch]);
+
   return {
     carregando, erro, setErro,
     buscarTutorPorCpf, cadastrarTutor, editarTutor, excluirTutor,
     cadastrarPaciente, editarPaciente, excluirPaciente,
     listarSintomas, criarTriagem,
     listarFila, removerDaFila,
+    listarMedicos, encaminharParaMedico,
   };
 }

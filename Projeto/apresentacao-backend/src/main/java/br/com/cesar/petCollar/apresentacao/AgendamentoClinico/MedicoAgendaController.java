@@ -8,6 +8,7 @@ import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.Perfil;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioAutenticavel;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioRepositorio;
 import br.com.cesar.petCollar.apresentacao.PortalTutor.PacienteJpaRepository;
+import br.com.cesar.petCollar.apresentacao.RecepcaoTriagem.FilaAtendimentoEmMemoria;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,12 +23,6 @@ import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Endpoint da agenda do médico (F-05): lista as consultas agendadas com ele,
- * filtradas pelo médico autenticado ({@code Principal} = matrícula = medicoId das
- * consultas). Sem data, retorna as consultas de hoje em diante; com {@code data},
- * apenas as do dia informado.
- */
 @RestController
 @RequestMapping("/api/medico")
 public class MedicoAgendaController {
@@ -35,13 +30,16 @@ public class MedicoAgendaController {
     private final IConsultaRepositorio consultas;
     private final PacienteJpaRepository pacientes;
     private final UsuarioRepositorio usuarios;
+    private final FilaAtendimentoEmMemoria fila;
 
     public MedicoAgendaController(IConsultaRepositorio consultas,
                                   PacienteJpaRepository pacientes,
-                                  UsuarioRepositorio usuarios) {
+                                  UsuarioRepositorio usuarios,
+                                  FilaAtendimentoEmMemoria fila) {
         this.consultas = consultas;
         this.pacientes = pacientes;
-        this.usuarios = usuarios;
+        this.usuarios  = usuarios;
+        this.fila      = fila;
     }
 
     @GetMapping("/atendimentos")
@@ -57,6 +55,15 @@ public class MedicoAgendaController {
             .filter(c -> c.getStatus() != StatusConsulta.CANCELADA)
             .sorted(Comparator.comparing(c -> c.getHorario().getInicio()))
             .map(this::montar)
+            .toList();
+    }
+
+    @GetMapping("/fila-encaminhada")
+    public List<FilaEncaminhadaDTO> filaEncaminhada(Principal principal) {
+        return fila.listarPorMedico(principal.getName()).stream()
+            .map(i -> new FilaEncaminhadaDTO(
+                i.pacienteId(), i.triagemId(), i.corDeRisco(),
+                i.finalizadaEm(), i.nomePaciente(), i.tutorId()))
             .toList();
     }
 
@@ -78,7 +85,23 @@ public class MedicoAgendaController {
             c.getHorario().getFim());
     }
 
-    public record AtendimentoMedicoDTO(String consultaId, String pacienteId, String pacienteNome,
-                                       String tutorNome, String tipo, String status,
-                                       LocalDateTime inicio, LocalDateTime fim) {}
+    public record AtendimentoMedicoDTO(
+        String consultaId,
+        String pacienteId,
+        String pacienteNome,
+        String tutorNome,
+        String tipo,
+        String status,
+        LocalDateTime inicio,
+        LocalDateTime fim
+    ) {}
+
+    public record FilaEncaminhadaDTO(
+        String pacienteId,
+        String triagemId,
+        String corDeRisco,
+        LocalDateTime finalizadaEm,
+        String nomePaciente,
+        String tutorId
+    ) {}
 }
