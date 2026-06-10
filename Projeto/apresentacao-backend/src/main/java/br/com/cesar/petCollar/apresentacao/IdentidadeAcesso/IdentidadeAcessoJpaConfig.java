@@ -23,20 +23,22 @@ public class IdentidadeAcessoJpaConfig {
     private static final Logger log = LoggerFactory.getLogger(IdentidadeAcessoJpaConfig.class);
 
     /**
-     * Seed operacional: garante que o administrador-raiz exista no primeiro boot.
-     * Sem este usuário não é possível fazer login nem gerenciar a clínica.
+     * Seed operacional: garante que o administrador-raiz exista e com a senha-padrão
+     * correta. Usa upsert para corrigir automaticamente casos em que o hash ficou
+     * desatualizado entre recriações do banco ou mudança de configuração do encoder.
      */
     @Bean
     public CommandLineRunner seedAdminPadrao(UsuarioJpaRepository usuarios,
                                               PasswordEncoder encoder) {
         return args -> {
-            if (usuarios.existsById("admin@petcollar.com")) return;
-            usuarios.save(UsuarioJpa.fromDomain(new UsuarioAutenticavel(
+            String senhaHash = encoder.encode("petcollar123");
+            UsuarioJpa admin = UsuarioJpa.fromDomain(new UsuarioAutenticavel(
                     "admin@petcollar.com", "Administrador",
                     Perfil.ADMIN_CLINICA,
-                    encoder.encode("petcollar123"),
-                    StatusConta.ATIVA)));
-            log.info("[SEED] Admin-raiz criado: admin@petcollar.com / petcollar123");
+                    senhaHash,
+                    StatusConta.ATIVA));
+            usuarios.save(admin);
+            log.info("[SEED] Admin-raiz garantido: admin@petcollar.com / petcollar123");
         };
     }
 }

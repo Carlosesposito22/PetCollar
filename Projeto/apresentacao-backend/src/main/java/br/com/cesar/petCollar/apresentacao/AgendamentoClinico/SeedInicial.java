@@ -46,6 +46,30 @@ public class SeedInicial {
         new String[]{"Ortopedia",     "Fraturas, displasias e doenças articulares"}
     );
 
+    /**
+     * Pool de nomes por especialidade — garante nomes reais e determinísticos a cada
+     * recriação do banco. Cada lista deve ter ao menos {@value #MEDICOS_POR_ESPECIALIDADE} entradas.
+     */
+    private static final java.util.Map<String, List<String>> NOMES_POR_ESPECIALIDADE =
+        java.util.Map.of(
+            "Clínica Geral", List.of(
+                "Dr. Carlos Eduardo Lima",
+                "Dra. Fernanda Souza Costa",
+                "Dra. Ana Paula Mendes"),
+            "Cardiologia", List.of(
+                "Dr. Roberto Alves Pereira",
+                "Dra. Juliana Castro Melo",
+                "Dr. Marcelo Tavares Silva"),
+            "Dermatologia", List.of(
+                "Dra. Isabela Rodrigues Nunes",
+                "Dr. André Luís Ferreira",
+                "Dra. Camila Martins Lopes"),
+            "Ortopedia", List.of(
+                "Dr. Ricardo Gomes Santos",
+                "Dra. Vanessa Oliveira Faria",
+                "Dr. Bruno Costa Ribeiro")
+        );
+
     @Bean
     public CommandLineRunner seedInicialRunner(EspecialidadeJpaRepository especialidades,
                                                UsuarioRepositorio usuarios,
@@ -89,9 +113,14 @@ public class SeedInicial {
             boolean mudou = medicos.size() != esp.medicos().size();
 
             // Completa até o alvo, criando novos usuários-médico.
+            List<String> nomesPool = NOMES_POR_ESPECIALIDADE.getOrDefault(
+                    dominio.getNome(), List.of());
             while (medicos.size() < MEDICOS_POR_ESPECIALIDADE) {
                 String matricula = usuarios.proximaMatricula(Perfil.MEDICO_VETERINARIO);
-                String nome = "Dr(a). " + dominio.getNome() + " " + (medicos.size() + 1);
+                int idx = medicos.size();
+                String nome = (idx < nomesPool.size())
+                        ? nomesPool.get(idx)
+                        : "Dr(a). " + dominio.getNome() + " " + (idx + 1);
                 usuarios.salvar(new UsuarioAutenticavel(
                     matricula, nome, Perfil.MEDICO_VETERINARIO, senha, StatusConta.ATIVA));
                 medicos.add(MedicoId.de(matricula));
