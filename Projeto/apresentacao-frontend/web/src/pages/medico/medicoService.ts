@@ -26,6 +26,10 @@ export type FilaItemDTO = {
   triagemId: string;
   corDeRisco: "VERMELHO" | "AMARELO" | "VERDE";
   finalizadaEm: string;
+  nomePaciente: string;
+  tutorId: string;
+  medicoId: string | null;
+  nomeMedico: string | null;
 };
 
 export type ProntuarioDTO = {
@@ -68,7 +72,7 @@ export type AtendimentoDoDiaDTO = {
   pacienteId: string;
 };
 
-// ── Tipos do Relatório Clínico Evolutivo (F-10) ───────────────────────────────
+// ── Tipos do Relatório Clínico Evolutivo ─────────────────────────────────────
 
 export type TipoRelatorio = "ROTINEIRO" | "CIRURGICO" | "PREVENTIVO";
 
@@ -116,8 +120,9 @@ export type RequisicaoConteudoDTO = {
 
 export function criarMedicoService(apiFetch: ApiFetch) {
   return {
+
     listarFilaDeEspera: (): Promise<FilaItemDTO[]> =>
-      json<FilaItemDTO[]>(apiFetch("/api/recepcao/fila")),
+      json<FilaItemDTO[]>(apiFetch("/api/medico/fila-encaminhada")),
 
     buscarProntuario: (pacienteId: string): Promise<ProntuarioDTO> => {
       const stub = PRONTUARIOS_STUB[pacienteId] ?? gerarProntuarioStub(pacienteId);

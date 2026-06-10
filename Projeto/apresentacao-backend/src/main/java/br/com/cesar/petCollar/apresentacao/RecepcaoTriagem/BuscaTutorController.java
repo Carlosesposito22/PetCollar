@@ -1,5 +1,8 @@
 package br.com.cesar.petCollar.apresentacao.RecepcaoTriagem;
 
+import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.Perfil;
+import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.StatusConta;
+import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioRepositorio;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -38,15 +41,18 @@ public class BuscaTutorController {
     private final PacienteRecepcaoJpaRepository pacienteRepo;
     private final TriagemJpaRepository triagemRepo;
     private final FilaAtendimentoEmMemoria fila;
+    private final UsuarioRepositorio usuarioRepositorio;
 
     public BuscaTutorController(TutorRecepcaoJpaRepository tutorRepo,
                                 PacienteRecepcaoJpaRepository pacienteRepo,
                                 TriagemJpaRepository triagemRepo,
-                                FilaAtendimentoEmMemoria fila) {
-        this.tutorRepo    = tutorRepo;
-        this.pacienteRepo = pacienteRepo;
-        this.triagemRepo  = triagemRepo;
-        this.fila         = fila;
+                                FilaAtendimentoEmMemoria fila,
+                                UsuarioRepositorio usuarioRepositorio) {
+        this.tutorRepo          = tutorRepo;
+        this.pacienteRepo       = pacienteRepo;
+        this.triagemRepo        = triagemRepo;
+        this.fila               = fila;
+        this.usuarioRepositorio = usuarioRepositorio;
     }
 
     // ── F01: Busca tutor por CPF ──────────────────────────────────────────────
@@ -151,12 +157,14 @@ public class BuscaTutorController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── F02: Triagem ──────────────────────────────────────────────────────────
+    // ── F02: Sintomas ─────────────────────────────────────────────────────────
 
     @GetMapping("/sintomas")
     public List<SintomaDTO> listarSintomas() {
         return CATALOGO;
     }
+
+    // ── F02: Triagem ──────────────────────────────────────────────────────────
 
     @PostMapping("/tutores/{tutorId}/pacientes/{pacienteId}/triagens")
     public ResponseEntity<TriagemDTO> criarTriagem(
@@ -191,7 +199,7 @@ public class BuscaTutorController {
             paciente.getNome(), tutorId));
 
         boolean grave = req.codigosSintomas().stream()
-            .anyMatch(c -> List.of("S05","S06","S07","S14").contains(c));
+            .anyMatch(c -> List.of("S05", "S06", "S07", "S14").contains(c));
         if (score >= 10 || grave) {
             paciente.setInfectocontagiosoRecente(true, LocalDateTime.now());
             pacienteRepo.save(paciente);
@@ -199,6 +207,8 @@ public class BuscaTutorController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(TriagemDTO.de(triagem));
     }
+
+    // ── Fila de atendimento ───────────────────────────────────────────────────
 
     @GetMapping("/fila")
     public List<FilaAtendimentoEmMemoria.ItemFilaDTO> listarFila() {
@@ -209,6 +219,38 @@ public class BuscaTutorController {
     public ResponseEntity<Void> removerDaFila(@PathVariable String triagemId) {
         fila.remover(triagemId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Encaminha um paciente da fila para um médico específico.
+     * A recepcionista chama este endpoint após escolher o médico na tela "Chamar".
+     */
+    @PostMapping("/fila/{triagemId}/encaminhar")
+    public ResponseEntity<?> encaminharParaMedico(
+            @PathVariable String triagemId,
+            @Valid @RequestBody RequisicaoEncaminhar req) {
+
+        boolean ok = fila.encaminhar(triagemId, req.medicoId(), req.nomeMedico());
+        if (!ok)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("mensagem", "Item não encontrado na fila."));
+
+        return ResponseEntity.ok(Map.of(
+            "mensagem", "Paciente encaminhado com sucesso.",
+            "medicoId", req.medicoId()));
+    }
+
+    /**
+     * Lista os médicos ativos — acessível à recepcionista apenas neste contexto
+     * de encaminhamento. Não expõe senhas nem dados sensíveis.
+     */
+    @GetMapping("/medicos")
+    public List<MedicoDTO> listarMedicos() {
+        return usuarioRepositorio.listarPorPerfil(Perfil.MEDICO_VETERINARIO)
+            .stream()
+            .filter(u -> u.status() == StatusConta.ATIVA)
+            .map(u -> new MedicoDTO(u.identificador(), u.nome()))
+            .toList();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -238,7 +280,7 @@ public class BuscaTutorController {
         return "VERDE";
     }
 
-    // ── DTOs e Records ────────────────────────────────────────────────────────
+    // ── DTOs ──────────────────────────────────────────────────────────────────
 
     public record RespostaTutorDTO(
         String id, String nome, String cpf, String telefone, String email,
@@ -265,6 +307,8 @@ public class BuscaTutorController {
 
     public record SintomaDTO(String codigo, String descricao, int peso) {}
 
+    public record MedicoDTO(String id, String nome) {}
+
     public record RequisicaoCadastroTutor(
         @NotBlank @Size(min = 11, max = 14) String cpf,
         @NotBlank @Size(min = 3, max = 120) String nome,
@@ -279,7 +323,11 @@ public class BuscaTutorController {
 
     public record RequisicaoTriagem(List<String> codigosSintomas) {}
 
-    // ── Exception handlers ────────────────────────────────────────────────────
+    public record RequisicaoEncaminhar(
+        @NotBlank String medicoId,
+        @NotBlank String nomeMedico) {}
+
+    // ── Exceptions ────────────────────────────────────────────────────────────
 
     public static class TutorNaoEncontradoException extends RuntimeException {
         public TutorNaoEncontradoException() { super("Tutor não encontrado."); }
