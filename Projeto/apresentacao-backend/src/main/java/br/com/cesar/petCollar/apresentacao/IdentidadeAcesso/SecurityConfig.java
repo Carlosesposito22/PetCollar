@@ -49,7 +49,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/tutores/contratar").permitAll()
                 .requestMatchers("/api/tutores/*/simular-pagamento").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
-                // F-04: clique de indicação é público (pré-login) e webhook é chamado pelo gateway
+                // Catálogo de planos: público para o fluxo de contratação
+                .requestMatchers("/api/planos").permitAll()
+                // F-04: landing de indicação, clique e webhook são públicos (pré-login / gateway)
                 .requestMatchers("/api/tutor/indicacao/clique/**").permitAll()
                 .requestMatchers("/api/tutor/indicacao/inscricao").permitAll()
                 .requestMatchers("/api/tutor/indicacao/webhook/pagamento").permitAll()
@@ -59,6 +61,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("ADMIN_CLINICA")
                 .requestMatchers("/api/tutor/**").hasRole("TUTOR")
                 .requestMatchers("/api/medico/**").hasRole("MEDICO_VETERINARIO")
+                .requestMatchers("/api/recepcao/**").hasAnyRole("RECEPCIONISTA", "ADMIN_CLINICA")
                 .anyRequest().authenticated()
             )
             // Retorna 401 (não 403) para requisições sem autenticação válida,

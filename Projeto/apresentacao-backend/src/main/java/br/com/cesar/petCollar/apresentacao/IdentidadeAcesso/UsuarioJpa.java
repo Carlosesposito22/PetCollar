@@ -34,6 +34,7 @@ public class UsuarioJpa {
     private String telefone;
     private String endereco;
     private String email;
+    private String planoId;
 
     protected UsuarioJpa() {}
 
@@ -48,6 +49,7 @@ public class UsuarioJpa {
         jpa.telefone      = u.telefone();
         jpa.endereco      = u.endereco();
         jpa.email         = u.email();
+        jpa.planoId       = u.planoId();
         return jpa;
     }
 
@@ -57,7 +59,7 @@ public class UsuarioJpa {
                 Perfil.valueOf(perfil),
                 senhaHash,
                 StatusConta.valueOf(status),
-                cpf, telefone, endereco, email);
+                cpf, telefone, endereco, email, planoId);
     }
 
     public String getIdentificador() { return identificador; }

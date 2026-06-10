@@ -3,8 +3,10 @@ import { useAuth } from "../../auth/AuthContext";
 import { BrandWordmark } from "../../components/Brand";
 
 const abas = [
-  { to: "/recepcao", label: "Painel", end: true },
-  { to: "/recepcao/protocolos", label: "Protocolos" },
+  { to: "/recepcao",             label: "Painel",       end: true },
+  { to: "/recepcao/busca-tutor", label: "Busca por CPF" },
+  { to: "/recepcao/fila-espera", label: "Fila de Espera" },
+  { to: "/recepcao/protocolos",  label: "Protocolos" },
 ];
 
 export function RecepcionistaLayout() {
@@ -23,15 +25,11 @@ export function RecepcionistaLayout() {
           <BrandWordmark />
           <nav className="flex flex-1 flex-wrap items-center gap-1">
             {abas.map((aba) => (
-              <NavLink
-                key={aba.to}
-                to={aba.to}
-                end={aba.end}
+              <NavLink key={aba.to} to={aba.to} end={aba.end}
                 className={({ isActive }) =>
                   "rounded-lg px-3 py-2 text-sm font-medium transition " +
                   (isActive ? "bg-brand-50 text-brand-700" : "text-ink-700 hover:bg-ink-100")
-                }
-              >
+                }>
                 {aba.label}
               </NavLink>
             ))}
@@ -40,13 +38,10 @@ export function RecepcionistaLayout() {
             <span className="hidden text-sm text-ink-500 sm:inline">
               {session?.user.nome ?? session?.user.identificador}
             </span>
-            <button onClick={sair} className="btn-ghost ring-1 ring-ink-300">
-              Sair
-            </button>
+            <button onClick={sair} className="btn-ghost ring-1 ring-ink-300">Sair</button>
           </div>
         </div>
       </header>
-
       <Outlet />
     </div>
   );

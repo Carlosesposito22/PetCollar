@@ -9,13 +9,17 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.ConfirmarPagamentoCobrancaUseCase;
 import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.ConsultarResumoFinanceiroUseCase;
 import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.ContratarPlanoUseCase;
+import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.GerenciarPlanoUseCase;
 import br.com.cesar.petCollar.aplicacao.AssinaturaFaturamento.PlanosPadrao;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.ICobrancaRepositorio;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.IPlanoRepositorio;
+import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.NotificacaoAlteracaoPlanoObservador;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.Plano;
+import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.PublicadorDeAlteracoesPlano;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.ValorMensalidade;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.servico.ClassificacaoInadimplenciaService;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.servico.ConsolidacaoQuitacaoService;
+import br.com.cesar.petCollar.dominio.compartilhado.eventos.PublicadorDeEventosDoTutor;
 /**
  * Wiring canônico (§6.5) dos services de domínio e use cases de F-07 como beans.
  * Spring resolve as interfaces {@code IXxxRepositorio} para os adapters JPA
@@ -45,7 +49,43 @@ public class AssinaturaFaturamentoConfig {
         return new ConsolidacaoQuitacaoService(cobrancaRepositorio);
     }
 
+    // ── Observer de alteração de planos (padrão Observer, §8) ───────────────
+
+    /**
+     * Subject criado sem observadores para evitar ciclo de dependência entre
+     * este Config (que habilita os repositórios JPA de AssinaturaFaturamento) e
+     * GamificacaoConfig (que define PublicadorDeEventosDoTutor, o qual depende
+     * indiretamente dos mesmos repositórios). O wiring do observador acontece em
+     * {@link #wireObservadorAlteracaoPlano} via CommandLineRunner — após todos os
+     * beans estarem prontos (CLAUDE.md §6.5).
+     */
+    @Bean
+    public PublicadorDeAlteracoesPlano publicadorDeAlteracoesPlano() {
+        return new PublicadorDeAlteracoesPlano();
+    }
+
+    /**
+     * Inscreve o {@link NotificacaoAlteracaoPlanoObservador} no subject depois
+     * que o contexto está totalmente inicializado, quebrando o ciclo de
+     * dependência sem comprometer a semântica do padrão Observer.
+     */
+    @Bean
+    public CommandLineRunner wireObservadorAlteracaoPlano(
+            PublicadorDeAlteracoesPlano publicadorDeAlteracoesPlano,
+            ICobrancaRepositorio cobrancaRepositorio,
+            PublicadorDeEventosDoTutor publicadorDeEventosDoTutor) {
+        return args -> publicadorDeAlteracoesPlano.inscrever(
+                new NotificacaoAlteracaoPlanoObservador(cobrancaRepositorio, publicadorDeEventosDoTutor));
+    }
+
     // ── Use cases ────────────────────────────────────────────────────────────
+
+    @Bean
+    public GerenciarPlanoUseCase gerenciarPlanoUseCase(
+            IPlanoRepositorio planoRepositorio,
+            PublicadorDeAlteracoesPlano publicadorDeAlteracoesPlano) {
+        return new GerenciarPlanoUseCase(planoRepositorio, publicadorDeAlteracoesPlano);
+    }
 
     @Bean
     public ContratarPlanoUseCase contratarPlanoUseCase(
@@ -55,8 +95,9 @@ public class AssinaturaFaturamentoConfig {
 
     @Bean
     public ConfirmarPagamentoCobrancaUseCase confirmarPagamentoCobrancaUseCase(
-            ICobrancaRepositorio cobrancaRepositorio) {
-        return new ConfirmarPagamentoCobrancaUseCase(cobrancaRepositorio);
+            ICobrancaRepositorio cobrancaRepositorio,
+            PublicadorDeEventosDoTutor publicadorDeEventosDoTutor) {
+        return new ConfirmarPagamentoCobrancaUseCase(cobrancaRepositorio, publicadorDeEventosDoTutor);
     }
 
     @Bean

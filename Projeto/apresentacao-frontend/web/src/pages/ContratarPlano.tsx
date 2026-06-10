@@ -1,7 +1,27 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "../components/AuthLayout";
 import { PasswordInput } from "../components/PasswordInput";
+
+type Beneficio = {
+  nome: string;
+  periodoRenovacao: "MENSAL" | "TRIMESTRAL" | "ANUAL";
+  limiteUsosPorPeriodo: number;
+  carenciaDias: number;
+};
+
+type Plano = {
+  id: string;
+  nome: string;
+  valorMensalidade: number;
+  beneficios: Beneficio[];
+};
+
+const PERIODO_ABREV: Record<Beneficio["periodoRenovacao"], string> = {
+  MENSAL: "mês",
+  TRIMESTRAL: "trim.",
+  ANUAL: "ano",
+};
 
 type Form = {
   cpf: string;
@@ -11,6 +31,7 @@ type Form = {
   endereco: string;
   senha: string;
   confirmacao: string;
+  planoId: string;
 };
 
 const inicial: Form = {
@@ -21,6 +42,7 @@ const inicial: Form = {
   endereco: "",
   senha: "",
   confirmacao: "",
+  planoId: "",
 };
 
 export function ContratarPlano() {
@@ -28,6 +50,23 @@ export function ContratarPlano() {
   const [form, setForm] = useState<Form>(inicial);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [planos, setPlanos] = useState<Plano[]>([]);
+  const [carregandoPlanos, setCarregandoPlanos] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/planos")
+      .then(r => r.json())
+      .then((dados: Plano[]) => {
+        setPlanos(dados);
+        if (dados.length > 0) {
+          setForm(prev => ({ ...prev, planoId: dados[0].id }));
+        }
+      })
+      .catch(() => {
+        // mantém lista vazia; usuário pode tentar novamente
+      })
+      .finally(() => setCarregandoPlanos(false));
+  }, []);
 
   function update<K extends keyof Form>(k: K, v: string) {
     setForm(prev => ({ ...prev, [k]: v }));
@@ -51,6 +90,10 @@ export function ContratarPlano() {
     e.preventDefault();
     setErro(null);
 
+    if (!form.planoId) {
+      setErro("Selecione um plano para continuar.");
+      return;
+    }
     if (form.senha !== form.confirmacao) {
       setErro("As senhas não coincidem.");
       return;
@@ -72,6 +115,7 @@ export function ContratarPlano() {
           email: form.email.trim(),
           endereco: form.endereco,
           senha: form.senha,
+          planoId: form.planoId,
         }),
       });
 
@@ -98,6 +142,8 @@ export function ContratarPlano() {
       setEnviando(false);
     }
   }
+
+  const planoSelecionado = planos.find(p => p.id === form.planoId);
 
   return (
     <AuthLayout
@@ -128,6 +174,54 @@ export function ContratarPlano() {
         )}
 
         <form onSubmit={onSubmit} noValidate className="grid gap-4">
+
+          {/* Seleção de plano */}
+          <div>
+            <label className="label">Plano</label>
+            {carregandoPlanos ? (
+              <p className="text-sm text-ink-400">Carregando planos…</p>
+            ) : planos.length === 0 ? (
+              <p className="text-sm text-amber-700">Nenhum plano disponível no momento.</p>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {planos.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => update("planoId", p.id)}
+                    className={
+                      "rounded-xl border px-4 py-3 text-left transition " +
+                      (form.planoId === p.id
+                        ? "border-brand-500 bg-brand-50 text-brand-700"
+                        : "border-ink-300 text-ink-700 hover:bg-ink-50")
+                    }
+                  >
+                    <p className="font-medium text-sm">{p.nome}</p>
+                    <p className="mt-0.5 text-xs opacity-75">
+                      R$ {Number(p.valorMensalidade).toFixed(2).replace(".", ",")}/mês
+                    </p>
+                    {p.beneficios && p.beneficios.length > 0 && (
+                      <ul className="mt-2 space-y-0.5 text-xs opacity-80">
+                        {p.beneficios.map(b => (
+                          <li key={b.nome}>
+                            • {b.nome}: {b.limiteUsosPorPeriodo}x/{PERIODO_ABREV[b.periodoRenovacao]}
+                            {b.carenciaDias > 0 ? ` · carência ${b.carenciaDias}d` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+            {planoSelecionado && (
+              <p className="mt-1.5 text-xs text-ink-500">
+                Plano selecionado: <strong>{planoSelecionado.nome}</strong> —{" "}
+                R$ {Number(planoSelecionado.valorMensalidade).toFixed(2).replace(".", ",")}/mês
+              </p>
+            )}
+          </div>
+
           <Campo label="CPF" htmlFor="cpf">
             <input
               id="cpf" required className="input"
@@ -190,7 +284,7 @@ export function ContratarPlano() {
             </Campo>
           </div>
 
-          <button type="submit" className="btn-primary mt-2" disabled={enviando}>
+          <button type="submit" className="btn-primary mt-2" disabled={enviando || carregandoPlanos}>
             {enviando ? "Processando…" : "Contratar Plano"}
           </button>
         </form>

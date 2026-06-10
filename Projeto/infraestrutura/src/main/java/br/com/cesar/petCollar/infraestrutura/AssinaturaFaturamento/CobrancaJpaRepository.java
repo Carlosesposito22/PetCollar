@@ -22,4 +22,12 @@ public interface CobrancaJpaRepository extends JpaRepository<CobrancaJpa, String
               AND c.vencimento < :hoje
             """)
     long contarEmAtraso(@Param("tutorId") String tutorId, @Param("hoje") LocalDate hoje);
+
+    /** Ids distintos de tutores com ao menos uma cobrança não paga no plano dado. Usado pelo observer de alteração de plano. */
+    @Query("""
+            SELECT DISTINCT c.tutorId FROM CobrancaJpa c
+            WHERE c.planoId = :planoId
+              AND c.dataPagamento IS NULL
+            """)
+    List<String> findTutorIdsComPendentePorPlano(@Param("planoId") String planoId);
 }

@@ -30,6 +30,8 @@
         <module>dominio-AgendamentoClinico</module>
         <module>dominio-ProtocoloInacessibilidade</module>
         <module>dominio-AssinaturaFaturamento</module>
+        <module>dominio-BeneficiosPlano</module>
+        <module>dominio-Gamificacao</module>
         <module>aplicacao</module>
         <module>infraestrutura</module>
         <module>apresentacao-frontend</module>

@@ -143,8 +143,8 @@ export function MedicoProntuario() {
         <div className="grid grid-cols-2 gap-3">
           <BotaoAcao
             titulo="Relatório Clínico"
-            // TODO: navegar para /medico/prontuario/:id/relatorio quando F-10 for implementado
-            onClick={() => alert("Relatório Clínico — funcionalidade em desenvolvimento (F-10).")}
+            onClick={() => navigate(`/medico/prontuario/${pacienteId}/relatorio`)}
+            destaque
           />
           <BotaoAcao
             titulo="Prescrição"
@@ -221,14 +221,17 @@ function TriagemItem({
   );
 }
 
-function BotaoAcao({ titulo, onClick }: { titulo: string; onClick: () => void }) {
+function BotaoAcao({ titulo, onClick, destaque = false }: { titulo: string; onClick: () => void; destaque?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-xl border border-ink-300 bg-white px-4 py-4 text-sm font-medium text-ink-700
-                 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700
-                 focus:outline-none focus:ring-4 focus:ring-brand-100"
+      className={
+        "rounded-xl border px-4 py-4 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-brand-100 " +
+        (destaque
+          ? "border-brand-400 bg-brand-50 text-brand-700 hover:bg-brand-100"
+          : "border-ink-300 bg-white text-ink-700 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700")
+      }
     >
       {titulo}
     </button>

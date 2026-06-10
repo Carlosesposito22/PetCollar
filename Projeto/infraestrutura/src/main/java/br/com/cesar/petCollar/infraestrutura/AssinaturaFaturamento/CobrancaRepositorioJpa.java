@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.Cobranca;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.CobrancaId;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.ICobrancaRepositorio;
+import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
 @Repository
@@ -38,5 +39,12 @@ public class CobrancaRepositorioJpa implements ICobrancaRepositorio {
     @Override
     public long contarEmAtrasoPorTutor(TutorId tutorId) {
         return jpa.contarEmAtraso(tutorId.getValor(), LocalDate.now());
+    }
+
+    @Override
+    public List<TutorId> listarTutoresComCobrancaPendente(PlanoId planoId) {
+        return jpa.findTutorIdsComPendentePorPlano(planoId.getValor()).stream()
+                .map(TutorId::de)
+                .toList();
     }
 }

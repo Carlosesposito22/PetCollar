@@ -64,5 +64,15 @@
             <artifactId>petCollar-dominio-AssinaturaFaturamento</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>petCollar-dominio-BeneficiosPlano</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>petCollar-dominio-Gamificacao</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 </project>

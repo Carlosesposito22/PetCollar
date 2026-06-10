@@ -14,6 +14,7 @@ import { AdminLayout } from "./pages/admin/AdminLayout";
 import { MedicoLayout } from "./pages/medico/MedicoLayout";
 import { MedicoPainel } from "./pages/medico/MedicoPainel";
 import { MedicoProntuario } from "./pages/medico/MedicoProntuario";
+import { MedicoRelatorio } from "./pages/medico/MedicoRelatorio";
 import { TutorInicio } from "./pages/tutor/TutorInicio";
 import { TutorVacinacao } from "./pages/tutor/TutorVacinacao";
 import { TutorBeneficios } from "./pages/tutor/TutorBeneficios";
@@ -25,6 +26,8 @@ import { AgendamentoHub } from "./pages/tutor/agendamento/AgendamentoHub";
 import { NovaConsultaPage } from "./pages/tutor/agendamento/NovaConsultaPage";
 import { AgendamentoRetornoPage } from "./pages/tutor/agendamento/AgendamentoRetornoPage";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
+import { BuscaTutorPage } from "./features/recepcao-triagem/pages/BuscaTutorPage";
+import { FilaEsperaPage } from "./features/recepcao-triagem/pages/FilaEsperaPage";
 import { AcompanhamentoProtocoloPage } from "./features/protocolo-inacessibilidade/pages/tutor/AcompanhamentoProtocoloPage";
 import { PainelProtocolosAtivosPage } from "./features/protocolo-inacessibilidade/pages/recepcionista/PainelProtocolosAtivosPage";
 import { DetalheProtocoloPage } from "./features/protocolo-inacessibilidade/pages/recepcionista/DetalheProtocoloPage";
@@ -76,6 +79,8 @@ export function App() {
         }
       >
         <Route index element={<Dashboard />} />
+        <Route path="busca-tutor" element={<BuscaTutorPage />} />
+        <Route path="fila-espera" element={<FilaEsperaPage />} />
         {/* F-03 — Protocolo de inacessibilidade: recepção (operacional) */}
         <Route path="protocolos" element={<PainelProtocolosAtivosPage />} />
         <Route path="protocolos/:protocoloId" element={<DetalheProtocoloPage />} />
@@ -92,6 +97,7 @@ export function App() {
       >
         <Route index element={<MedicoPainel />} />
         <Route path="prontuario/:pacienteId" element={<MedicoProntuario />} />
+        <Route path="prontuario/:pacienteId/relatorio" element={<MedicoRelatorio />} />
       </Route>
 
       {/* Área do Admin */}
