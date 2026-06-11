@@ -15,7 +15,15 @@ public interface PlanoNutricionalJpaRepository extends JpaRepository<PlanoNutric
     List<PlanoNutricionalJpa> findByPacienteIdAndStatusOrderByAtualizadoEmDesc(
             String pacienteId, String status);
 
+    /** Histórico completo (FINALIZADO + SUBSTITUIDO) de um paciente. */
+    List<PlanoNutricionalJpa> findByPacienteIdAndStatusInOrderByAtualizadoEmDesc(
+            String pacienteId, List<String> status);
+
     /** Histórico de planos finalizados de todos os pacientes de um tutor. */
     List<PlanoNutricionalJpa> findByTutorIdAndStatusOrderByAtualizadoEmDesc(
             String tutorId, String status);
+
+    /** Histórico completo (FINALIZADO + SUBSTITUIDO) de todos os pacientes do tutor. */
+    List<PlanoNutricionalJpa> findByTutorIdAndStatusInOrderByAtualizadoEmDesc(
+            String tutorId, List<String> status);
 }

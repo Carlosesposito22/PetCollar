@@ -135,6 +135,15 @@ export type HistoricoEvolutivoDTO = {
   evolucoes: EvolucaoNutricionalDTO[];
 };
 
+export type ContextoPacienteDTO = {
+  pacienteId: string;
+  tutorId: string;
+  nomePet: string;
+  nomeTutor: string;
+  pesoAtualKg: Decimal;
+  idadeAnos: number;
+};
+
 // ── Rótulos para UI ─────────────────────────────────────────────────────────
 
 export const ROTULOS_NIVEL_ATIVIDADE: Record<NivelAtividade, string> = {
@@ -214,8 +223,20 @@ export function criarNutricaoMedicoService(apiFetch: ApiFetch) {
         apiFetch(`/api/medico/nutricao/pacientes/${pacienteId}/evolucao`)
       ),
 
+    contextoPaciente: (pacienteId: string): Promise<ContextoPacienteDTO> =>
+      json<ContextoPacienteDTO>(
+        apiFetch(`/api/medico/nutricao/pacientes/${pacienteId}/contexto`)
+      ),
+
     buscarRascunho: async (pacienteId: string): Promise<PlanoNutricionalDTO | null> => {
       const res = await apiFetch(`/api/medico/nutricao/pacientes/${pacienteId}/rascunho`);
+      if (res.status === 204) return null;
+      return json<PlanoNutricionalDTO>(res);
+    },
+
+    /** Plano vigente (FINALIZADO ativo) do paciente — null se nunca prescrito. */
+    buscarVigente: async (pacienteId: string): Promise<PlanoNutricionalDTO | null> => {
+      const res = await apiFetch(`/api/medico/nutricao/pacientes/${pacienteId}/vigente`);
       if (res.status === 204) return null;
       return json<PlanoNutricionalDTO>(res);
     },
@@ -231,6 +252,28 @@ export function criarNutricaoMedicoService(apiFetch: ApiFetch) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ imagemAssinaturaBase64 }),
+        })
+      ),
+
+    /**
+     * Cria + finaliza o plano num único POST atômico — sem passar por rascunho.
+     * Se a validação falhar, nada é persistido (zero estado parcial no banco).
+     */
+    finalizarDireto: (input: {
+      pacienteId: string;
+      tutorId: string;
+      parametros: ParametrosDTO;
+      cronograma: CronogramaDTO;
+      observacoes: string[];
+      racaoId?: string | null;
+      justificativaDivergencia?: string | null;
+      imagemAssinaturaBase64: string;
+    }): Promise<PlanoNutricionalDTO> =>
+      json<PlanoNutricionalDTO>(
+        apiFetch("/api/medico/nutricao/finalizar-direto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
         })
       ),
 

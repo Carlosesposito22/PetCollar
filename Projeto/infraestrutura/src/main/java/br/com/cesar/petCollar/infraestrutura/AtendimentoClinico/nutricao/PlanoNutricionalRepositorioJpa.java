@@ -44,16 +44,36 @@ public class PlanoNutricionalRepositorioJpa implements IPlanoNutricionalReposito
     }
 
     @Override
-    public List<PlanoNutricional> listarFinalizadosDoPaciente(PacienteId pacienteId) {
-        return jpa.findByPacienteIdAndStatusOrderByAtualizadoEmDesc(
+    public Optional<PlanoNutricional> buscarFinalizadoAtivoDoPaciente(PacienteId pacienteId) {
+        return jpa.findFirstByPacienteIdAndStatusOrderByAtualizadoEmDesc(
                 pacienteId.getValor(), StatusPlanoNutricional.FINALIZADO.name())
+                .map(PlanoNutricionalJpa::toDomain);
+    }
+
+    @Override
+    public List<PlanoNutricional> listarFinalizadosDoPaciente(PacienteId pacienteId) {
+        // Histórico completo do médico — inclui SUBSTITUIDO para visualizar
+        // a progressão das prescrições ao longo dos atendimentos.
+        return jpa.findByPacienteIdAndStatusInOrderByAtualizadoEmDesc(
+                pacienteId.getValor(),
+                List.of(StatusPlanoNutricional.FINALIZADO.name(),
+                        StatusPlanoNutricional.SUBSTITUIDO.name()))
+                .stream().map(PlanoNutricionalJpa::toDomain).toList();
+    }
+
+    @Override
+    public List<PlanoNutricional> listarAtivosDoTutor(TutorId tutorId) {
+        return jpa.findByTutorIdAndStatusOrderByAtualizadoEmDesc(
+                tutorId.getValor(), StatusPlanoNutricional.FINALIZADO.name())
                 .stream().map(PlanoNutricionalJpa::toDomain).toList();
     }
 
     @Override
     public List<PlanoNutricional> listarFinalizadosDoTutor(TutorId tutorId) {
-        return jpa.findByTutorIdAndStatusOrderByAtualizadoEmDesc(
-                tutorId.getValor(), StatusPlanoNutricional.FINALIZADO.name())
+        return jpa.findByTutorIdAndStatusInOrderByAtualizadoEmDesc(
+                tutorId.getValor(),
+                List.of(StatusPlanoNutricional.FINALIZADO.name(),
+                        StatusPlanoNutricional.SUBSTITUIDO.name()))
                 .stream().map(PlanoNutricionalJpa::toDomain).toList();
     }
 }

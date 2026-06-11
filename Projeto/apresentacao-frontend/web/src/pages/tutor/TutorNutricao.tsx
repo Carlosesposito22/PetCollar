@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import {
-  criarNutricaoMedicoService,
   criarNutricaoTutorService,
   fmt,
   ROTULOS_COMORBIDADE,
@@ -21,6 +20,7 @@ export function TutorNutricao() {
   const service = useMemo(() => criarNutricaoTutorService(apiFetch), [apiFetch]);
 
   const [planos, setPlanos] = useState<PlanoNutricionalDTO[] | null>(null);
+  const [catalogo, setCatalogo] = useState<RacaoDTO[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [planoSelecionado, setPlanoSelecionado] = useState<PlanoNutricionalDTO | null>(null);
 
@@ -28,10 +28,17 @@ export function TutorNutricao() {
     service.listarMeusPlanos()
       .then(setPlanos)
       .catch((e: Error) => { setErro(e.message); setPlanos([]); });
+    service.listarCatalogoRacoes().then(setCatalogo).catch(() => {});
   }, [service]);
 
   if (planoSelecionado) {
-    return <DetalhePlano plano={planoSelecionado} onVoltar={() => setPlanoSelecionado(null)} />;
+    return (
+      <DetalhePlano
+        plano={planoSelecionado}
+        catalogo={catalogo}
+        onVoltar={() => setPlanoSelecionado(null)}
+      />
+    );
   }
 
   return (
@@ -112,10 +119,17 @@ export function TutorNutricao() {
 
 // ── Detalhe ──────────────────────────────────────────────────────────────────
 
-function DetalhePlano({ plano, onVoltar }: { plano: PlanoNutricionalDTO; onVoltar: () => void }) {
+function DetalhePlano({
+  plano, catalogo, onVoltar,
+}: {
+  plano: PlanoNutricionalDTO; catalogo: RacaoDTO[]; onVoltar: () => void;
+}) {
   const resultado = plano.resultadoFinalizado;
   const assinatura = plano.assinatura;
   const dataAssinatura = assinatura ? new Date(assinatura.assinadoEm).toLocaleString("pt-BR") : "—";
+  const racaoPrescrita = plano.racaoId
+    ? catalogo.find(r => r.id === plano.racaoId) ?? null
+    : null;
 
   return (
     <div className="space-y-6">
@@ -127,7 +141,6 @@ function DetalhePlano({ plano, onVoltar }: { plano: PlanoNutricionalDTO; onVolta
 
       <div className="card p-6 space-y-5">
         <header>
-          <p className="text-xs text-ink-500">Plano nº <code>{plano.id}</code></p>
           <p className="text-sm text-ink-500">Emitido em {dataAssinatura}</p>
         </header>
 
@@ -156,10 +169,28 @@ function DetalhePlano({ plano, onVoltar }: { plano: PlanoNutricionalDTO; onVolta
           </section>
         )}
 
+        {racaoPrescrita && (
+          <section className="rounded-xl border-2 border-brand-200 bg-brand-50/40 p-4">
+            <h2 className="mb-2 text-base font-semibold text-ink-900">Ração Prescrita</h2>
+            <p className="text-base font-semibold text-brand-700">{racaoPrescrita.descricaoCurta}</p>
+            <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+              <Linha
+                rotulo="Densidade calórica"
+                valor={`${fmt(racaoPrescrita.densidadeCaloricaKcalPorKg, 0)} kcal/kg`}
+              />
+              <Linha rotulo="Faixa etária" valor={racaoPrescrita.faixasIndicadas.join(", ")} />
+              <Linha rotulo="Portes indicados" valor={racaoPrescrita.portesIndicados.join(", ")} />
+            </dl>
+          </section>
+        )}
+
         <section>
           <h2 className="mb-2 text-base font-semibold text-ink-900">
             Transição alimentar — {ROTULOS_TIPO_CRONOGRAMA[plano.cronograma.tipo]}
           </h2>
+          <p className="mb-3 text-xs text-ink-500">
+            Faça a troca da ração atual pela nova gradualmente, conforme as porcentagens abaixo.
+          </p>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-ink-200 text-left text-xs text-ink-500">
@@ -197,7 +228,9 @@ function DetalhePlano({ plano, onVoltar }: { plano: PlanoNutricionalDTO; onVolta
               alt="Assinatura do médico"
               className="h-24 w-auto rounded border border-ink-200 bg-white p-2"
             />
-            <p className="mt-2 text-xs text-ink-500">Hash SHA-256: <code>{assinatura.hashConteudo}</code></p>
+            <p className="mt-2 text-xs text-ink-500">
+              ✓ Documento assinado digitalmente em {dataAssinatura}.
+            </p>
           </section>
         )}
       </div>

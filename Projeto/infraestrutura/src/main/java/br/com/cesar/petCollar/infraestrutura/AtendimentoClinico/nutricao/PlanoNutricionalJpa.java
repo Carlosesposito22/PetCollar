@@ -26,7 +26,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 /**
@@ -54,9 +53,9 @@ public class PlanoNutricionalJpa {
 
     @Column(nullable = false) private String tipoCronograma;
     /** Faixas serializadas como "faixa:atual:nova|faixa:atual:nova". */
-    @Lob @Column(nullable = false) private String cronogramaDias;
+    @Column(nullable = false, columnDefinition = "TEXT") private String cronogramaDias;
     /** Observações serializadas como "texto|texto|texto". */
-    @Lob @Column(nullable = false) private String observacoesTexto;
+    @Column(nullable = false, columnDefinition = "TEXT") private String observacoesTexto;
 
     @Column(nullable = false) private String status;
     @Column(nullable = false) private LocalDateTime criadoEm;
@@ -72,14 +71,14 @@ public class PlanoNutricionalJpa {
 
     // Assinatura digital.
     private String assinadoPorMedicoId;
-    @Lob private String assinaturaImagemBase64;
+    @Column(columnDefinition = "TEXT") private String assinaturaImagemBase64;
     private LocalDateTime assinadoEm;
     private String assinaturaHash;
 
     // F-11 reforçada: ração do catálogo (opcional) + justificativa exigida em
     // divergências de peso acima do limiar (PlanoNutricional.LIMIAR_*).
     private String racaoId;
-    @Lob private String justificativaDivergencia;
+    @Column(columnDefinition = "TEXT") private String justificativaDivergencia;
 
     protected PlanoNutricionalJpa() {}
 

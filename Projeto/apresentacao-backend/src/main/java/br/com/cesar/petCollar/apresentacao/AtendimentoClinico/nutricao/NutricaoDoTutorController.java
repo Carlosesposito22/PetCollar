@@ -41,10 +41,14 @@ public class NutricaoDoTutorController {
         return listarCatalogoRacoes.executar().stream().map(RacaoDTO::de).toList();
     }
 
-    /** Lista os planos finalizados dos pacientes deste tutor (mais recente primeiro). */
+    /**
+     * Lista o plano nutricional <strong>vigente</strong> de cada paciente deste
+     * tutor — no máximo 1 por paciente. Prescrições anteriores foram
+     * substituídas e ficam visíveis apenas para o médico (auditoria).
+     */
     @GetMapping
     public List<PlanoNutricionalDTO> meusPlanos(Principal principal) {
-        return consultar.listarFinalizadosDoTutor(TutorId.de(principal.getName())).stream()
+        return consultar.listarAtivosDoTutor(TutorId.de(principal.getName())).stream()
                 .map(PlanoNutricionalDTO::de).toList();
     }
 

@@ -60,6 +60,20 @@ public final class NutricaoDTOs {
 
     public record RequisicaoFinalizarDTO(String imagemAssinaturaBase64) {}
 
+    /**
+     * Carga atômica: tudo que o plano precisa + assinatura num único POST.
+     * Usada pelo botão "Finalizar e Assinar" (não passa por rascunho).
+     */
+    public record RequisicaoCriarEFinalizarDTO(
+            String pacienteId,
+            String tutorId,
+            RequisicaoParametrosDTO parametros,
+            RequisicaoCronogramaDTO cronograma,
+            List<String> observacoes,
+            String racaoId,
+            String justificativaDivergencia,
+            String imagemAssinaturaBase64) {}
+
     // ── Saída ────────────────────────────────────────────────────────────────
 
     public record ParametrosDTO(
@@ -186,6 +200,16 @@ public final class NutricaoDTOs {
                     e.deltaNemPercentual(), e.tendenciaPeso().name());
         }
     }
+
+    /**
+     * Contexto mínimo do paciente para a tela de Gestão Nutricional —
+     * resolve o tutorId real e os dados básicos a partir das tabelas já
+     * existentes (sem mexer em endpoints de colegas).
+     */
+    public record ContextoPacienteDTO(
+            String pacienteId, String tutorId,
+            String nomePet, String nomeTutor,
+            BigDecimal pesoAtualKg, int idadeAnos) {}
 
     public record HistoricoEvolutivoDTO(List<PlanoNutricionalDTO> historico, List<EvolucaoNutricionalDTO> evolucoes) {
         public static HistoricoEvolutivoDTO de(

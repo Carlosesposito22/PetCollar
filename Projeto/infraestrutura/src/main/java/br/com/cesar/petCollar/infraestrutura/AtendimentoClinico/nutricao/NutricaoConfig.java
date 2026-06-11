@@ -15,6 +15,7 @@ import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.ConsultarPla
 import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.FinalizarPlanoNutricionalUseCase;
 import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.SalvarRascunhoPlanoNutricionalUseCase;
 import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.CompararEvolucaoNutricionalUseCase;
+import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.CriarEFinalizarPlanoNutricionalUseCase;
 import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.ListarCatalogoRacoesUseCase;
 import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.RecomendarRacoesUseCase;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.avaliacao.AvaliacaoCorporalService;
@@ -90,6 +91,12 @@ public class NutricaoConfig {
     public FinalizarPlanoNutricionalUseCase finalizarPlanoNutricionalUseCase(
             IPlanoNutricionalRepositorio repositorio) {
         return new FinalizarPlanoNutricionalUseCase(repositorio);
+    }
+
+    @Bean
+    public CriarEFinalizarPlanoNutricionalUseCase criarEFinalizarPlanoNutricionalUseCase(
+            IPlanoNutricionalRepositorio repositorio) {
+        return new CriarEFinalizarPlanoNutricionalUseCase(repositorio);
     }
 
     @Bean

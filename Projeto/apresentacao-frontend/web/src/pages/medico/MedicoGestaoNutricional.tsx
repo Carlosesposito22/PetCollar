@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
-import { criarMedicoService } from "./medicoService";
 import { SignaturePad, type SignaturePadHandle } from "./SignaturePad";
 import {
   criarNutricaoMedicoService,
@@ -12,7 +11,6 @@ import {
   type Comorbidade,
   type CronogramaDTO,
   type DiaTransicaoDTO,
-  type EvolucaoNutricionalDTO,
   type HistoricoEvolutivoDTO,
   type NivelAtividade,
   type ParametrosDTO,
@@ -61,7 +59,6 @@ export function MedicoGestaoNutricional() {
   const navigate = useNavigate();
   const { apiFetch } = useAuth();
 
-  const medicoService = useMemo(() => criarMedicoService(apiFetch), [apiFetch]);
   const nutricaoService = useMemo(() => criarNutricaoMedicoService(apiFetch), [apiFetch]);
 
   // Cabeçalho do paciente (vem do prontuário existente — read-only aqui)
@@ -84,9 +81,10 @@ export function MedicoGestaoNutricional() {
   const [recomendacoes, setRecomendacoes] = useState<RacaoRecomendadaDTO[]>([]);
   const [historico, setHistorico] = useState<HistoricoEvolutivoDTO | null>(null);
 
-  // Estado do plano em backend
-  const [planoRascunho, setPlanoRascunho] = useState<PlanoNutricionalDTO | null>(null);
+  // Plano finalizado (só após assinatura — não há rascunho persistido)
   const [planoFinalizado, setPlanoFinalizado] = useState<PlanoNutricionalDTO | null>(null);
+  // Plano vigente do paciente — se existir, será SUBSTITUIDO ao finalizar o novo
+  const [planoVigente, setPlanoVigente] = useState<PlanoNutricionalDTO | null>(null);
 
   // Preview ao vivo
   const [preview, setPreview] = useState<PreviewNEMDTO | null>(null);
@@ -99,41 +97,51 @@ export function MedicoGestaoNutricional() {
 
   // Feedback geral
   const [erro, setErro] = useState<string | null>(null);
-  const [salvando, setSalvando] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
 
-  // Carregamento inicial: prontuário (nome do pet/tutor) + rascunho existente
-  // + catálogo de rações + histórico de planos
+  // Divergência peso atual ↔ ideal (mesma fórmula do backend: |atual - ideal| / ideal * 100)
+  const divergenciaPercentual = parametros.pesoIdealKg > 0
+    ? Math.abs(parametros.pesoAtualKg - parametros.pesoIdealKg) / parametros.pesoIdealKg * 100
+    : 0;
+
+  // Carregamento inicial: contexto do paciente (tutorId real do banco) +
+  // rascunho existente + catálogo de rações + histórico de planos.
   useEffect(() => {
     if (!pacienteId) return;
-    medicoService.buscarProntuario(pacienteId)
-      .then(p => {
-        setNomePet(p.nomePet);
-        setNomeTutor(p.nomeTutor);
-        setIdadeAnos(p.idadeAnos);
-        setParametros(prev =>
-          prev.pesoAtualKg === 0 && p.pesoKg > 0 ? { ...prev, pesoAtualKg: p.pesoKg } : prev
-        );
+    nutricaoService.contextoPaciente(pacienteId)
+      .then(ctx => {
+        setNomePet(ctx.nomePet);
+        setNomeTutor(ctx.nomeTutor);
+        setTutorId(ctx.tutorId);
+        setIdadeAnos(ctx.idadeAnos);
+        const pesoAtual = typeof ctx.pesoAtualKg === "number"
+          ? ctx.pesoAtualKg
+          : Number.parseFloat(String(ctx.pesoAtualKg));
+        if (!Number.isNaN(pesoAtual) && pesoAtual > 0) {
+          setParametros(prev =>
+            prev.pesoAtualKg === 0 ? { ...prev, pesoAtualKg: pesoAtual } : prev);
+        }
       })
-      .catch(() => { /* mantém placeholder */ });
-
-    nutricaoService.buscarRascunho(pacienteId)
-      .then(r => {
-        if (!r) return;
-        setPlanoRascunho(r);
-        setTutorId(r.tutorId);
-        setParametros(r.parametros);
-        setTipoCronograma(r.cronograma.tipo);
-        setDiasCronograma(r.cronograma.dias);
-        setObservacoes(r.observacoes);
-        setRacaoSelecionadaId(r.racaoId);
-        setJustificativaDivergencia(r.justificativaDivergencia ?? "");
-      })
-      .catch(() => { /* sem rascunho, ok */ });
+      .catch((e: Error) => setErro(`Não foi possível resolver o paciente: ${e.message}`));
 
     nutricaoService.listarCatalogoRacoes().then(setCatalogo).catch(() => {});
     nutricaoService.historicoEvolutivo(pacienteId).then(setHistorico).catch(() => {});
-  }, [medicoService, nutricaoService, pacienteId]);
+
+    // Carrega o plano vigente: pré-preenche o form e avisa o médico que o
+    // próximo Finalizar substituirá esta prescrição.
+    nutricaoService.buscarVigente(pacienteId)
+      .then(vig => {
+        if (!vig) return;
+        setPlanoVigente(vig);
+        setParametros(vig.parametros);
+        setTipoCronograma(vig.cronograma.tipo);
+        setDiasCronograma(vig.cronograma.dias);
+        setObservacoes(vig.observacoes);
+        setRacaoSelecionadaId(vig.racaoId);
+        setJustificativaDivergencia(vig.justificativaDivergencia ?? "");
+      })
+      .catch(() => { /* sem vigente, ok */ });
+  }, [nutricaoService, pacienteId]);
 
   // Recomendações de ração ao vivo (mudam quando peso ideal / comorbidade / idade muda)
   useEffect(() => {
@@ -216,40 +224,28 @@ export function MedicoGestaoNutricional() {
     }
   }
 
-  async function salvarRascunho() {
-    if (!pacienteId) return;
+  /** Abre o modal de assinatura (não persiste nada ainda). */
+  function abrirAssinatura() {
     if (!tutorId) {
-      setErro("Tutor do paciente não foi resolvido. Recarregue a tela.");
+      setErro("Paciente ainda carregando — aguarde alguns instantes e tente de novo.");
+      return;
+    }
+    if (parametros.pesoIdealKg <= 0) {
+      setErro("Informe o peso ideal antes de finalizar.");
       return;
     }
     setErro(null);
-    setSalvando(true);
-    try {
-      const cronograma: CronogramaDTO = { tipo: tipoCronograma, dias: diasCronograma };
-      const salvo = await nutricaoService.salvarRascunho({
-        pacienteId, tutorId, parametros, cronograma, observacoes,
-        racaoId: racaoSelecionadaId,
-        justificativaDivergencia: justificativaDivergencia.trim() || null,
-      });
-      setPlanoRascunho(salvo);
-    } catch (e) {
-      setErro((e as Error).message);
-    } finally {
-      setSalvando(false);
-    }
-  }
-
-  function abrirAssinatura() {
-    if (!planoRascunho) {
-      setErro("Salve o rascunho antes de finalizar.");
-      return;
-    }
     setAssinaturaVazia(true);
     setMostrandoAssinatura(true);
   }
 
+  /**
+   * Cria + finaliza o plano nutricional em um único POST atômico. Se a
+   * validação falhar, nada é persistido no banco — não fica rascunho
+   * órfão por aí. A tela só avança para a vista de PDF se der certo.
+   */
   async function confirmarFinalizacao() {
-    if (!planoRascunho) return;
+    if (!tutorId || !pacienteId) return;
     const imagem = padRef.current?.toDataURL();
     if (!imagem) {
       setErro("Assinatura é obrigatória para finalizar.");
@@ -258,9 +254,14 @@ export function MedicoGestaoNutricional() {
     setErro(null);
     setFinalizando(true);
     try {
-      const finalizado = await nutricaoService.finalizar(planoRascunho.id, imagem);
+      const cronograma: CronogramaDTO = { tipo: tipoCronograma, dias: diasCronograma };
+      const finalizado = await nutricaoService.finalizarDireto({
+        pacienteId, tutorId, parametros, cronograma, observacoes,
+        racaoId: racaoSelecionadaId,
+        justificativaDivergencia: justificativaDivergencia.trim() || null,
+        imagemAssinaturaBase64: imagem,
+      });
       setPlanoFinalizado(finalizado);
-      setPlanoRascunho(null);
       setMostrandoAssinatura(false);
     } catch (e) {
       setErro((e as Error).message);
@@ -297,6 +298,35 @@ export function MedicoGestaoNutricional() {
       {erro && (
         <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {erro}
+        </div>
+      )}
+
+      {/* Aviso de substituição (plano vigente carregado) */}
+      {planoVigente && (
+        <div role="alert" className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-xl" aria-hidden="true">⚠</span>
+            <div className="flex-1 text-sm text-amber-800">
+              <p className="font-semibold">
+                Este paciente já tem uma prescrição nutricional vigente
+                {planoVigente.assinatura && (
+                  <>
+                    {" "}emitida em{" "}
+                    <strong>
+                      {new Date(planoVigente.assinatura.assinadoEm).toLocaleDateString("pt-BR")}
+                    </strong>
+                  </>
+                )}
+                .
+              </p>
+              <p className="mt-1">
+                Os campos abaixo foram pré-preenchidos com os dados do plano atual.
+                Ao clicar em <strong>Finalizar e Assinar</strong>, a prescrição anterior
+                será marcada como <strong>SUBSTITUÍDA</strong> (permanece no histórico para auditoria)
+                e a nova passa a ser a vigente para o tutor.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -382,13 +412,13 @@ export function MedicoGestaoNutricional() {
       />
 
       {/* Justificativa de divergência (condicional, RN reforçada) */}
-      {planoRascunho && parseFloat(String(planoRascunho.divergenciaPercentual ?? "0")) > 30 && (
+      {divergenciaPercentual > 30 && (
         <div className="card p-6 space-y-3 border-2 border-amber-300">
           <h2 className="text-base font-semibold text-amber-800">
             ⚠ Justificativa Clínica Obrigatória
           </h2>
           <p className="text-sm text-amber-700">
-            A divergência entre peso atual e ideal é de {fmt(planoRascunho.divergenciaPercentual, 1)}%
+            A divergência entre peso atual e ideal é de {divergenciaPercentual.toFixed(1)}%
             (acima do limite seguro de 30%). Registre a conduta clínica para finalizar o plano.
           </p>
           <textarea
@@ -539,24 +569,22 @@ export function MedicoGestaoNutricional() {
       </div>
 
       {/* Ações */}
-      <div className="flex flex-wrap justify-end gap-3">
-        <button
-          type="button"
-          onClick={salvarRascunho}
-          disabled={salvando}
-          className="rounded-xl border border-ink-300 bg-white px-5 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50 disabled:opacity-60"
-        >
-          {salvando ? "Salvando…" : "Salvar Rascunho"}
-        </button>
-        <button
-          type="button"
-          onClick={abrirAssinatura}
-          disabled={!planoRascunho}
-          className="rounded-xl border border-brand-500 bg-brand-500 px-5 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-          title={!planoRascunho ? "Salve o rascunho primeiro" : ""}
-        >
-          Finalizar e Assinar
-        </button>
+      <div className="space-y-2">
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={abrirAssinatura}
+            disabled={!tutorId}
+            className="rounded-xl border border-brand-500 bg-brand-500 px-6 py-3 text-base font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+          >
+            ✍ {planoVigente ? "Substituir e Assinar" : "Finalizar e Assinar"}
+          </button>
+        </div>
+        <p className="text-right text-xs text-ink-500">
+          {planoVigente
+            ? "A prescrição vigente será marcada como SUBSTITUÍDA e a nova passa a valer."
+            : "O plano é salvo no banco apenas após a assinatura digital — antes disso, nada fica persistido."}
+        </p>
       </div>
 
       {/* Modal de assinatura */}
@@ -595,6 +623,16 @@ export function MedicoGestaoNutricional() {
 
 // ── Subcomponentes ───────────────────────────────────────────────────────────
 
+/** Converte o nome da Strategy do backend em texto humano para o card. */
+function motivoHumano(nomeStrategy: string): string {
+  switch (nomeStrategy) {
+    case "Comorbidade": return "Cobre a comorbidade";
+    case "FaixaEtaria": return "Adequada à idade";
+    case "Porte":       return "Adequada ao porte";
+    default:            return nomeStrategy;
+  }
+}
+
 function SecaoRacao({
   recomendacoes, catalogo, racaoSelecionadaId, onSelecionar,
 }: {
@@ -605,9 +643,12 @@ function SecaoRacao({
 }) {
   return (
     <div className="card p-6 space-y-4">
-      <div className="flex items-baseline justify-between">
+      <div>
         <h2 className="text-base font-semibold text-ink-900">Ração Recomendada</h2>
-        <span className="text-xs text-ink-500">Top 3 por afinidade clínica (Strategy)</span>
+        <p className="text-xs text-ink-500">
+          O sistema sugere as 3 rações mais adequadas com base no porte, idade e comorbidade do paciente.
+          Clique numa para vinculá-la ao plano (a densidade calórica é preenchida automaticamente).
+        </p>
       </div>
 
       {recomendacoes.length === 0 && (
@@ -617,8 +658,9 @@ function SecaoRacao({
       )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {recomendacoes.map(rec => {
+        {recomendacoes.map((rec, indice) => {
           const ativa = racaoSelecionadaId === rec.racao.id;
+          const rotuloMotivos = rec.motivosFortes.map(motivoHumano).join(", ");
           return (
             <button
               key={rec.racao.id}
@@ -633,16 +675,16 @@ function SecaoRacao({
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-semibold text-ink-900">{rec.racao.descricaoCurta}</p>
-                <span className="inline-flex shrink-0 items-center rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 ring-1 ring-brand-200">
-                  {rec.pontuacao} pts
+                <span className="inline-flex shrink-0 items-center rounded-full bg-ink-100 px-2 py-0.5 text-xs font-medium text-ink-600">
+                  #{indice + 1}
                 </span>
               </div>
               <p className="mt-1 text-xs text-ink-500">
                 {fmt(rec.racao.densidadeCaloricaKcalPorKg, 0)} kcal/kg
               </p>
-              {rec.motivosFortes.length > 0 && (
+              {rotuloMotivos && (
                 <p className="mt-2 text-xs text-ink-600">
-                  Indicada por: <strong>{rec.motivosFortes.join(", ")}</strong>
+                  ✓ {rotuloMotivos}
                 </p>
               )}
             </button>
@@ -762,17 +804,38 @@ function CampoNumero({
 }: {
   rotulo: string; valor: number; onChange: (v: number) => void; passo?: number;
 }) {
+  // Mantém o input como string durante a edição para permitir apagar tudo,
+  // digitar "5.5" sem o React forçar de volta pra "5", etc. Só converte
+  // pra number na saída via onChange.
+  const [texto, setTexto] = useState<string>(valor === 0 ? "" : String(valor));
+
+  useEffect(() => {
+    // Sincroniza quando o valor é alterado externamente (auto-preencher
+    // pela seleção de ração, por exemplo).
+    const numAtual = Number.parseFloat(texto.replace(",", "."));
+    if (valor !== numAtual) {
+      setTexto(valor === 0 ? "" : String(valor));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valor]);
+
   return (
     <label className="block">
       <span className="text-xs text-ink-500">{rotulo}</span>
       <input
-        type="number"
-        value={valor}
-        step={passo}
-        min={0}
-        onChange={e => onChange(Number.parseFloat(e.target.value || "0"))}
+        type="text"
+        inputMode="decimal"
+        value={texto}
+        placeholder="0,0"
+        onChange={e => {
+          const t = e.target.value.replace(/[^0-9.,]/g, "");
+          setTexto(t);
+          const n = Number.parseFloat(t.replace(",", "."));
+          onChange(Number.isNaN(n) ? 0 : n);
+        }}
         className="mt-1 w-full rounded-lg border border-ink-300 px-3 py-2 text-sm"
       />
+      <span className="sr-only">passo {passo}</span>
     </label>
   );
 }
@@ -826,25 +889,34 @@ function PdfPrescricao({
 
   return (
     <div className="space-y-4">
-      {/* Barra de ações — escondida na impressão */}
-      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <button onClick={onVoltar} className="btn-ghost text-sm">← Voltar ao Prontuário</button>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="rounded-xl border border-brand-500 bg-brand-500 px-5 py-2 text-sm font-medium text-white hover:bg-brand-600"
-        >
-          🖨 Gerar PDF (Imprimir)
-        </button>
+      {/* Banner de sucesso + ações — escondidos na impressão */}
+      <div className="print:hidden rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-5">
+        <div className="flex items-start gap-3">
+          <span className="text-3xl" aria-hidden="true">✓</span>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-emerald-800">Plano Nutricional Finalizado</h2>
+            <p className="mt-1 text-sm text-emerald-700">
+              Assinado digitalmente em {dataAssinatura}. O plano agora é imutável e está visível
+              para o tutor na aba <strong>Nutrição</strong> dele.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+          <button onClick={onVoltar} className="btn-ghost text-sm">← Voltar ao Prontuário</button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="rounded-xl border border-brand-500 bg-brand-500 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-brand-600"
+          >
+            📄 Baixar PDF
+          </button>
+        </div>
       </div>
 
       {/* Conteúdo imprimível */}
       <div className="card p-8 space-y-6 print:shadow-none print:border-0">
         <header className="border-b border-ink-200 pb-4">
           <h1 className="text-2xl font-bold text-ink-900">Prescrição Nutricional</h1>
-          <p className="mt-1 text-sm text-ink-500">
-            Plano nº <code>{plano.id}</code>
-          </p>
           <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
             <div><dt className="text-xs text-ink-500">Paciente</dt><dd className="font-medium">{nomePet}</dd></div>
             <div><dt className="text-xs text-ink-500">Tutor</dt><dd className="font-medium">{nomeTutor}</dd></div>
@@ -942,7 +1014,7 @@ function PdfPrescricao({
             className="mb-2 h-28 w-auto rounded border border-ink-200 bg-white p-2"
           />
           <p className="text-xs text-ink-500">
-            Assinado em {dataAssinatura} · Hash SHA-256: <code>{assinatura.hashConteudo}</code>
+            ✓ Documento assinado digitalmente em {dataAssinatura}.
           </p>
         </section>
       </div>

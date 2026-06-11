@@ -210,6 +210,20 @@ public class PlanoNutricional {
                     "Plano já finalizado é imutável. Crie um novo plano para ajustes.");
     }
 
+    /**
+     * Marca este plano como SUBSTITUIDO. Só faz sentido em planos
+     * FINALIZADOS — disparado quando o médico finaliza um novo plano para o
+     * mesmo paciente. Preserva o snapshot histórico (assinatura, parâmetros,
+     * resultado), apenas troca o status para indicar que não é mais o vigente.
+     */
+    public void marcarComoSubstituido() {
+        if (status != StatusPlanoNutricional.FINALIZADO)
+            throw new IllegalStateException(
+                    "Só é possível substituir um plano FINALIZADO. Estado atual: " + status);
+        this.status = StatusPlanoNutricional.SUBSTITUIDO;
+        this.atualizadoEm = LocalDateTime.now();
+    }
+
     /** Representação textual estável usada para gerar o hash da assinatura. */
     private String resumoParaHash() {
         StringBuilder sb = new StringBuilder()

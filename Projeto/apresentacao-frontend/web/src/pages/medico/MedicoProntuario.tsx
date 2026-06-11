@@ -216,8 +216,7 @@ export function MedicoProntuario() {
             titulo="Gestão Nutricional"
             disabled={ehVacina}
             motivoDesabilitado="Indisponível em atendimento de aplicação de vacina."
-            // TODO: navegar para /medico/prontuario/:id/nutricional quando F-11 (NEM) for implementado
-            onClick={() => alert("Gestão Nutricional (NEM) — funcionalidade em desenvolvimento (F-11).")}
+            onClick={() => navigate(`/medico/prontuario/${pacienteId}/nutricao`)}
           />
           <BotaoAcao
             titulo={ehVacina && !temVacinaPendente ? "Vacinação (concluída)" : "Vacinação"}

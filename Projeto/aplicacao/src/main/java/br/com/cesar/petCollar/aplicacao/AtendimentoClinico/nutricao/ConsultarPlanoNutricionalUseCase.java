@@ -35,7 +35,20 @@ public class ConsultarPlanoNutricionalUseCase {
         return repositorio.listarFinalizadosDoPaciente(pacienteId);
     }
 
+    /** Para o tutor: somente planos ATIVOS (1 por paciente — o vigente). */
+    public List<PlanoNutricional> listarAtivosDoTutor(TutorId tutorId) {
+        return repositorio.listarAtivosDoTutor(tutorId);
+    }
+
     public List<PlanoNutricional> listarFinalizadosDoTutor(TutorId tutorId) {
         return repositorio.listarFinalizadosDoTutor(tutorId);
+    }
+
+    /**
+     * Plano vigente do paciente — usado pelo médico para pré-preencher a
+     * tela e avisar de substituição antes de assinar uma nova prescrição.
+     */
+    public Optional<PlanoNutricional> buscarVigenteDoPaciente(PacienteId pacienteId) {
+        return repositorio.buscarFinalizadoAtivoDoPaciente(pacienteId);
     }
 }
