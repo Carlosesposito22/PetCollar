@@ -18,6 +18,7 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.PlanoNut
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.ResultadoNEM;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.StatusPlanoNutricional;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.TipoCronograma;
+import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RacaoId;
 import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
@@ -75,6 +76,11 @@ public class PlanoNutricionalJpa {
     private LocalDateTime assinadoEm;
     private String assinaturaHash;
 
+    // F-11 reforçada: ração do catálogo (opcional) + justificativa exigida em
+    // divergências de peso acima do limiar (PlanoNutricional.LIMIAR_*).
+    private String racaoId;
+    @Lob private String justificativaDivergencia;
+
     protected PlanoNutricionalJpa() {}
 
     public static PlanoNutricionalJpa fromDomain(PlanoNutricional p) {
@@ -116,6 +122,8 @@ public class PlanoNutricionalJpa {
             j.assinadoEm = a.assinadoEm();
             j.assinaturaHash = a.hashConteudo();
         }
+        j.racaoId = p.getRacaoId() == null ? null : p.getRacaoId().getValor();
+        j.justificativaDivergencia = p.getJustificativaDivergencia();
         return j;
     }
 
@@ -146,7 +154,9 @@ public class PlanoNutricionalJpa {
                 desserializarObservacoes(observacoesTexto),
                 StatusPlanoNutricional.valueOf(status),
                 criadoEm, atualizadoEm,
-                resultado, assinatura);
+                resultado, assinatura,
+                racaoId == null ? null : RacaoId.de(racaoId),
+                justificativaDivergencia);
     }
 
     // ── Serialização simples de coleções (separadores | e :) ─────────────────

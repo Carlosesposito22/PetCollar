@@ -171,8 +171,7 @@ export function MedicoProntuario() {
           />
           <BotaoAcao
             titulo="Gestão Nutricional"
-            // TODO: navegar para /medico/prontuario/:id/nutricional quando F-11 (NEM) for implementado
-            onClick={() => alert("Gestão Nutricional (NEM) — funcionalidade em desenvolvimento (F-11).")}
+            onClick={() => navigate(`/medico/prontuario/${pacienteId}/nutricao`)}
           />
           <BotaoAcao
             titulo="Vacinação"
