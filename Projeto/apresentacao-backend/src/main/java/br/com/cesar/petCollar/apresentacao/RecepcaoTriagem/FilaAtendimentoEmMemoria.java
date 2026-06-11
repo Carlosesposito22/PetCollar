@@ -28,7 +28,7 @@ public class FilaAtendimentoEmMemoria {
                 fila.set(i, new ItemFila(
                     atual.pacienteId(), atual.triagemId(), atual.corDeRisco(),
                     atual.finalizadaEm(), atual.nomePaciente(), atual.tutorId(),
-                    medicoId, nomeMedico));
+                    medicoId, nomeMedico, atual.aplicacaoVacina()));
                 return true;
             }
         }
@@ -37,6 +37,16 @@ public class FilaAtendimentoEmMemoria {
 
     public void remover(String triagemId) {
         fila.removeIf(i -> i.triagemId().equals(triagemId));
+    }
+
+    /** Remove todos os itens de um paciente — usado ao finalizar o atendimento. */
+    public void removerPorPaciente(String pacienteId) {
+        fila.removeIf(i -> i.pacienteId().equals(pacienteId));
+    }
+
+    /** Indica se o paciente já possui um item ativo na fila de espera. */
+    public boolean contemPaciente(String pacienteId) {
+        return fila.stream().anyMatch(i -> i.pacienteId().equals(pacienteId));
     }
 
     /** Fila completa (usada pela recepcionista). */
@@ -53,8 +63,11 @@ public class FilaAtendimentoEmMemoria {
     }
 
     private void reordenar() {
+        // Prioridade por cor de risco; aplicações de vacina vão sempre por último
+        // (menor prioridade), independentemente da cor, e então por ordem de chegada.
         fila.sort(Comparator
-            .comparingInt((ItemFila i) -> PRIORIDADE.getOrDefault(i.corDeRisco(), 3))
+            .comparing((ItemFila i) -> i.aplicacaoVacina())
+            .thenComparingInt(i -> PRIORIDADE.getOrDefault(i.corDeRisco(), 3))
             .thenComparing(ItemFila::finalizadaEm));
     }
 
@@ -66,13 +79,15 @@ public class FilaAtendimentoEmMemoria {
         String nomePaciente,
         String tutorId,
         String medicoId,      // null enquanto não encaminhado
-        String nomeMedico
+        String nomeMedico,
+        boolean aplicacaoVacina
     ) {
         /** Construtor de criação — ainda sem médico atribuído. */
         public ItemFila(String pacienteId, String triagemId, String corDeRisco,
-                        LocalDateTime finalizadaEm, String nomePaciente, String tutorId) {
+                        LocalDateTime finalizadaEm, String nomePaciente, String tutorId,
+                        boolean aplicacaoVacina) {
             this(pacienteId, triagemId, corDeRisco, finalizadaEm,
-                 nomePaciente, tutorId, null, null);
+                 nomePaciente, tutorId, null, null, aplicacaoVacina);
         }
     }
 
@@ -84,13 +99,14 @@ public class FilaAtendimentoEmMemoria {
         String nomePaciente,
         String tutorId,
         String medicoId,
-        String nomeMedico
+        String nomeMedico,
+        boolean aplicacaoVacina
     ) {
         public static ItemFilaDTO de(ItemFila i) {
             return new ItemFilaDTO(
                 i.pacienteId(), i.triagemId(), i.corDeRisco(),
                 i.finalizadaEm(), i.nomePaciente(), i.tutorId(),
-                i.medicoId(), i.nomeMedico());
+                i.medicoId(), i.nomeMedico(), i.aplicacaoVacina());
         }
     }
 }

@@ -10,6 +10,7 @@ import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.CicloVacinalServic
 import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.DoseVacinal;
 import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.StatusDoseVacinal;
 import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.VacinaId;
+import br.com.cesar.petCollar.apresentacao.AtendimentoClinico.CuidadosPosOperatoriosEmMemoria;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.Perfil;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioAutenticavel;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioRepositorio;
@@ -56,6 +57,7 @@ public class MedicoAgendaController {
     private final TriagemJpaRepository triagensRepo;
     private final TutorRecepcaoJpaRepository tutoresRecepcao;
     private final CicloVacinalService cicloVacinalService;
+    private final CuidadosPosOperatoriosEmMemoria cuidadosPosOp;
 
     public MedicoAgendaController(IConsultaRepositorio consultas,
                                   PacienteJpaRepository pacientes,
@@ -64,7 +66,8 @@ public class MedicoAgendaController {
                                   PacienteRecepcaoJpaRepository pacienteRecepcao,
                                   TriagemJpaRepository triagensRepo,
                                   TutorRecepcaoJpaRepository tutoresRecepcao,
-                                  CicloVacinalService cicloVacinalService) {
+                                  CicloVacinalService cicloVacinalService,
+                                  CuidadosPosOperatoriosEmMemoria cuidadosPosOp) {
         this.consultas           = consultas;
         this.pacientes           = pacientes;
         this.usuarios            = usuarios;
@@ -73,6 +76,7 @@ public class MedicoAgendaController {
         this.triagensRepo        = triagensRepo;
         this.tutoresRecepcao     = tutoresRecepcao;
         this.cicloVacinalService = cicloVacinalService;
+        this.cuidadosPosOp       = cuidadosPosOp;
     }
 
     @GetMapping("/atendimentos")
@@ -176,6 +180,32 @@ public class MedicoAgendaController {
             .toList();
     }
 
+    /**
+     * Lista as doses já aplicadas do paciente (histórico vacinal), para o médico
+     * consultar o que o paciente já tomou na tela de vacinação. Ordenadas da
+     * aplicação mais recente para a mais antiga.
+     */
+    @GetMapping("/pacientes/{pacienteId}/vacinas-aplicadas")
+    public List<VacinaAplicadaDTO> vacinasAplicadas(@PathVariable String pacienteId) {
+        return cicloVacinalService.listarPorPaciente(PacienteId.de(pacienteId)).stream()
+            .flatMap(c -> c.getDoses().stream()
+                .filter(DoseVacinal::estaAplicada)
+                .map(d -> new VacinaAplicadaDTO(
+                    c.getId().getValor(),
+                    d.getId().getValor(),
+                    c.getNomeCiclo(),
+                    c.getTotalDoses() > 1
+                        ? c.getNomeCiclo() + " — Dose " + d.getDoseNumero() + "/" + c.getTotalDoses()
+                        : c.getNomeCiclo(),
+                    d.getDoseNumero(),
+                    c.getTotalDoses(),
+                    d.getDataAplicacao().toString(),
+                    d.getMedico(),
+                    d.getLote())))
+            .sorted(Comparator.comparing(VacinaAplicadaDTO::dataAplicacao).reversed())
+            .toList();
+    }
+
     /** Confirma a aplicação de uma dose vacinal pelo médico durante a consulta (RN-078). */
     @PostMapping("/pacientes/{pacienteId}/vacinas/aplicar")
     public ResponseEntity<Void> aplicarVacina(@PathVariable String pacienteId,
@@ -188,6 +218,34 @@ public class MedicoAgendaController {
         cicloVacinalService.aplicarDose(
             VacinaId.de(req.cicloId()), VacinaId.de(req.doseId()),
             LocalDate.now(), medico, lote);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Registra os cuidados pós-operatórios do paciente ao assinar um relatório
+     * cirúrgico (F-10). O alerta fica visível no portal do tutor até expirar, após
+     * a quantidade de dias de cuidado informada pelo médico.
+     */
+    @PostMapping("/pacientes/{pacienteId}/cuidados-pos-operatorios")
+    public ResponseEntity<Void> registrarCuidadosPosOp(@PathVariable String pacienteId,
+                                                       @RequestBody RequisicaoCuidadosPosOpDTO req,
+                                                       Principal principal) {
+        String medico = usuarios.buscar(Perfil.MEDICO_VETERINARIO, principal.getName())
+            .map(UsuarioAutenticavel::nome)
+            .orElse(principal.getName());
+        cuidadosPosOp.registrar(pacienteId, req.cuidados(), req.tempoRecuperacao(),
+            req.diasCuidado(), medico);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Finaliza o atendimento do paciente: remove-o da fila de espera, encerrando o
+     * fluxo dentro da recepção. Os cuidados pós-operatórios permanecem ativos até
+     * sua validade, pois o tutor precisa deles durante a recuperação.
+     */
+    @PostMapping("/pacientes/{pacienteId}/finalizar-atendimento")
+    public ResponseEntity<Void> finalizarAtendimento(@PathVariable String pacienteId) {
+        fila.removerPorPaciente(pacienteId);
         return ResponseEntity.noContent().build();
     }
 
@@ -218,7 +276,8 @@ public class MedicoAgendaController {
                     t.getFinalizadaEm().toLocalDate().toString(),
                     motivo,
                     t.getCorDeRisco() != null ? t.getCorDeRisco() : "VERDE",
-                    t.getScoreTotal());
+                    t.getScoreTotal(),
+                    t.isAplicacaoVacina());
             })
             .toList();
 
@@ -292,11 +351,18 @@ public class MedicoAgendaController {
     record VacinaPendenteDTO(String cicloId, String doseId, String ciclo, String rotulo,
                              int doseNumero, int totalDoses, String status, String dataAgendada) {}
 
+    record VacinaAplicadaDTO(String cicloId, String doseId, String ciclo, String rotulo,
+                             int doseNumero, int totalDoses, String dataAplicacao,
+                             String medico, String lote) {}
+
     record RequisicaoAplicarVacinaDTO(String cicloId, String doseId, String lote) {}
+
+    record RequisicaoCuidadosPosOpDTO(String cuidados, String tempoRecuperacao, int diasCuidado) {}
 
     record TagDTO(String rotulo, boolean alerta) {}
 
-    record TriagemResumoDTO(String id, String data, String motivo, String corDeRisco, int pesoTotal) {}
+    record TriagemResumoDTO(String id, String data, String motivo, String corDeRisco,
+                            int pesoTotal, boolean aplicacaoVacina) {}
 
     record ProntuarioMedicoDTO(
         String pacienteId,

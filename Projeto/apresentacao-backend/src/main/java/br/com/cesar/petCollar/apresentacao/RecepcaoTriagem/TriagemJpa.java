@@ -27,6 +27,9 @@ public class TriagemJpa {
     private LocalDateTime finalizadaEm;
     private String responsavelId;
 
+    /** true quando o atendimento é apenas aplicação de vacina (definido na recepção). */
+    private Boolean aplicacaoVacina;
+
     protected TriagemJpa() {}
 
     public TriagemJpa(String id, String pacienteId, String tutorId, String responsavelId) {
@@ -50,10 +53,12 @@ public class TriagemJpa {
     public LocalDateTime getCriadoEm()     { return criadoEm; }
     public LocalDateTime getFinalizadaEm() { return finalizadaEm; }
     public String getResponsavelId()       { return responsavelId; }
+    public boolean isAplicacaoVacina()     { return Boolean.TRUE.equals(aplicacaoVacina); }
 
     public void setScoreTotal(int score)          { this.scoreTotal = score; }
     public void setCorDeRisco(String cor)         { this.corDeRisco = cor; }
     public void setStatus(String status)          { this.status = status; }
     public void setSintomasSelecionados(String s) { this.sintomasSelecionados = s; }
     public void setFinalizadaEm(LocalDateTime t)  { this.finalizadaEm = t; }
+    public void setAplicacaoVacina(boolean v)     { this.aplicacaoVacina = v; }
 }

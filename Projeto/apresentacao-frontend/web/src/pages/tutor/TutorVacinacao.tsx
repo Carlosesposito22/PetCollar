@@ -87,12 +87,31 @@ const STATUS_VISUAL: Record<StatusVacina, { borda: string; fundo: string; badge:
   EM_ATRASO: { borda: "border-l-rose-500",    fundo: "bg-rose-50/40",      badge: "bg-rose-100 text-rose-700 ring-1 ring-rose-200",          texto: "text-rose-700",    label: "Em Atraso", icone: "⚠"  },
 };
 
-const STATUS_EVENTO_COR: Record<StatusEvento, string> = {
-  APLICADA:  "bg-emerald-500",
-  PENDENTE:  "bg-amber-400",
-  EM_ATRASO: "bg-rose-500",
-  PREVISTA:  "bg-sky-400",
+// No calendário, cada PET tem sua própria cor (estilo agenda). O status vira um
+// pequeno glifo no evento — a cor identifica o pet, não o status.
+const PALETA_PET = [
+  { bar: "bg-sky-500",     dot: "bg-sky-500"     },
+  { bar: "bg-violet-500",  dot: "bg-violet-500"  },
+  { bar: "bg-emerald-600", dot: "bg-emerald-600" },
+  { bar: "bg-amber-500",   dot: "bg-amber-500"   },
+  { bar: "bg-rose-500",    dot: "bg-rose-500"    },
+  { bar: "bg-teal-500",    dot: "bg-teal-500"    },
+  { bar: "bg-indigo-500",  dot: "bg-indigo-500"  },
+  { bar: "bg-fuchsia-500", dot: "bg-fuchsia-500" },
+];
+
+const STATUS_GLIFO: Record<StatusEvento, string> = {
+  APLICADA: "✓", PENDENTE: "◷", EM_ATRASO: "⚠", PREVISTA: "◔",
 };
+const STATUS_LABEL: Record<StatusEvento, string> = {
+  APLICADA: "Aplicada", PENDENTE: "Pendente", EM_ATRASO: "Em Atraso", PREVISTA: "Prevista",
+};
+
+/** Cor estável do pet a partir da posição dele na lista de pacientes do tutor. */
+function corDoPet(pacienteId: string, pacientes: Paciente[]) {
+  const idx = pacientes.findIndex(p => p.id === pacienteId);
+  return PALETA_PET[(idx >= 0 ? idx : 0) % PALETA_PET.length];
+}
 
 const PROTOCOLO_INFO: Record<TipoProtocolo, { label: string; cor: string; dias: string }> = {
   FILHOTE:       { label: "Ciclo de Filhote",   cor: "bg-violet-100 text-violet-700 ring-1 ring-violet-200", dias: "21 dias"   },
@@ -189,13 +208,6 @@ export function TutorVacinacao() {
           <h1 className="text-2xl font-bold text-ink-900">Carteira Digital de Vacinação</h1>
           <p className="mt-1 text-sm text-ink-500">Acompanhe o ciclo vacinal, visualize previsões e proteja a saúde do seu pet.</p>
         </div>
-        {aba === "carteira" && carteira && (
-          <div className="flex gap-2">
-            <button onClick={() => setAgendarNova(true)} className="btn-ghost ring-1 ring-ink-300 text-sm">+ Nova vacina</button>
-            <button onClick={() => setAba("pdf")} className="btn-ghost ring-1 ring-brand-300 text-brand-700 text-sm">📄 Importar PDF</button>
-            <button onClick={() => gerarCertificadoPDF(carteira)} className="btn-primary w-auto text-sm">⬇ Certificado</button>
-          </div>
-        )}
       </div>
 
       {/* Navegação das abas */}
@@ -212,9 +224,9 @@ export function TutorVacinacao() {
       {/* ── Aba: Carteira ─────────────────────────────────────────────────── */}
       {aba === "carteira" && (
         <>
-          {/* Seletor de paciente + estatísticas */}
+          {/* Seletor de paciente + ações da carteira (ligadas ao pet) */}
           <div className="card p-4">
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-end gap-4">
               <div className="min-w-[240px] flex-1">
                 <label className="label" htmlFor="paciente">Paciente</label>
                 <select id="paciente" className="input mt-1" value={pacienteId} onChange={e => setPacienteId(e.target.value)}>
@@ -223,14 +235,17 @@ export function TutorVacinacao() {
                 </select>
               </div>
               {carteira && (
-                <div className="flex flex-wrap gap-3 pt-5">
-                  <EstatCard valor={estatisticas.aplicadas} label="Aplicadas"  cor="text-emerald-600" bg="bg-emerald-50" />
-                  <EstatCard valor={estatisticas.pendentes} label="Pendentes"  cor="text-amber-600"   bg="bg-amber-50" />
-                  <EstatCard valor={estatisticas.atrasadas} label="Em Atraso"  cor="text-rose-600"    bg="bg-rose-50" />
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => setAgendarNova(true)} className="btn-ghost ring-1 ring-ink-300 text-sm">+ Nova vacina</button>
+                  <button onClick={() => setAba("pdf")} className="btn-ghost ring-1 ring-brand-300 text-brand-700 text-sm">📄 Importar PDF</button>
+                  <button onClick={() => gerarCertificadoPDF(carteira)} className="btn-primary w-auto text-sm">⬇ Certificado</button>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Resumo visual da carteira (barra empilhada + legendas) */}
+          {carteira && <ResumoCarteira estatisticas={estatisticas} />}
 
           {temAtraso && (
             <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
@@ -296,26 +311,46 @@ export function TutorVacinacao() {
               </h2>
               <button onClick={() => mudarMes(1)} className="btn-ghost ring-1 ring-ink-300 px-3 py-1.5 text-sm">▶</button>
             </div>
-            {/* Legenda */}
-            <div className="mt-3 flex flex-wrap gap-3 text-xs">
-              {(["APLICADA","PENDENTE","EM_ATRASO","PREVISTA"] as StatusEvento[]).map(s => (
-                <span key={s} className="flex items-center gap-1.5">
-                  <span className={`h-2.5 w-2.5 rounded-full ${STATUS_EVENTO_COR[s]}`} />
-                  {{ APLICADA: "Aplicada", PENDENTE: "Pendente", EM_ATRASO: "Em Atraso", PREVISTA: "Prevista (Strategy)" }[s]}
-                </span>
-              ))}
-            </div>
+            {/* Legenda — uma cor por pet */}
+            {(() => {
+              const ids = Array.from(new Set(calEventos.map(e => e.pacienteId)));
+              return (
+                <div className="mt-3 space-y-2">
+                  {ids.length > 0 && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+                      {ids.map(id => {
+                        const nome = calEventos.find(e => e.pacienteId === id)?.pacienteNome ?? "Pet";
+                        return (
+                          <span key={id} className="flex items-center gap-1.5 font-medium text-ink-700">
+                            <span className={`h-2.5 w-2.5 rounded-full ${corDoPet(id, pacientes).dot}`} />
+                            {nome}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-ink-400">
+                    {(["APLICADA","PENDENTE","EM_ATRASO","PREVISTA"] as StatusEvento[]).map(s => (
+                      <span key={s} className="flex items-center gap-1">
+                        <span>{STATUS_GLIFO[s]}</span>{STATUS_LABEL[s]}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {calCarregando && <div className="card h-64 animate-pulse bg-white/60" />}
 
           {!calCarregando && (
             <>
-              <CalendarioGrid mes={calMes} eventos={calEventos} diaSelecionado={diaSelecionado} onSelecionarDia={setDiaSelecionado} />
+              <CalendarioGrid mes={calMes} eventos={calEventos} pacientes={pacientes}
+                diaSelecionado={diaSelecionado} onSelecionarDia={setDiaSelecionado} />
 
               {diaSelecionado && (
                 <PainelDia data={diaSelecionado} eventos={calEventos.filter(e => e.data === diaSelecionado)}
-                  onFechar={() => setDiaSelecionado(null)} />
+                  pacientes={pacientes} onFechar={() => setDiaSelecionado(null)} />
               )}
 
               {calEventos.length === 0 && (
@@ -352,11 +387,60 @@ export function TutorVacinacao() {
 
 // ── Sub-componentes — Carteira ───────────────────────────────────────────────
 
-function EstatCard({ valor, label, cor, bg }: { valor: number; label: string; cor: string; bg: string }) {
+function ResumoCarteira({ estatisticas }: {
+  estatisticas: { total: number; aplicadas: number; pendentes: number; atrasadas: number };
+}) {
+  const { total, aplicadas, pendentes, atrasadas } = estatisticas;
+  const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0);
+
+  const segmentos = [
+    { label: "Aplicadas", valor: aplicadas, barra: "bg-emerald-500", ponto: "bg-emerald-500", texto: "text-emerald-700", anel: "ring-emerald-100", fundo: "bg-emerald-50/50" },
+    { label: "Pendentes", valor: pendentes, barra: "bg-amber-400",   ponto: "bg-amber-400",   texto: "text-amber-700",   anel: "ring-amber-100",   fundo: "bg-amber-50/50" },
+    { label: "Em Atraso", valor: atrasadas, barra: "bg-rose-500",    ponto: "bg-rose-500",    texto: "text-rose-700",    anel: "ring-rose-100",    fundo: "bg-rose-50/50" },
+  ];
+
   return (
-    <div className={`flex items-center gap-2 rounded-lg ${bg} px-3 py-2`}>
-      <span className={`text-xl font-bold ${cor}`}>{valor}</span>
-      <span className="text-xs text-ink-600">{label}</span>
+    <div className="card p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-ink-700">Resumo da carteira</h3>
+        <span className="text-xs text-ink-500">{total} dose{total !== 1 ? "s" : ""} no total</span>
+      </div>
+
+      {/* Barra empilhada proporcional */}
+      <div className="flex h-5 w-full overflow-hidden rounded-full bg-ink-100 ring-1 ring-ink-200/60">
+        {total === 0 ? (
+          <div className="flex w-full items-center justify-center text-[11px] text-ink-400">
+            Nenhuma vacina cadastrada ainda
+          </div>
+        ) : (
+          segmentos.map((s, i) =>
+            s.valor > 0 ? (
+              <div
+                key={i}
+                className={`${s.barra} h-full transition-all duration-500`}
+                style={{ width: `${pct(s.valor)}%` }}
+                title={`${s.label}: ${s.valor} (${Math.round(pct(s.valor))}%)`}
+              />
+            ) : null
+          )
+        )}
+      </div>
+
+      {/* Legendas com contagem e percentual */}
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        {segmentos.map((s, i) => (
+          <div key={i} className={`rounded-xl ${s.fundo} p-3 ring-1 ${s.anel}`}>
+            <div className="flex items-center gap-2">
+              <span className={`h-2.5 w-2.5 rounded-full ${s.ponto}`} />
+              <span className="text-xs font-medium text-ink-600">{s.label}</span>
+            </div>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className={`text-2xl font-bold ${s.texto}`}>{s.valor}</span>
+              <span className="text-xs text-ink-400">{total > 0 ? `${Math.round(pct(s.valor))}%` : "0%"}</span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -518,9 +602,11 @@ function InfoChip({ icone, rotulo, valor }: { icone: string; rotulo: string; val
 
 // ── Sub-componentes — Calendário ─────────────────────────────────────────────
 
-function CalendarioGrid({ mes, eventos, diaSelecionado, onSelecionarDia }: {
-  mes: string; eventos: EventoVacinal[]; diaSelecionado: string | null; onSelecionarDia: (d: string) => void;
+function CalendarioGrid({ mes, eventos, pacientes, diaSelecionado, onSelecionarDia }: {
+  mes: string; eventos: EventoVacinal[]; pacientes: Paciente[];
+  diaSelecionado: string | null; onSelecionarDia: (d: string) => void;
 }) {
+  const MAX_VISIVEL = 2; // chips mostrados por dia antes do "+N"
   const [ano, mesNum] = mes.split("-").map(Number);
   const primeiroDia   = new Date(ano, mesNum - 1, 1).getDay(); // 0=Dom
   const totalDias     = new Date(ano, mesNum, 0).getDate();
@@ -543,16 +629,18 @@ function CalendarioGrid({ mes, eventos, diaSelecionado, onSelecionarDia }: {
       {/* Grade de dias */}
       <div className="grid grid-cols-7">
         {celulas.map((dia, i) => {
-          if (dia === null) return <div key={i} className="min-h-[72px] border-b border-r border-ink-100/60 bg-ink-50/30" />;
+          if (dia === null) return <div key={i} className="min-h-[104px] border-b border-r border-ink-100/60 bg-ink-50/30" />;
           const isoData  = `${mes}-${String(dia).padStart(2,"0")}`;
           const evsDia   = eventosPorDia[isoData] ?? [];
           const hoje     = new Date().toISOString().slice(0,10);
           const eSelecionado = diaSelecionado === isoData;
           const eHoje    = isoData === hoje;
+          const visiveis = evsDia.slice(0, MAX_VISIVEL);
+          const extra    = evsDia.length - visiveis.length;
           return (
             <button key={i} onClick={() => evsDia.length > 0 ? onSelecionarDia(isoData) : undefined}
               className={
-                "min-h-[72px] border-b border-r border-ink-100/60 p-1.5 text-left transition " +
+                "min-h-[104px] border-b border-r border-ink-100/60 p-1.5 text-left align-top transition " +
                 (eSelecionado ? "bg-brand-50 ring-2 ring-inset ring-brand-400 " : "hover:bg-ink-50 ") +
                 (evsDia.length > 0 ? "cursor-pointer " : "cursor-default ")
               }>
@@ -560,13 +648,18 @@ function CalendarioGrid({ mes, eventos, diaSelecionado, onSelecionarDia }: {
                 "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold " +
                 (eHoje ? "bg-brand-500 text-white" : "text-ink-700")
               }>{dia}</span>
-              {/* Pontos dos eventos */}
-              <div className="mt-1 flex flex-wrap gap-0.5">
-                {evsDia.slice(0, 5).map((ev, j) => (
-                  <span key={j} title={`${ev.pacienteNome} — ${ev.nomeCiclo}`}
-                    className={`h-2 w-2 rounded-full ${STATUS_EVENTO_COR[ev.status] ?? "bg-gray-400"}`} />
+              {/* Eventos como chips coloridos por pet (estilo agenda) */}
+              <div className="mt-1 space-y-0.5">
+                {visiveis.map((ev, j) => (
+                  <span key={j}
+                    title={`${ev.pacienteNome} — ${ev.nomeCiclo} · ${STATUS_LABEL[ev.status]}`}
+                    className={`block w-full truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight text-white ${corDoPet(ev.pacienteId, pacientes).bar}`}>
+                    <span className="mr-0.5">{STATUS_GLIFO[ev.status]}</span>{ev.nomeCiclo}
+                  </span>
                 ))}
-                {evsDia.length > 5 && <span className="text-[10px] text-ink-400">+{evsDia.length - 5}</span>}
+                {extra > 0 && (
+                  <span className="block px-1 text-[10px] font-semibold text-ink-500">+{extra} mais</span>
+                )}
               </div>
             </button>
           );
@@ -576,8 +669,9 @@ function CalendarioGrid({ mes, eventos, diaSelecionado, onSelecionarDia }: {
   );
 }
 
-function PainelDia({ data, eventos, onFechar }: { data: string; eventos: EventoVacinal[]; onFechar: () => void }) {
-  const STATUS_LABELS: Record<StatusEvento, string> = { APLICADA: "Aplicada", PENDENTE: "Pendente", EM_ATRASO: "Em Atraso", PREVISTA: "Prevista" };
+function PainelDia({ data, eventos, pacientes, onFechar }: {
+  data: string; eventos: EventoVacinal[]; pacientes: Paciente[]; onFechar: () => void;
+}) {
   return (
     <div className="card p-5">
       <div className="mb-4 flex items-center justify-between">
@@ -587,10 +681,12 @@ function PainelDia({ data, eventos, onFechar }: { data: string; eventos: EventoV
       <div className="space-y-2">
         {eventos.map((ev, i) => (
           <div key={i} className="flex items-center gap-3 rounded-lg border border-ink-200 bg-white px-4 py-3">
-            <span className={`h-3 w-3 shrink-0 rounded-full ${STATUS_EVENTO_COR[ev.status] ?? "bg-gray-400"}`} />
+            <span className={`h-3 w-3 shrink-0 rounded-full ${corDoPet(ev.pacienteId, pacientes).dot}`} title={ev.pacienteNome} />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-ink-900">{ev.pacienteNome} — {ev.nomeCiclo}</p>
-              <p className="text-xs text-ink-500">Dose {ev.doseNumero}/{ev.totalDoses} · <span className="font-medium">{STATUS_LABELS[ev.status]}</span></p>
+              <p className="text-xs text-ink-500">
+                Dose {ev.doseNumero}/{ev.totalDoses} · <span className="font-medium">{STATUS_GLIFO[ev.status]} {STATUS_LABEL[ev.status]}</span>
+              </p>
             </div>
             {ev.lembreteAtivo && <span className="text-amber-500 text-sm" title="Lembrete ativo">🔔</span>}
           </div>

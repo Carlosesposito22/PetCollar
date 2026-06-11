@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRecepcao, type TutorDTO, type PacienteDTO, type SintomaDTO, type DadosPaciente } from "../hooks/useRecepcao";
 
@@ -213,6 +213,138 @@ function ModalPaciente({ paciente, onSalvar, onClose }: {
   );
 }
 
+function ModalCadastrarVacina({ paciente, onSalvar, onClose }: {
+  paciente: PacienteDTO;
+  onSalvar: (dados: { ciclo: string; totalDoses: number; data: string; tipoProtocolo: string; intervaloDias?: number }) => Promise<boolean>;
+  onClose: () => void;
+}) {
+  const [ciclo, setCiclo]               = useState("");
+  const [totalDoses, setTotalDoses]     = useState(1);
+  const [data, setData]                 = useState("");
+  const [protocolo, setProtocolo]       = useState("FILHOTE");
+  const [intervaloDias, setIntervaloDias] = useState(30);
+  const [erro, setErro]                 = useState<string | null>(null);
+  const [enviando, setEnviando]         = useState(false);
+
+  async function submit() {
+    if (!ciclo.trim()) { setErro("Informe o nome da vacina."); return; }
+    if (!data) { setErro("Informe a data da 1ª dose."); return; }
+    setErro(null);
+    setEnviando(true);
+    const dados = {
+      ciclo: ciclo.trim(), totalDoses, data, tipoProtocolo: protocolo,
+      ...(protocolo === "PERSONALIZADO" ? { intervaloDias } : {}),
+    };
+    const ok = await onSalvar(dados);
+    setEnviando(false);
+    if (!ok) setErro("Não foi possível cadastrar a vacina. Verifique os dados.");
+  }
+
+  return (
+    <Modal titulo="Cadastrar vacina" onClose={onClose}>
+      <p className="mb-4 text-sm text-ink-600">
+        <strong>{paciente.nome}</strong> não tem vacina agendada. Cadastre a vacina — ela aparece
+        na carteira do tutor e fica disponível para o médico aplicar.
+      </p>
+      {erro && (
+        <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{erro}</div>
+      )}
+      <div className="flex flex-col gap-4">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-ink-700">Nome da vacina *</label>
+          <input value={ciclo} onChange={e => setCiclo(e.target.value)}
+            placeholder="Ex.: V10, Antirrábica, Giardíase"
+            className="w-full rounded-xl border border-ink-300 px-4 py-2.5 text-sm" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-ink-700">Nº de doses</label>
+            <input type="number" min={1} max={10} value={totalDoses}
+              onChange={e => setTotalDoses(Number(e.target.value))}
+              className="w-full rounded-xl border border-ink-300 px-4 py-2.5 text-sm" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-ink-700">Data da 1ª dose *</label>
+            <input type="date" value={data} onChange={e => setData(e.target.value)}
+              className="w-full rounded-xl border border-ink-300 px-4 py-2.5 text-sm" />
+          </div>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-ink-700">Protocolo</label>
+          <select value={protocolo} onChange={e => setProtocolo(e.target.value)}
+            className="w-full rounded-xl border border-ink-300 px-4 py-2.5 text-sm">
+            <option value="FILHOTE">Ciclo de Filhote (21 dias)</option>
+            <option value="REFORCO_ANUAL">Reforço Anual (12 meses)</option>
+            <option value="VIAGEM">Protocolo de Viagem (30 dias)</option>
+            <option value="PERSONALIZADO">Personalizado</option>
+          </select>
+        </div>
+        {protocolo === "PERSONALIZADO" && (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-ink-700">Intervalo entre doses (dias)</label>
+            <input type="number" min={1} max={730} value={intervaloDias}
+              onChange={e => setIntervaloDias(Number(e.target.value))}
+              className="w-full rounded-xl border border-ink-300 px-4 py-2.5 text-sm" />
+          </div>
+        )}
+        <div className="flex gap-3 pt-2">
+          <button onClick={onClose} disabled={enviando} className="btn-ghost flex-1">Cancelar</button>
+          <button onClick={submit} disabled={enviando}
+            className="flex-1 rounded-xl bg-ink-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-50">
+            {enviando ? "Cadastrando..." : "Cadastrar e enviar à fila"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function ModalTipoAtendimento({ paciente, onFechar, onTriagem, onVacina }: {
+  paciente: PacienteDTO;
+  onFechar: () => void;
+  onTriagem: () => void;
+  onVacina: () => void;
+}) {
+  const [enviando, setEnviando] = useState<null | "triagem" | "vacina">(null);
+  return (
+    <Modal titulo="Tipo de atendimento" onClose={onFechar}>
+      <p className="mb-5 text-sm text-ink-600">
+        Como será o atendimento de <strong>{paciente.nome}</strong>?
+      </p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          disabled={!!enviando}
+          onClick={() => { setEnviando("triagem"); onTriagem(); }}
+          className="flex flex-col items-start gap-1 rounded-2xl border-2 border-brand-200 bg-brand-50/50 p-5 text-left transition hover:border-brand-400 hover:bg-brand-50 disabled:opacity-50">
+          <span className="text-2xl">🩺</span>
+          <span className="text-base font-bold text-ink-900">Triagem clínica</span>
+          <span className="text-xs text-ink-500">
+            Seleção de sintomas e classificação de risco. Define a prioridade na fila.
+          </span>
+        </button>
+        <button
+          type="button"
+          disabled={!!enviando}
+          onClick={() => { setEnviando("vacina"); onVacina(); }}
+          className="flex flex-col items-start gap-1 rounded-2xl border-2 border-emerald-200 bg-emerald-50/50 p-5 text-left transition hover:border-emerald-400 hover:bg-emerald-50 disabled:opacity-50">
+          <span className="text-2xl">💉</span>
+          <span className="text-base font-bold text-ink-900">Aplicação de vacina</span>
+          <span className="text-xs text-ink-500">
+            Sem triagem. Entra na fila com a <strong>menor prioridade</strong>.
+          </span>
+        </button>
+      </div>
+      {enviando === "vacina" && (
+        <p className="mt-4 text-center text-sm text-ink-500">Adicionando à fila…</p>
+      )}
+      <div className="mt-6 flex justify-end">
+        <button onClick={onFechar} disabled={!!enviando} className="btn-ghost">Cancelar</button>
+      </div>
+    </Modal>
+  );
+}
+
 function ModalTriagem({ paciente, sintomas, onSalvar, onClose }: {
   paciente: PacienteDTO; sintomas: SintomaDTO[];
   onSalvar: (codigos: string[]) => Promise<void>;
@@ -304,16 +436,28 @@ export function BuscaTutorPage() {
 
   const [modalTutor, setModalTutor]               = useState<"cadastrar" | "editar" | null>(null);
   const [modalPaciente, setModalPaciente]         = useState<{ modo: "cadastrar" | "editar"; paciente?: PacienteDTO } | null>(null);
+  const [modalTipo, setModalTipo]                 = useState<PacienteDTO | null>(null);
+  const [modalCadastrarVacina, setModalCadastrarVacina] = useState<PacienteDTO | null>(null);
   const [modalTriagem, setModalTriagem]           = useState<PacienteDTO | null>(null);
   const [sintomas, setSintomas]                   = useState<SintomaDTO[]>([]);
   const [confirmExcluirTutor, setConfirmExcluirTutor] = useState(false);
   const [confirmExcluirPac, setConfirmExcluirPac]     = useState<PacienteDTO | null>(null);
   const [toastMsg, setToastMsg]                   = useState<string | null>(null);
+  const [pacientesNaFila, setPacientesNaFila]     = useState<Set<string>>(new Set());
 
   function toast(msg: string) {
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3000);
+    setTimeout(() => setToastMsg(null), 3500);
   }
+
+  const { listarFila } = recepcao;
+  const recarregarFila = useCallback(async () => {
+    const fila = await listarFila();
+    setPacientesNaFila(new Set(fila.map((i) => i.pacienteId)));
+  }, [listarFila]);
+
+  // Mantém a lista de pacientes já na fila para sinalizar/bloquear nova triagem.
+  useEffect(() => { void recarregarFila(); }, [recarregarFila]);
 
   async function buscar() {
     const cpfLimpo = cpf.replace(/\D/g, "");
@@ -333,12 +477,46 @@ export function BuscaTutorPage() {
     }
   }
 
-  async function abrirTriagem(paciente: PacienteDTO) {
+  function abrirAtendimento(paciente: PacienteDTO) {
+    // RN: não permitir novo atendimento de um paciente que já está na fila.
+    if (pacientesNaFila.has(paciente.id)) {
+      toast(`⚠️ ${paciente.nome} já está na fila de espera. Conclua o atendimento atual antes de iniciar outro.`);
+      return;
+    }
+    setModalTipo(paciente);
+  }
+
+  async function escolherTriagemClinica(paciente: PacienteDTO) {
     if (sintomas.length === 0) {
       const s = await recepcao.listarSintomas();
       setSintomas(s);
     }
+    setModalTipo(null);
     setModalTriagem(paciente);
+  }
+
+  async function escolherAplicacaoVacina(paciente: PacienteDTO) {
+    if (!tutor) return;
+    // Só vai à fila de vacina se houver dose agendada; senão, cadastra a vacina antes.
+    const pendentes = await recepcao.contarVacinasPendentes(paciente.id);
+    if (pendentes === 0) {
+      setModalTipo(null);
+      setModalCadastrarVacina(paciente);
+      return;
+    }
+    await enviarParaFilaVacina(paciente);
+  }
+
+  async function enviarParaFilaVacina(paciente: PacienteDTO) {
+    if (!tutor) return;
+    const ok = await recepcao.criarTriagem(tutor.id, paciente.id, [], true);
+    setModalTipo(null);
+    if (ok) {
+      toast(`💉 ${paciente.nome} entrou na fila para aplicação de vacina (menor prioridade).`);
+    } else {
+      toast(recepcao.erro || "Não foi possível adicionar à fila.");
+    }
+    void recarregarFila();
   }
 
   return (
@@ -412,12 +590,43 @@ export function BuscaTutorPage() {
           </div>
         </Modal>
       )}
+      {modalTipo && tutor && (
+        <ModalTipoAtendimento
+          paciente={modalTipo}
+          onFechar={() => setModalTipo(null)}
+          onTriagem={() => escolherTriagemClinica(modalTipo)}
+          onVacina={() => escolherAplicacaoVacina(modalTipo)}
+        />
+      )}
+      {modalCadastrarVacina && tutor && (
+        <ModalCadastrarVacina
+          paciente={modalCadastrarVacina}
+          onClose={() => setModalCadastrarVacina(null)}
+          onSalvar={async (dados) => {
+            const pac = modalCadastrarVacina;
+            const ok = await recepcao.cadastrarVacina(pac.id, dados);
+            if (ok) {
+              setModalCadastrarVacina(null);
+              await enviarParaFilaVacina(pac);
+            }
+            return ok;
+          }}
+        />
+      )}
       {modalTriagem && tutor && (
         <ModalTriagem paciente={modalTriagem} sintomas={sintomas}
           onClose={() => setModalTriagem(null)}
           onSalvar={async (codigos) => {
             const ok = await recepcao.criarTriagem(tutor.id, modalTriagem.id, codigos);
-            if (ok) { setModalTriagem(null); toast("Triagem finalizada! Paciente adicionado à fila."); }
+            if (ok) {
+              setModalTriagem(null);
+              toast("Triagem finalizada! Paciente adicionado à fila.");
+              void recarregarFila();
+            } else {
+              setModalTriagem(null);
+              toast(recepcao.erro || "Não foi possível criar a triagem.");
+              void recarregarFila();
+            }
           }} />
       )}
 
@@ -516,6 +725,11 @@ export function BuscaTutorPage() {
                             ⚠ Infectocontagioso
                           </span>
                         )}
+                        {pacientesNaFila.has(p.id) && (
+                          <span className="rounded-full border border-brand-300 bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700">
+                            🕒 Na fila
+                          </span>
+                        )}
                       </div>
                       <p className="mt-0.5 text-xs text-ink-500">
                         {[
@@ -527,9 +741,15 @@ export function BuscaTutorPage() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => abrirTriagem(p)}
-                        className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition">
-                        🩺 Triagem
+                      <button onClick={() => abrirAtendimento(p)}
+                        title={pacientesNaFila.has(p.id) ? "Paciente já está na fila de espera" : "Iniciar atendimento"}
+                        className={
+                          "rounded-lg border px-3 py-1.5 text-xs font-semibold transition " +
+                          (pacientesNaFila.has(p.id)
+                            ? "cursor-not-allowed border-ink-200 bg-ink-100 text-ink-400"
+                            : "border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100")
+                        }>
+                        🩺 Atender
                       </button>
                       <button onClick={() => setModalPaciente({ modo: "editar", paciente: p })}
                         className="rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 transition">

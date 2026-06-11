@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
-import { criarMedicoService, type ProntuarioDTO } from "./medicoService";
+import {
+  criarMedicoService,
+  type ProntuarioDTO,
+  type VacinaAplicadaDTO,
+  type VacinaPendenteDTO,
+} from "./medicoService";
 import { gerarPdfRelatorio, listarRelatorios, type RelatorioSalvo } from "./relatorioStorage";
 
 export function MedicoProntuario() {
@@ -14,6 +19,25 @@ export function MedicoProntuario() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [relatorios, setRelatorios] = useState<RelatorioSalvo[]>([]);
+  const [confirmarFinalizar, setConfirmarFinalizar] = useState(false);
+  const [finalizando, setFinalizando] = useState(false);
+  const [erroFinalizar, setErroFinalizar] = useState<string | null>(null);
+  const [vacinasAplicadas, setVacinasAplicadas] = useState<VacinaAplicadaDTO[]>([]);
+  const [vacinasPendentes, setVacinasPendentes] = useState<VacinaPendenteDTO[]>([]);
+  const [modalHistVacina, setModalHistVacina] = useState(false);
+
+  async function finalizarAtendimento() {
+    if (!pacienteId) return;
+    setFinalizando(true);
+    setErroFinalizar(null);
+    try {
+      await service.finalizarAtendimento(pacienteId);
+      navigate("/medico");
+    } catch (e) {
+      setErroFinalizar((e as Error).message || "Não foi possível finalizar o atendimento.");
+      setFinalizando(false);
+    }
+  }
 
   useEffect(() => {
     if (!pacienteId) return;
@@ -23,6 +47,9 @@ export function MedicoProntuario() {
       .then(setProntuario)
       .catch((e: Error) => setErro(e.message))
       .finally(() => setCarregando(false));
+    // Vacinas (para indicar atendimentos de vacinação, o histórico e o estado do botão).
+    service.listarVacinasAplicadas(pacienteId).then(setVacinasAplicadas).catch(() => setVacinasAplicadas([]));
+    service.listarVacinasPendentes(pacienteId).then(setVacinasPendentes).catch(() => setVacinasPendentes([]));
   }, [service, pacienteId]);
 
   if (carregando) {
@@ -50,6 +77,12 @@ export function MedicoProntuario() {
       </div>
     );
   }
+
+  // O modo do atendimento vem da triagem mais recente: aplicação de vacina libera
+  // só a seção Vacinação; atendimento clínico libera as demais (e bloqueia Vacinação).
+  const ehVacina = !!prontuario.triagens[0]?.aplicacaoVacina;
+  // A seção Vacinação só fica ativa enquanto há dose pendente; após aplicar tudo, desabilita.
+  const temVacinaPendente = vacinasPendentes.length > 0;
 
   return (
     <div className="space-y-6">
@@ -142,6 +175,7 @@ export function MedicoProntuario() {
                 onEmitirRelatorio={() =>
                   navigate(`/medico/prontuario/${pacienteId}/relatorio?triagem=${t.id}`)
                 }
+                onVerHistoricoVacinacao={() => setModalHistVacina(true)}
               />
             ))}
           </div>
@@ -150,10 +184,17 @@ export function MedicoProntuario() {
 
       {/* ── Seção 4: Ações do Prontuário ──────────────────────────────────── */}
       <div className="card p-6">
-        <h2 className="mb-4 text-base font-semibold text-ink-900">Acesso às Seções</h2>
+        <h2 className="mb-1 text-base font-semibold text-ink-900">Acesso às Seções</h2>
+        <p className="mb-4 text-xs text-ink-500">
+          {ehVacina
+            ? "Atendimento de aplicação de vacina — apenas a seção Vacinação está habilitada."
+            : "Atendimento clínico — a seção Vacinação fica habilitada apenas em atendimentos de vacina."}
+        </p>
         <div className="grid grid-cols-2 gap-3">
           <BotaoAcao
             titulo="Relatório Clínico"
+            disabled={ehVacina}
+            motivoDesabilitado="Indisponível em atendimento de aplicação de vacina."
             onClick={() => {
               const ultima = prontuario.triagens[0];
               if (!ultima) {
@@ -166,21 +207,84 @@ export function MedicoProntuario() {
           />
           <BotaoAcao
             titulo="Prescrição"
+            disabled={ehVacina}
+            motivoDesabilitado="Indisponível em atendimento de aplicação de vacina."
             // TODO: navegar para /medico/prontuario/:id/prescricao quando F-12 (Farmacovigilância) for implementado
             onClick={() => alert("Prescrição — funcionalidade em desenvolvimento (F-12).")}
           />
           <BotaoAcao
             titulo="Gestão Nutricional"
+            disabled={ehVacina}
+            motivoDesabilitado="Indisponível em atendimento de aplicação de vacina."
             // TODO: navegar para /medico/prontuario/:id/nutricional quando F-11 (NEM) for implementado
             onClick={() => alert("Gestão Nutricional (NEM) — funcionalidade em desenvolvimento (F-11).")}
           />
           <BotaoAcao
-            titulo="Vacinação"
-            // TODO: integrar com dados reais de vacinação do paciente via CicloVacinalService (F-06)
-            onClick={() => alert("Vacinação — funcionalidade em desenvolvimento (F-06).")}
+            titulo={ehVacina && !temVacinaPendente ? "Vacinação (concluída)" : "Vacinação"}
+            disabled={!ehVacina || !temVacinaPendente}
+            motivoDesabilitado={
+              !ehVacina
+                ? "Disponível apenas em atendimentos de aplicação de vacina."
+                : "Todas as vacinas pendentes já foram aplicadas."
+            }
+            onClick={() => navigate(`/medico/prontuario/${pacienteId}/vacinacao`)}
           />
         </div>
       </div>
+
+      {/* ── Seção 5: Finalizar Atendimento ────────────────────────────────── */}
+      <div className="rounded-2xl border-2 border-brand-300 bg-gradient-to-r from-brand-50 to-white p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-ink-900">Finalizar Atendimento</h2>
+            <p className="mt-0.5 text-sm text-ink-500">
+              Encerra o atendimento deste paciente e o remove da fila de espera,
+              concluindo o fluxo na recepção.
+            </p>
+          </div>
+          {!confirmarFinalizar ? (
+            <button
+              type="button"
+              onClick={() => setConfirmarFinalizar(true)}
+              className="btn-primary shrink-0 sm:w-auto"
+            >
+              ✓ Finalizar Atendimento
+            </button>
+          ) : (
+            <div className="flex shrink-0 items-center gap-3">
+              <span className="text-sm font-medium text-ink-700">Confirmar?</span>
+              <button
+                type="button"
+                onClick={() => setConfirmarFinalizar(false)}
+                disabled={finalizando}
+                className="rounded-xl border border-ink-300 bg-white px-4 py-2.5 text-sm font-medium text-ink-700 transition hover:bg-ink-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={finalizarAtendimento}
+                disabled={finalizando}
+                className="btn-primary sm:w-auto"
+              >
+                {finalizando ? "Finalizando..." : "Sim, finalizar"}
+              </button>
+            </div>
+          )}
+        </div>
+        {erroFinalizar && (
+          <div role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            {erroFinalizar}
+          </div>
+        )}
+      </div>
+
+      {modalHistVacina && (
+        <ModalHistoricoVacinacao
+          vacinas={vacinasAplicadas}
+          onFechar={() => setModalHistVacina(false)}
+        />
+      )}
     </div>
   );
 }
@@ -197,13 +301,15 @@ function CampoInfo({ rotulo, valor }: { rotulo: string; valor: string }) {
 }
 
 function TriagemItem({
-  triagem, relatorio, onBaixarRelatorio, onEmitirRelatorio,
+  triagem, relatorio, onBaixarRelatorio, onEmitirRelatorio, onVerHistoricoVacinacao,
 }: {
-  triagem: { id: string; data: string; motivo: string; corDeRisco: "VERMELHO" | "AMARELO" | "VERDE"; pesoTotal: number };
+  triagem: { id: string; data: string; motivo: string; corDeRisco: "VERMELHO" | "AMARELO" | "VERDE"; pesoTotal: number; aplicacaoVacina?: boolean };
   relatorio: RelatorioSalvo | null;
   onBaixarRelatorio: (r: RelatorioSalvo) => void;
   onEmitirRelatorio: () => void;
+  onVerHistoricoVacinacao: () => void;
 }) {
+  const ehVacina = !!triagem.aplicacaoVacina;
   const corConfig = {
     VERMELHO: { bg: "bg-red-50",    ring: "ring-red-200",    text: "text-red-700",    ponto: "🔴", rotulo: "Vermelho" },
     AMARELO:  { bg: "bg-amber-50",  ring: "ring-amber-200",  text: "text-amber-700",  ponto: "🟡", rotulo: "Amarelo"  },
@@ -225,52 +331,145 @@ function TriagemItem({
           <span className="font-medium text-ink-700">Data:</span> {dataFormatada}
         </p>
         <p className="text-xs text-ink-500">
-          <span className="font-medium text-ink-700">Motivo:</span> {triagem.motivo}
+          <span className="font-medium text-ink-700">Motivo:</span>{" "}
+          {ehVacina ? "Aplicação de vacina" : triagem.motivo}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2 shrink-0">
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${corConfig.bg} ${corConfig.ring} ${corConfig.text}`}
-        >
-          {corConfig.ponto} {corConfig.rotulo}
-        </span>
-        <span className="text-xs text-ink-500">
-          | PesoTotal: <strong className="text-ink-700">{triagem.pesoTotal}</strong>
-        </span>
-        {relatorio ? (
-          <button
-            type="button"
-            onClick={() => onBaixarRelatorio(relatorio)}
-            className="inline-flex items-center gap-1 rounded-lg border border-brand-300 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition hover:bg-brand-100"
-            title="Ver/baixar o relatório clínico já emitido para este atendimento"
-          >
-            📄 Ver Relatório
-          </button>
+        {ehVacina ? (
+          <>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+              💉 Vacinação
+            </span>
+            <button
+              type="button"
+              onClick={onVerHistoricoVacinacao}
+              className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100"
+              title="Ver o histórico de vacinas aplicadas deste paciente"
+            >
+              💉 Ver histórico de vacinação
+            </button>
+          </>
         ) : (
-          <button
-            type="button"
-            onClick={onEmitirRelatorio}
-            className="inline-flex items-center gap-1 rounded-lg border border-ink-300 bg-white px-2.5 py-1 text-xs font-medium text-ink-700 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
-            title="Emitir o relatório clínico deste atendimento"
-          >
-            ✍ Emitir Relatório
-          </button>
+          <>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${corConfig.bg} ${corConfig.ring} ${corConfig.text}`}
+            >
+              {corConfig.ponto} {corConfig.rotulo}
+            </span>
+            <span className="text-xs text-ink-500">
+              | PesoTotal: <strong className="text-ink-700">{triagem.pesoTotal}</strong>
+            </span>
+            {relatorio ? (
+              <button
+                type="button"
+                onClick={() => onBaixarRelatorio(relatorio)}
+                className="inline-flex items-center gap-1 rounded-lg border border-brand-300 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition hover:bg-brand-100"
+                title="Ver/baixar o relatório clínico já emitido para este atendimento"
+              >
+                📄 Ver Relatório
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onEmitirRelatorio}
+                className="inline-flex items-center gap-1 rounded-lg border border-ink-300 bg-white px-2.5 py-1 text-xs font-medium text-ink-700 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
+                title="Emitir o relatório clínico deste atendimento"
+              >
+                ✍ Emitir Relatório
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
 
-function BotaoAcao({ titulo, onClick, destaque = false }: { titulo: string; onClick: () => void; destaque?: boolean }) {
+function ModalHistoricoVacinacao({ vacinas, onFechar }: {
+  vacinas: VacinaAplicadaDTO[];
+  onFechar: () => void;
+}) {
+  function formatarData(iso: string): string {
+    const partes = (iso ?? "").slice(0, 10).split("-");
+    if (partes.length === 3) {
+      const [a, m, d] = partes;
+      return `${d}/${m}/${a}`;
+    }
+    return iso;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onFechar}>
+      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">💉</span>
+            <h3 className="text-base font-semibold text-ink-900">Histórico de Vacinas Aplicadas</h3>
+          </div>
+          <button onClick={onFechar} className="flex h-7 w-7 items-center justify-center rounded-full text-ink-400 hover:bg-ink-100">✕</button>
+        </div>
+
+        {vacinas.length === 0 ? (
+          <p className="rounded-xl bg-ink-50 px-4 py-6 text-center text-sm text-ink-500">
+            Nenhuma vacina aplicada registrada para este paciente.
+          </p>
+        ) : (
+          <div className="max-h-[60vh] overflow-y-auto rounded-xl border border-ink-100">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-ink-100 bg-ink-50/70">
+                  {["Data", "Vacina", "Médico", "Lote / Selo"].map((col) => (
+                    <th key={col} className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-ink-500">
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink-100">
+                {vacinas.map((v) => (
+                  <tr key={v.doseId} className="hover:bg-ink-50/40">
+                    <td className="px-4 py-2.5 text-ink-600">{formatarData(v.dataAplicacao)}</td>
+                    <td className="px-4 py-2.5 font-medium text-ink-900">{v.rotulo}</td>
+                    <td className="px-4 py-2.5 text-ink-800">{v.medico || "—"}</td>
+                    <td className="px-4 py-2.5 text-ink-800">{v.lote || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="mt-5 flex justify-end">
+          <button onClick={onFechar} className="btn-primary w-auto">Fechar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BotaoAcao({
+  titulo, onClick, destaque = false, disabled = false, motivoDesabilitado,
+}: {
+  titulo: string;
+  onClick: () => void;
+  destaque?: boolean;
+  disabled?: boolean;
+  motivoDesabilitado?: string;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
+      title={disabled ? motivoDesabilitado : undefined}
       className={
         "rounded-xl border px-4 py-4 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-brand-100 " +
-        (destaque
-          ? "border-brand-400 bg-brand-50 text-brand-700 hover:bg-brand-100"
-          : "border-ink-300 bg-white text-ink-700 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700")
+        (disabled
+          ? "cursor-not-allowed border-ink-200 bg-ink-100 text-ink-400"
+          : destaque
+            ? "border-brand-400 bg-brand-50 text-brand-700 hover:bg-brand-100"
+            : "border-ink-300 bg-white text-ink-700 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700")
       }
     >
       {titulo}

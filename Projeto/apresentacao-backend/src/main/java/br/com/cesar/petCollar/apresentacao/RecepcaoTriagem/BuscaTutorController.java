@@ -5,8 +5,13 @@ import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.StatusConta;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioRepositorio;
 import br.com.cesar.petCollar.apresentacao.PortalTutor.Paciente;
 import br.com.cesar.petCollar.apresentacao.PortalTutor.PortalTutorRepositorio;
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.CicloVacinalService;
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.StatusDoseVacinal;
+import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.TipoProtocolo;
+import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,19 +50,22 @@ public class BuscaTutorController {
     private final FilaAtendimentoEmMemoria fila;
     private final UsuarioRepositorio usuarioRepositorio;
     private final PortalTutorRepositorio portal;
+    private final CicloVacinalService cicloVacinalService;
 
     public BuscaTutorController(TutorRecepcaoJpaRepository tutorRepo,
                                 PacienteRecepcaoJpaRepository pacienteRepo,
                                 TriagemJpaRepository triagemRepo,
                                 FilaAtendimentoEmMemoria fila,
                                 UsuarioRepositorio usuarioRepositorio,
-                                PortalTutorRepositorio portal) {
+                                PortalTutorRepositorio portal,
+                                CicloVacinalService cicloVacinalService) {
         this.tutorRepo          = tutorRepo;
         this.pacienteRepo       = pacienteRepo;
         this.triagemRepo        = triagemRepo;
         this.fila               = fila;
         this.usuarioRepositorio = usuarioRepositorio;
         this.portal             = portal;
+        this.cicloVacinalService = cicloVacinalService;
     }
 
     /**
@@ -185,7 +193,7 @@ public class BuscaTutorController {
     // ── F02: Triagem ──────────────────────────────────────────────────────────
 
     @PostMapping("/tutores/{tutorId}/pacientes/{pacienteId}/triagens")
-    public ResponseEntity<TriagemDTO> criarTriagem(
+    public ResponseEntity<?> criarTriagem(
             @PathVariable String tutorId,
             @PathVariable String pacienteId,
             @Valid @RequestBody RequisicaoTriagem req,
@@ -196,28 +204,41 @@ public class BuscaTutorController {
             .filter(x -> x.tutorId().equalsIgnoreCase(chaveTutor(t)))
             .orElseThrow(() -> new RuntimeException("Paciente não encontrado."));
 
+        // RN: não faz sentido triar/atender de novo um paciente que já está na fila.
+        if (fila.contemPaciente(pacienteId))
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "mensagem", paciente.nome() + " já está na fila de espera. "
+                          + "Finalize ou remova o atendimento atual antes de triar novamente."));
+
         var emElaboracao = triagemRepo.findByPacienteIdAndStatus(pacienteId, "EM_ELABORACAO");
         if (!emElaboracao.isEmpty())
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "mensagem", "Já existe uma triagem em elaboração para este paciente."));
 
-        int score = calcularScore(req.codigosSintomas());
-        String cor = classificarCor(score);
+        boolean ehVacina = req.aplicacaoVacina();
+        List<String> sintomas = req.codigosSintomas() != null ? req.codigosSintomas() : List.of();
+
+        // Aplicação de vacina não passa por triagem clínica: score 0, classificação VERDE
+        // e entra na fila com a MENOR prioridade (flag aplicacaoVacina ordena por último).
+        int score = ehVacina ? 0 : calcularScore(sintomas);
+        String cor = ehVacina ? "VERDE" : classificarCor(score);
 
         TriagemJpa triagem = new TriagemJpa(
             UUID.randomUUID().toString(), pacienteId, tutorId,
             principal != null ? principal.getName() : "recepcao");
         triagem.setScoreTotal(score);
         triagem.setCorDeRisco(cor);
-        triagem.setSintomasSelecionados(String.join(",", req.codigosSintomas()));
+        triagem.setSintomasSelecionados(String.join(",", sintomas));
         triagem.setStatus("FINALIZADA");
         triagem.setFinalizadaEm(LocalDateTime.now());
+        triagem.setAplicacaoVacina(ehVacina);
         triagemRepo.save(triagem);
 
         fila.inserir(new FilaAtendimentoEmMemoria.ItemFila(
             pacienteId, triagem.getId(), cor, triagem.getFinalizadaEm(),
-            paciente.nome(), tutorId));
+            paciente.nome(), tutorId, ehVacina));
 
-        boolean grave = req.codigosSintomas().stream()
+        boolean grave = !ehVacina && sintomas.stream()
             .anyMatch(c -> List.of("S05", "S06", "S07", "S14").contains(c));
         if (score >= 10 || grave) {
             paciente.marcarInfectocontagioso(true, LocalDateTime.now());
@@ -225,6 +246,48 @@ public class BuscaTutorController {
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(TriagemDTO.de(triagem));
+    }
+
+    // ── Vacinas (recepção) ────────────────────────────────────────────────────
+
+    /**
+     * Doses vacinais ainda não aplicadas do paciente. A recepção usa para decidir se
+     * pode enviar à fila como "aplicação de vacina" (só se houver dose pendente).
+     */
+    @GetMapping("/pacientes/{pacienteId}/vacinas-pendentes")
+    public List<VacinaPendenteRecepDTO> vacinasPendentes(@PathVariable String pacienteId) {
+        return cicloVacinalService.listarPorPaciente(PacienteId.de(pacienteId)).stream()
+            .flatMap(c -> c.getDoses().stream()
+                .filter(d -> d.status() != StatusDoseVacinal.APLICADA)
+                .map(d -> new VacinaPendenteRecepDTO(
+                    c.getNomeCiclo(), d.getDoseNumero(), c.getTotalDoses(), d.status().name())))
+            .toList();
+    }
+
+    /**
+     * Cadastra um novo ciclo vacinal para o paciente pela recepção (RN-075). Reflete
+     * na carteira do tutor e habilita o médico a aplicar a dose. Mesma lógica do portal.
+     */
+    @PostMapping("/pacientes/{pacienteId}/vacinas")
+    public ResponseEntity<Void> cadastrarVacina(@PathVariable String pacienteId,
+                                                @Valid @RequestBody RequisicaoNovaVacinaRecep req) {
+        portal.buscarPaciente(pacienteId)
+            .orElseThrow(() -> new RuntimeException("Paciente não encontrado."));
+        TipoProtocolo protocolo = resolverProtocolo(req.tipoProtocolo());
+        cicloVacinalService.criarCicloComPrimeiraDose(
+            PacienteId.de(pacienteId), req.ciclo(), protocolo,
+            req.totalDoses() != null && req.totalDoses() > 0 ? req.totalDoses() : 1,
+            req.intervaloDias(), req.data());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    private TipoProtocolo resolverProtocolo(String valor) {
+        if (valor == null || valor.isBlank()) return TipoProtocolo.PERSONALIZADO;
+        try {
+            return TipoProtocolo.valueOf(valor.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return TipoProtocolo.PERSONALIZADO;
+        }
     }
 
     // ── Fila de atendimento ───────────────────────────────────────────────────
@@ -343,7 +406,16 @@ public class BuscaTutorController {
         @NotBlank String nome, String especie, String raca, LocalDate nascimento,
         Double pesoKg, String sexo) {}
 
-    public record RequisicaoTriagem(List<String> codigosSintomas) {}
+    public record RequisicaoTriagem(List<String> codigosSintomas, boolean aplicacaoVacina) {}
+
+    public record VacinaPendenteRecepDTO(String ciclo, int doseNumero, int totalDoses, String status) {}
+
+    public record RequisicaoNovaVacinaRecep(
+        @NotBlank String ciclo,
+        Integer totalDoses,
+        @NotNull LocalDate data,
+        String tipoProtocolo,
+        Integer intervaloDias) {}
 
     public record RequisicaoEncaminhar(
         @NotBlank String medicoId,

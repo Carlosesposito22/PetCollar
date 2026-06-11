@@ -52,6 +52,7 @@ export type TriagemResumoDTO = {
   motivo: string;
   corDeRisco: "VERMELHO" | "AMARELO" | "VERDE";
   pesoTotal: number;
+  aplicacaoVacina: boolean;
 };
 
 export type VacinaPendenteDTO = {
@@ -63,6 +64,18 @@ export type VacinaPendenteDTO = {
   totalDoses: number;
   status: "PENDENTE" | "EM_ATRASO";
   dataAgendada: string;
+};
+
+export type VacinaAplicadaDTO = {
+  cicloId: string;
+  doseId: string;
+  ciclo: string;
+  rotulo: string;
+  doseNumero: number;
+  totalDoses: number;
+  dataAplicacao: string;
+  medico: string;
+  lote: string;
 };
 
 export type AtendimentoMedicoDTO = {
@@ -218,6 +231,30 @@ export function criarMedicoService(apiFetch: ApiFetch) {
     listarVacinasPendentes: (pacienteId: string): Promise<VacinaPendenteDTO[]> =>
       json<VacinaPendenteDTO[]>(apiFetch(`/api/medico/pacientes/${pacienteId}/vacinas-pendentes`)),
 
+    listarVacinasAplicadas: (pacienteId: string): Promise<VacinaAplicadaDTO[]> =>
+      json<VacinaAplicadaDTO[]>(apiFetch(`/api/medico/pacientes/${pacienteId}/vacinas-aplicadas`)),
+
+    registrarCuidadosPosOp: async (
+      pacienteId: string,
+      dados: { cuidados: string; tempoRecuperacao: string; diasCuidado: number }
+    ): Promise<void> => {
+      await lancarSeErro(
+        await apiFetch(`/api/medico/pacientes/${pacienteId}/cuidados-pos-operatorios`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dados),
+        })
+      );
+    },
+
+    finalizarAtendimento: async (pacienteId: string): Promise<void> => {
+      await lancarSeErro(
+        await apiFetch(`/api/medico/pacientes/${pacienteId}/finalizar-atendimento`, {
+          method: "POST",
+        })
+      );
+    },
+
     aplicarVacina: async (
       pacienteId: string, cicloId: string, doseId: string, lote: string
     ): Promise<void> => {
@@ -272,8 +309,8 @@ const PRONTUARIOS_STUB: Record<string, ProntuarioDTO> = {
       { rotulo: "Alerta Comportamental", alerta: true },
     ],
     triagens: [
-      { id: "stub-max-1", data: "2026-04-28", motivo: "Vômitos frequentes", corDeRisco: "AMARELO", pesoTotal: 5 },
-      { id: "stub-max-2", data: "2026-03-15", motivo: "Check-up preventivo", corDeRisco: "VERDE", pesoTotal: 0 },
+      { id: "stub-max-1", data: "2026-04-28", motivo: "Vômitos frequentes", corDeRisco: "AMARELO", pesoTotal: 5, aplicacaoVacina: false },
+      { id: "stub-max-2", data: "2026-03-15", motivo: "Check-up preventivo", corDeRisco: "VERDE", pesoTotal: 0, aplicacaoVacina: false },
     ],
   },
   "pac-luna": {
@@ -288,7 +325,7 @@ const PRONTUARIOS_STUB: Record<string, ProntuarioDTO> = {
     alergias: [],
     tags: [{ rotulo: "Adulto", alerta: false }],
     triagens: [
-      { id: "stub-luna-1", data: "2026-04-28", motivo: "Apatia e recusa alimentar", corDeRisco: "VERMELHO", pesoTotal: 12 },
+      { id: "stub-luna-1", data: "2026-04-28", motivo: "Apatia e recusa alimentar", corDeRisco: "VERMELHO", pesoTotal: 12, aplicacaoVacina: false },
     ],
   },
 };

@@ -47,8 +47,14 @@ public class PortalTutorRepositorioJpa implements PortalTutorRepositorio {
     @Override
     @Transactional
     public void removerPaciente(String id) {
-        ciclosVacinais.deleteByPacienteId(id);
-        pacientes.deleteById(id);
+        // DELETE em massa via JPQL (doses antes dos ciclos): evita o UPDATE SET
+        // cicloId=NULL do orphanRemoval, que falhava na coluna NOT NULL e impedia
+        // a exclusão de pets com carteira de vacinação.
+        ciclosVacinais.deletarDosesPorPaciente(id);
+        ciclosVacinais.deletarCiclosPorPaciente(id);
+        if (pacientes.existsById(id)) {
+            pacientes.deleteById(id);
+        }
     }
 
     @Override

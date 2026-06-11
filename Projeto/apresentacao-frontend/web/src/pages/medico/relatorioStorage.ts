@@ -24,6 +24,7 @@ export type RelatorioSalvo = {
   orientacoes: string;
   cuidadosPosOp: string;
   tempoRecuperacao: string;
+  diasCuidado?: string;         // dias sob cuidado pós-operatório (relatório cirúrgico)
   medicamentos: string[];
   anexos: string[];
   assinaturaDataUrl: string;    // PNG base64 da assinatura desenhada

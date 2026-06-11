@@ -7,7 +7,6 @@ import {
   type ProntuarioDTO,
   type RegistroHistoricoDTO,
   type TipoRelatorio,
-  type VacinaPendenteDTO,
 } from "./medicoService";
 import { SignaturePad, type SignaturePadHandle } from "./SignaturePad";
 import {
@@ -26,6 +25,7 @@ type CamposFormulario = {
   resumoTutor: string;
   cuidadosPosOp: string;
   tempoRecuperacao: string;
+  diasCuidado: string;
 };
 
 type ConfiguracaoTipoRelatorio = {
@@ -50,17 +50,19 @@ const CONFIGURACOES_TIPO: Record<TipoRelatorio, ConfiguracaoTipoRelatorio> = {
     rotulo: "Procedimento Cirúrgico",
     descricao: "Cirurgia ou procedimento invasivo com anestesia",
     icone: "🔬",
-    validar({ diagnostico, resumoTutor, cuidadosPosOp, tempoRecuperacao }) {
+    validar({ diagnostico, resumoTutor, cuidadosPosOp, tempoRecuperacao, diasCuidado }) {
       if (!diagnostico.trim()) return "O diagnóstico técnico é obrigatório.";
       if (!resumoTutor.trim()) return "O resumo para o tutor é obrigatório.";
       if (!cuidadosPosOp.trim()) return "Os cuidados pós-operatórios são obrigatórios para relatório cirúrgico.";
       if (!tempoRecuperacao.trim()) return "O tempo de recuperação estimado é obrigatório para relatório cirúrgico.";
+      if (!diasCuidado.trim() || Number(diasCuidado) <= 0)
+        return "Informe os dias sob cuidado pós-operatório (número maior que zero) para o alerta ao tutor.";
       return null;
     },
   },
   PREVENTIVO: {
     rotulo: "Consulta Preventiva",
-    descricao: "Vacinação, vermifugação ou check-up de rotina",
+    descricao: "Vermifugação ou check-up de rotina",
     icone: "💉",
     validar({ resumoTutor }) {
       if (!resumoTutor.trim()) return "O resumo para o tutor é obrigatório.";
@@ -95,6 +97,7 @@ export function MedicoRelatorio() {
   const [orientacoes, setOrientacoes] = useState("");
   const [cuidadosPosOp, setCuidadosPosOp] = useState("");
   const [tempoRecuperacao, setTempoRecuperacao] = useState("");
+  const [diasCuidado, setDiasCuidado] = useState("");
   const [arquivosSelecionados, setArquivosSelecionados] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -102,14 +105,6 @@ export function MedicoRelatorio() {
   const [assinaturaVazia, setAssinaturaVazia] = useState(true);
   const [relatorioSalvo, setRelatorioSalvo] = useState<RelatorioSalvo | null>(null);
   const [jaEmitido, setJaEmitido] = useState(false);
-
-  // Vacinas (apenas consulta preventiva)
-  const [vacinasPendentes, setVacinasPendentes] = useState<VacinaPendenteDTO[]>([]);
-  const [doseSelecionada, setDoseSelecionada] = useState("");
-  const [loteVacina, setLoteVacina] = useState("");
-  const [aplicandoVacina, setAplicandoVacina] = useState(false);
-  const [vacinaMsg, setVacinaMsg] = useState<string | null>(null);
-  const [vacinasAplicadas, setVacinasAplicadas] = useState<string[]>([]);
 
   const hoje = new Date().toLocaleDateString("pt-BR");
   const medicoNome = session?.user.nome ?? session?.user.identificador ?? "Médico";
@@ -136,6 +131,7 @@ export function MedicoRelatorio() {
           setOrientacoes(existente.orientacoes);
           setCuidadosPosOp(existente.cuidadosPosOp);
           setTempoRecuperacao(existente.tempoRecuperacao);
+          setDiasCuidado(existente.diasCuidado ?? "");
           setJaEmitido(true);
           setAssinado(true);
         }
@@ -143,13 +139,11 @@ export function MedicoRelatorio() {
       .finally(() => setCarregando(false));
   }, [service, pacienteId, triagemId]);
 
-  // Carrega vacinas pendentes quando o tipo é preventivo
+  // Ao finalizar/assinar (ou reabrir já assinado), leva o foco ao topo — onde fica
+  // o aviso de "Documento Assinado / já finalizado".
   useEffect(() => {
-    if (!pacienteId || tipoRelatorio !== "PREVENTIVO" || assinado) return;
-    service.listarVacinasPendentes(pacienteId)
-      .then(setVacinasPendentes)
-      .catch(() => setVacinasPendentes([]));
-  }, [service, pacienteId, tipoRelatorio, assinado]);
+    if (assinado) window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [assinado]);
 
   function handleArquivos(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -160,26 +154,6 @@ export function MedicoRelatorio() {
     setArquivosSelecionados((prev) => prev.filter((_, i) => i !== index));
   }
 
-  async function aplicarVacina() {
-    if (!pacienteId || !doseSelecionada) return;
-    const vac = vacinasPendentes.find((v) => v.doseId === doseSelecionada);
-    if (!vac) return;
-    setAplicandoVacina(true);
-    setVacinaMsg(null);
-    try {
-      await service.aplicarVacina(pacienteId, vac.cicloId, vac.doseId, loteVacina);
-      setVacinasAplicadas((prev) => [...prev, `${vac.rotulo} (lote ${loteVacina || "—"})`]);
-      setVacinasPendentes((prev) => prev.filter((v) => v.doseId !== vac.doseId));
-      setDoseSelecionada("");
-      setLoteVacina("");
-      setVacinaMsg(`✓ ${vac.rotulo} aplicada e registrada na carteira do tutor.`);
-    } catch (err) {
-      setVacinaMsg((err as Error).message || "Não foi possível aplicar a vacina.");
-    } finally {
-      setAplicandoVacina(false);
-    }
-  }
-
   async function handleAssinar(e: React.FormEvent) {
     e.preventDefault();
     // Sinais vitais são obrigatórios em qualquer tipo de relatório.
@@ -188,7 +162,7 @@ export function MedicoRelatorio() {
       return;
     }
     const estrategia = CONFIGURACOES_TIPO[tipoRelatorio];
-    const erro = estrategia.validar({ diagnostico, resumoTutor, cuidadosPosOp, tempoRecuperacao });
+    const erro = estrategia.validar({ diagnostico, resumoTutor, cuidadosPosOp, tempoRecuperacao, diasCuidado });
     if (erro) { setErroAssinatura(erro); return; }
     if (assinaturaRef.current?.estaVazio()) {
       setErroAssinatura("Desenhe sua assinatura no quadro antes de publicar.");
@@ -223,8 +197,27 @@ export function MedicoRelatorio() {
           tempoRecuperacaoEstimado: tempoRecuperacao || undefined,
         });
         await service.assinarRelatorio(rel.id);
+        // Atualiza o último peso registrado do paciente já na assinatura (antes
+        // a atualização acontecia ao "finalizar prontuário", passo que foi removido).
+        if (peso) {
+          await service.atualizarPesoPaciente(pacienteId, parseFloat(peso));
+        }
       } catch {
         // segue com a persistência local mesmo se o backend recusar
+      }
+
+      // Cuidados pós-operatórios: dispara o alerta no portal do tutor (F-10).
+      // Independente do relatório no backend, registramos o cuidado ativo.
+      if (tipoRelatorio === "CIRURGICO" && diasCuidado.trim()) {
+        try {
+          await service.registrarCuidadosPosOp(pacienteId, {
+            cuidados: cuidadosPosOp,
+            tempoRecuperacao,
+            diasCuidado: Number(diasCuidado),
+          });
+        } catch {
+          // não bloqueia a assinatura se o registro do alerta falhar
+        }
       }
     }
 
@@ -243,7 +236,7 @@ export function MedicoRelatorio() {
       tipoRotulo: CONFIGURACOES_TIPO[tipoRelatorio].rotulo,
       peso, temperatura, frequenciaCardiaca,
       diagnostico, resumoTutor, orientacoes,
-      cuidadosPosOp, tempoRecuperacao,
+      cuidadosPosOp, tempoRecuperacao, diasCuidado,
       medicamentos: preventivo ? [] : MEDICAMENTOS_STUB,
       anexos: preventivo ? [] : arquivosSelecionados.map((f) => f.name),
       assinaturaDataUrl,
@@ -298,12 +291,6 @@ export function MedicoRelatorio() {
         jaEmitido={jaEmitido}
         relatorioSalvo={relatorioSalvo}
         onBaixarPdf={() => gerarPdfRelatorio(relatorioSalvo)}
-        onFinalizar={async () => {
-          if (pacienteId && peso) {
-            try { await service.atualizarPesoPaciente(pacienteId, parseFloat(peso)); } catch { /* segue */ }
-          }
-          navigate(`/medico/prontuario/${pacienteId}`);
-        }}
         onVoltar={() => navigate(`/medico/prontuario/${pacienteId}`)}
       />
     );
@@ -616,81 +603,25 @@ export function MedicoRelatorio() {
                 placeholder="Ex: 10 a 14 dias"
               />
             </div>
-          </div>
-        )}
-
-        {/* ── Aplicar Vacina (apenas consulta preventiva) ──────────────────── */}
-        {tipoRelatorio === "PREVENTIVO" && (
-          <div className="card border-l-4 border-brand-400 p-6">
-            <div className="mb-1 flex items-center gap-2">
-              <span className="text-lg text-brand-600">💉</span>
-              <h2 className="text-base font-semibold text-ink-900">Aplicação de Vacina</h2>
+            <div>
+              <label className="label" htmlFor="diasCuidado">
+                Dias sob cuidado pós-operatório <span className="text-paw-500">*</span>
+              </label>
+              <input
+                id="diasCuidado"
+                type="number"
+                min="1"
+                step="1"
+                value={diasCuidado}
+                onChange={(e) => setDiasCuidado(e.target.value)}
+                className="input"
+                placeholder="Ex: 14"
+              />
+              <p className="mt-1 text-xs text-ink-500">
+                O tutor verá um alerta de cuidados no app por este número de dias a partir de hoje.
+                Após esse prazo, o alerta some automaticamente.
+              </p>
             </div>
-            <p className="mb-4 text-xs text-ink-500">
-              Selecione uma dose pendente da carteira do paciente. Ao aplicar, o status é
-              atualizado na carteira de vacinação vista pelo tutor (F-06).
-            </p>
-
-            {vacinasPendentes.length === 0 ? (
-              <p className="rounded-xl bg-ink-50 px-4 py-3 text-sm text-ink-500">
-                Nenhuma dose pendente na carteira deste paciente. O tutor cadastra as vacinas
-                planejadas no portal.
-              </p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
-                <div>
-                  <label className="label" htmlFor="dose">Vacina pendente</label>
-                  <select
-                    id="dose"
-                    value={doseSelecionada}
-                    onChange={(e) => setDoseSelecionada(e.target.value)}
-                    className="input"
-                  >
-                    <option value="">Selecione…</option>
-                    {vacinasPendentes.map((v) => (
-                      <option key={v.doseId} value={v.doseId}>
-                        {v.rotulo}{v.status === "EM_ATRASO" ? " — em atraso" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="label" htmlFor="lote">Lote / Selo</label>
-                  <input
-                    id="lote"
-                    type="text"
-                    value={loteVacina}
-                    onChange={(e) => setLoteVacina(e.target.value)}
-                    className="input"
-                    placeholder="Ex: LT-2026-A"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={aplicarVacina}
-                  disabled={!doseSelecionada || aplicandoVacina}
-                  className="btn-primary sm:w-auto"
-                >
-                  {aplicandoVacina ? "Aplicando..." : "Aplicar"}
-                </button>
-              </div>
-            )}
-
-            {vacinaMsg && (
-              <p className={"mt-3 text-sm " + (vacinaMsg.startsWith("✓") ? "text-brand-700" : "text-red-700")}>
-                {vacinaMsg}
-              </p>
-            )}
-
-            {vacinasAplicadas.length > 0 && (
-              <ul className="mt-3 space-y-1.5">
-                {vacinasAplicadas.map((v, i) => (
-                  <li key={i} className="flex items-center gap-2 rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-800">
-                    <span>✅</span> {v}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         )}
 
@@ -862,7 +793,7 @@ function RelatorioLeituraView({
   prontuario, historico, hoje, medicoNome, peso, temperatura, frequenciaCardiaca,
   tipoRelatorio, diagnostico, resumoTutor, orientacoes,
   cuidadosPosOp, tempoRecuperacao, jaEmitido, relatorioSalvo,
-  onBaixarPdf, onFinalizar, onVoltar,
+  onBaixarPdf, onVoltar,
 }: {
   prontuario: ProntuarioDTO;
   historico: RegistroHistoricoDTO[];
@@ -880,16 +811,9 @@ function RelatorioLeituraView({
   jaEmitido: boolean;
   relatorioSalvo: RelatorioSalvo;
   onBaixarPdf: () => void;
-  onFinalizar: () => Promise<void>;
   onVoltar: () => void;
 }) {
   const configTipo = CONFIGURACOES_TIPO[tipoRelatorio];
-  const [finalizando, setFinalizando] = useState(false);
-
-  async function handleFinalizar() {
-    setFinalizando(true);
-    await onFinalizar();
-  }
 
   return (
     <div className="space-y-6">
@@ -1076,45 +1000,24 @@ function RelatorioLeituraView({
         </div>
       )}
 
-      {/* Rodapé: finalizar prontuário */}
+      {/* Rodapé: prontuário já finalizado (somente leitura + download) */}
       <div className="rounded-2xl border-2 border-brand-200 bg-brand-50/60 p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-ink-800">Concluir atendimento</p>
-          <p className="mt-0.5 text-xs text-ink-500">
-            Finalizar o prontuário atualiza o último peso registrado do paciente
-            {peso ? <> para <strong>{peso} kg</strong></> : ""} e encerra o atendimento.
-          </p>
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">✅</span>
+          <div>
+            <p className="text-sm font-semibold text-ink-800">Prontuário já finalizado</p>
+            <p className="mt-0.5 text-xs text-ink-500">
+              Este relatório foi assinado e publicado (RN-120). Documento somente leitura —
+              você pode baixar o PDF.
+            </p>
+          </div>
         </div>
-        <div className="flex shrink-0 gap-3">
-          <button
-            type="button"
-            onClick={onBaixarPdf}
-            className="rounded-xl border border-brand-400 bg-white px-4 py-2.5 text-sm font-medium text-brand-700 transition hover:bg-brand-50"
-          >
-            ⬇ Baixar PDF
-          </button>
-          <button
-            type="button"
-            onClick={handleFinalizar}
-            disabled={finalizando}
-            className="btn-primary sm:w-auto"
-          >
-            {finalizando ? "Finalizando..." : "✓ Finalizar Prontuário"}
-          </button>
-        </div>
-      </div>
-
-      {/* Canal de comunicação */}
-      <div className="rounded-2xl border border-dashed border-ink-300/70 bg-white/90 p-5 flex flex-wrap items-center justify-between gap-4">
-        <p className="text-xs text-ink-500">
-          Dúvidas sobre o tratamento? O tutor pode entrar em contato com a clínica.
-        </p>
         <button
           type="button"
-          className="rounded-xl border border-paw-300 bg-paw-50 px-4 py-2 text-sm font-medium text-paw-700 transition hover:bg-paw-100"
-          onClick={() => alert("Canal de comunicação da clínica (RN-121) — integração em desenvolvimento.")}
+          onClick={onBaixarPdf}
+          className="shrink-0 rounded-xl border border-brand-400 bg-white px-4 py-2.5 text-sm font-medium text-brand-700 transition hover:bg-brand-50"
         >
-          Dúvida Urgente
+          ⬇ Baixar PDF
         </button>
       </div>
 

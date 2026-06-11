@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 
+export type CuidadoPosOp = {
+  cuidados: string;
+  tempoRecuperacao: string;
+  validoAte: string;     // ISO date
+  medico: string;
+  registradoEm: string;  // ISO date
+};
+
 export type Paciente = {
   id: string;
   nome: string;
@@ -11,6 +19,7 @@ export type Paciente = {
   pesoKg: number | null;
   sexo: string | null;
   vacinaEmAtraso: boolean;
+  cuidadoPosOp?: CuidadoPosOp | null;
 };
 
 const ESPECIES = ["Cão", "Gato", "Ave", "Roedor", "Réptil", "Outro"];
@@ -44,6 +53,9 @@ export function TutorInicio() {
   const [editando, setEditando] = useState<Paciente | null>(null);
   const [criando, setCriando] = useState(false);
   const [removendo, setRemovendo] = useState<Paciente | null>(null);
+  const [cuidadoAberto, setCuidadoAberto] = useState<Paciente | null>(null);
+
+  const algumComCuidado = pacientes.some((p) => p.cuidadoPosOp);
 
   const recarregar = useCallback(async () => {
     setErro(null);
@@ -90,6 +102,20 @@ export function TutorInicio() {
         </div>
       )}
 
+      {algumComCuidado && (
+        <div className="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <span className="mt-0.5 text-xl">🏥</span>
+          <div className="text-sm text-emerald-800">
+            <p className="font-semibold">Cuidados pós-operatórios ativos</p>
+            <p className="mt-0.5 text-emerald-700">
+              Pets marcados com o ícone <span className="font-semibold">🏥</span> têm cuidados
+              pós-operatórios indicados pelo veterinário. Clique no ícone no card do pet para
+              ver as orientações. O aviso some automaticamente ao fim do período de recuperação.
+            </p>
+          </div>
+        </div>
+      )}
+
       {carregando ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2].map(i => <div key={i} className="card h-44 animate-pulse bg-white/60" />)}
@@ -110,6 +136,7 @@ export function TutorInicio() {
               paciente={p}
               onEditar={() => setEditando(p)}
               onExcluir={() => setRemovendo(p)}
+              onVerCuidado={() => setCuidadoAberto(p)}
             />
           ))}
         </div>
@@ -130,19 +157,41 @@ export function TutorInicio() {
           onConfirmar={() => excluir(removendo)}
         />
       )}
+
+      {cuidadoAberto?.cuidadoPosOp && (
+        <CuidadoPosOpModal
+          paciente={cuidadoAberto}
+          cuidado={cuidadoAberto.cuidadoPosOp}
+          onFechar={() => setCuidadoAberto(null)}
+        />
+      )}
     </div>
   );
 }
 
 function PacienteCard({
-  paciente, onEditar, onExcluir,
-}: { paciente: Paciente; onEditar: () => void; onExcluir: () => void }) {
+  paciente, onEditar, onExcluir, onVerCuidado,
+}: { paciente: Paciente; onEditar: () => void; onExcluir: () => void; onVerCuidado: () => void }) {
   const alerta = paciente.vacinaEmAtraso;
+  const temCuidado = !!paciente.cuidadoPosOp;
   return (
     <div className={"card flex h-full flex-col p-5 " + (alerta ? "ring-2 ring-paw-300" : "")}>
       {/* Nome sempre no topo, alinhado entre todos os cards */}
       <div className="flex items-start justify-between">
-        <h3 className="text-lg font-bold text-ink-900">{paciente.nome}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-bold text-ink-900">{paciente.nome}</h3>
+          {temCuidado && (
+            <button
+              type="button"
+              onClick={onVerCuidado}
+              title="Cuidados pós-operatórios — clique para ver"
+              aria-label="Ver cuidados pós-operatórios"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-base ring-1 ring-emerald-300 transition hover:bg-emerald-200"
+            >
+              🏥
+            </button>
+          )}
+        </div>
         <span className="text-2xl" aria-hidden>{emoji(paciente.especie)}</span>
       </div>
 
@@ -305,6 +354,179 @@ function ConfirmarExclusaoModal({
       </div>
     </ModalShell>
   );
+}
+
+function CuidadoPosOpModal({
+  paciente, cuidado, onFechar,
+}: { paciente: Paciente; cuidado: CuidadoPosOp; onFechar: () => void }) {
+  const [virado, setVirado] = useState(false);
+  const [duvida, setDuvida] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [enviado, setEnviado] = useState(false);
+
+  function enviar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!duvida.trim() || enviando || enviado) return;
+    setEnviando(true);
+    // Simula o envio da dúvida à clínica (integração de mensageria em desenvolvimento).
+    setTimeout(() => { setEnviando(false); setEnviado(true); }, 800);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onFechar}
+    >
+      {/* Cena 3D: o card gira no eixo Y como se virasse uma página */}
+      <div
+        className="w-full max-w-lg [perspective:2000px]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className={
+            "relative min-h-[460px] w-full transition-transform duration-700 ease-in-out [transform-style:preserve-3d] " +
+            (virado ? "[transform:rotateY(180deg)]" : "")
+          }
+        >
+          {/* ── FRENTE: os cuidados ─────────────────────────────────────────── */}
+          <div className="absolute inset-0 [backface-visibility:hidden]">
+            <div className="card flex h-full flex-col p-6">
+              <h3 className="mb-4 text-lg font-bold text-ink-900">
+                Cuidados pós-operatórios — {paciente.nome}
+              </h3>
+
+              <div className="flex-1 space-y-4 overflow-y-auto">
+                <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  <span className="mt-0.5 text-lg">🏥</span>
+                  <p>
+                    Orientações registradas pelo veterinário após o procedimento. Siga até o fim
+                    do período de recuperação.
+                  </p>
+                </div>
+
+                <div>
+                  <dt className="mb-1 text-xs font-medium text-ink-500">Cuidados indicados</dt>
+                  <dd className="whitespace-pre-wrap rounded-xl bg-ink-50 p-3 text-sm text-ink-800">
+                    {cuidado.cuidados || "—"}
+                  </dd>
+                </div>
+
+                <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs font-medium text-ink-500">Tempo de recuperação estimado</dt>
+                    <dd className="mt-0.5 text-sm font-medium text-ink-800">{cuidado.tempoRecuperacao || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-ink-500">Cuidados válidos até</dt>
+                    <dd className="mt-0.5 text-sm font-medium text-ink-800">{formatarDataISO(cuidado.validoAte)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-ink-500">Veterinário responsável</dt>
+                    <dd className="mt-0.5 text-sm font-medium text-ink-800">{cuidado.medico || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-ink-500">Registrado em</dt>
+                    <dd className="mt-0.5 text-sm font-medium text-ink-800">{formatarDataISO(cuidado.registradoEm)}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setVirado(true)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-brand-300 bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-700 transition hover:bg-brand-100"
+                >
+                  💬 Tirar dúvidas
+                </button>
+                <button onClick={onFechar} className="btn-primary w-auto">Entendi</button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── VERSO: formulário estilo e-mail ─────────────────────────────── */}
+          <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+            <div className="card flex h-full flex-col overflow-hidden p-0">
+              {/* "Cabeçalho do e-mail" */}
+              <div className="flex items-center gap-3 border-b border-ink-200 bg-gradient-to-r from-brand-50 to-white px-6 py-4">
+                <span className="text-2xl">✉️</span>
+                <div>
+                  <h3 className="text-lg font-bold text-ink-900">Tirar dúvidas</h3>
+                  <p className="text-xs text-ink-500">Envie sua pergunta sobre os cuidados do {paciente.nome}</p>
+                </div>
+              </div>
+
+              {enviado ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+                  <div className="flex h-16 w-16 animate-bounce items-center justify-center rounded-full bg-emerald-100 text-3xl ring-4 ring-emerald-200">
+                    ✓
+                  </div>
+                  <p className="text-lg font-bold text-emerald-700">Dúvida enviada!</p>
+                  <p className="max-w-xs text-sm text-ink-600">
+                    A clínica recebeu sua mensagem. O prazo de retorno é de
+                    <strong className="text-ink-900"> até 48 horas</strong>.
+                  </p>
+                  <button onClick={onFechar} className="btn-primary mt-2 w-auto">Fechar</button>
+                </div>
+              ) : (
+                <form onSubmit={enviar} className="flex flex-1 flex-col gap-3 p-6">
+                  <div className="grid gap-2 text-sm">
+                    <div className="flex items-center gap-2 border-b border-ink-100 pb-2">
+                      <span className="w-14 shrink-0 text-ink-400">Para:</span>
+                      <span className="font-medium text-ink-800">Clínica petCollar</span>
+                    </div>
+                    <div className="flex items-center gap-2 border-b border-ink-100 pb-2">
+                      <span className="w-14 shrink-0 text-ink-400">Assunto:</span>
+                      <span className="font-medium text-ink-800">Cuidados pós-operatórios — {paciente.nome}</span>
+                    </div>
+                  </div>
+
+                  <textarea
+                    autoFocus
+                    rows={5}
+                    value={duvida}
+                    onChange={(e) => setDuvida(e.target.value)}
+                    className="input flex-1 resize-none"
+                    placeholder="Descreva aqui a sua dúvida sobre os cuidados do seu pet..."
+                  />
+
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setVirado(false)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-ink-300 bg-white px-4 py-2.5 text-sm font-medium text-ink-700 transition hover:bg-ink-50"
+                    >
+                      ← Voltar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!duvida.trim() || enviando}
+                      className="btn-primary w-auto"
+                    >
+                      {enviando ? "Enviando..." : "✈ Enviar dúvida"}
+                    </button>
+                  </div>
+                  <p className="text-center text-xs text-ink-400">
+                    O prazo de retorno da clínica é de até 48 horas.
+                  </p>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatarDataISO(iso: string): string {
+  if (!iso) return "—";
+  const partes = iso.slice(0, 10).split("-");
+  if (partes.length === 3) {
+    const [a, m, d] = partes;
+    return `${d}/${m}/${a}`;
+  }
+  return iso;
 }
 
 function ModalShell({

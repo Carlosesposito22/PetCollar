@@ -20,4 +20,19 @@ public interface CicloVacinalJpaRepository extends JpaRepository<CicloVacinalJpa
     @Modifying
     @Query("DELETE FROM CicloVacinalJpa c WHERE c.id = :id")
     void deletarPorId(@Param("id") String id);
+
+    /**
+     * Remove em massa as doses de todos os ciclos de um paciente, via JPQL — evita
+     * o UPDATE SET cicloId=NULL do orphanRemoval (a coluna cicloId é NOT NULL).
+     * Deve ser chamado ANTES de {@link #deletarCiclosPorPaciente(String)}.
+     */
+    @Modifying
+    @Query("DELETE FROM DoseVacinalJpa d WHERE d.cicloId IN "
+         + "(SELECT c.id FROM CicloVacinalJpa c WHERE c.pacienteId = :pacienteId)")
+    void deletarDosesPorPaciente(@Param("pacienteId") String pacienteId);
+
+    /** DELETE direto dos ciclos de um paciente, via JPQL (sem orphanRemoval). */
+    @Modifying
+    @Query("DELETE FROM CicloVacinalJpa c WHERE c.pacienteId = :pacienteId")
+    void deletarCiclosPorPaciente(@Param("pacienteId") String pacienteId);
 }

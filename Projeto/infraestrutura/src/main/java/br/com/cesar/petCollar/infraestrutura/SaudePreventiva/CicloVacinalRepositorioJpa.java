@@ -62,6 +62,9 @@ public class CicloVacinalRepositorioJpa implements ICicloVacinalRepositorio {
     @Override
     @Transactional
     public void removerPorPaciente(PacienteId pacienteId) {
-        jpa.deleteByPacienteId(pacienteId.getValor());
+        // DELETE em massa via JPQL: remove primeiro as doses (filhas) e depois os
+        // ciclos, evitando o UPDATE SET cicloId=NULL do orphanRemoval (cicloId é NOT NULL).
+        jpa.deletarDosesPorPaciente(pacienteId.getValor());
+        jpa.deletarCiclosPorPaciente(pacienteId.getValor());
     }
 }

@@ -1,5 +1,7 @@
 package br.com.cesar.petCollar.apresentacao.PortalTutor;
 
+import br.com.cesar.petCollar.apresentacao.AtendimentoClinico.CuidadosPosOperatoriosEmMemoria;
+import br.com.cesar.petCollar.apresentacao.AtendimentoClinico.CuidadosPosOperatoriosEmMemoria.CuidadoPosOp;
 import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.CicloVacinalService;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 
@@ -30,17 +32,22 @@ public class PacienteController {
 
     private final PortalTutorRepositorio repositorio;
     private final CicloVacinalService cicloVacinalService;
+    private final CuidadosPosOperatoriosEmMemoria cuidadosPosOp;
 
     public PacienteController(PortalTutorRepositorio repositorio,
-                               CicloVacinalService cicloVacinalService) {
+                               CicloVacinalService cicloVacinalService,
+                               CuidadosPosOperatoriosEmMemoria cuidadosPosOp) {
         this.repositorio        = repositorio;
         this.cicloVacinalService = cicloVacinalService;
+        this.cuidadosPosOp      = cuidadosPosOp;
     }
 
     @GetMapping
     public List<PacienteDTO> listar(Principal principal) {
         return repositorio.listarPacientesDoTutor(principal.getName()).stream()
-                .map(p -> PacienteDTO.de(p, cicloVacinalService.possuiVacinaEmAtraso(PacienteId.de(p.id()))))
+                .map(p -> PacienteDTO.de(p,
+                        cicloVacinalService.possuiVacinaEmAtraso(PacienteId.de(p.id())),
+                        cuidadosPosOp.buscarAtivo(p.id()).orElse(null)))
                 .toList();
     }
 
@@ -51,7 +58,7 @@ public class PacienteController {
                 req.nome(), req.especie(), req.raca(), req.nascimento(),
                 req.pesoKg(), req.sexo());
         repositorio.salvarPaciente(novo);
-        return ResponseEntity.status(HttpStatus.CREATED).body(PacienteDTO.de(novo, false));
+        return ResponseEntity.status(HttpStatus.CREATED).body(PacienteDTO.de(novo, false, null));
     }
 
     @PutMapping("/{id}")
@@ -60,13 +67,16 @@ public class PacienteController {
         p.atualizar(req.nome(), req.especie(), req.raca(), req.nascimento(),
                 req.pesoKg(), req.sexo());
         repositorio.salvarPaciente(p);
-        return PacienteDTO.de(p, cicloVacinalService.possuiVacinaEmAtraso(PacienteId.de(p.id())));
+        return PacienteDTO.de(p,
+                cicloVacinalService.possuiVacinaEmAtraso(PacienteId.de(p.id())),
+                cuidadosPosOp.buscarAtivo(p.id()).orElse(null));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> remover(@PathVariable String id, Principal principal) {
         obterDoTutor(id, principal);
         cicloVacinalService.removerPorPaciente(PacienteId.de(id));
+        cuidadosPosOp.remover(id);
         repositorio.removerPaciente(id);
         return ResponseEntity.noContent().build();
     }
@@ -91,11 +101,24 @@ public class PacienteController {
     public record PacienteDTO(
             String id, String nome, String especie, String raca,
             LocalDate nascimento, int idade, Double pesoKg, String sexo,
-            boolean vacinaEmAtraso
+            boolean vacinaEmAtraso,
+            CuidadoPosOpDTO cuidadoPosOp
     ) {
-        static PacienteDTO de(Paciente p, boolean vacinaEmAtraso) {
+        static PacienteDTO de(Paciente p, boolean vacinaEmAtraso, CuidadoPosOp cuidado) {
             return new PacienteDTO(p.id(), p.nome(), p.especie(), p.raca(),
-                    p.nascimento(), p.idadeEmAnos(), p.pesoKg(), p.sexo(), vacinaEmAtraso);
+                    p.nascimento(), p.idadeEmAnos(), p.pesoKg(), p.sexo(), vacinaEmAtraso,
+                    CuidadoPosOpDTO.de(cuidado));
+        }
+    }
+
+    public record CuidadoPosOpDTO(
+            String cuidados, String tempoRecuperacao,
+            LocalDate validoAte, String medico, LocalDate registradoEm
+    ) {
+        static CuidadoPosOpDTO de(CuidadoPosOp c) {
+            if (c == null) return null;
+            return new CuidadoPosOpDTO(c.cuidados(), c.tempoRecuperacao(),
+                    c.validoAte(), c.medico(), c.registradoEm());
         }
     }
 

@@ -216,18 +216,54 @@ export function useRecepcao() {
   const criarTriagem = useCallback(async (
     tutorId: string,
     pacienteId: string,
-    codigosSintomas: string[]
+    codigosSintomas: string[],
+    aplicacaoVacina: boolean = false
   ): Promise<boolean> => {
     setCarregando(true);
     setErro(null);
     try {
       const res = await apiFetch(
         `/api/recepcao/tutores/${tutorId}/pacientes/${pacienteId}/triagens`,
-        { method: "POST", body: JSON.stringify({ codigosSintomas }) }
+        { method: "POST", body: JSON.stringify({ codigosSintomas, aplicacaoVacina }) }
       );
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.mensagem || "Erro ao criar triagem.");
+      }
+      return true;
+    } catch (e: any) {
+      setErro(e.message);
+      return false;
+    } finally {
+      setCarregando(false);
+    }
+  }, [apiFetch]);
+
+  const contarVacinasPendentes = useCallback(async (pacienteId: string): Promise<number> => {
+    try {
+      const res = await apiFetch(`/api/recepcao/pacientes/${pacienteId}/vacinas-pendentes`);
+      if (!res.ok) return 0;
+      const arr = await res.json();
+      return Array.isArray(arr) ? arr.length : 0;
+    } catch {
+      return 0;
+    }
+  }, [apiFetch]);
+
+  const cadastrarVacina = useCallback(async (
+    pacienteId: string,
+    dados: { ciclo: string; totalDoses: number; data: string; tipoProtocolo: string; intervaloDias?: number }
+  ): Promise<boolean> => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const res = await apiFetch(`/api/recepcao/pacientes/${pacienteId}/vacinas`, {
+        method: "POST",
+        body: JSON.stringify(dados),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.mensagem || "Erro ao cadastrar vacina.");
       }
       return true;
     } catch (e: any) {
@@ -292,6 +328,7 @@ export function useRecepcao() {
     buscarTutorPorCpf, cadastrarTutor, editarTutor, excluirTutor,
     cadastrarPaciente, editarPaciente, excluirPaciente,
     listarSintomas, criarTriagem,
+    contarVacinasPendentes, cadastrarVacina,
     listarFila, removerDaFila,
     listarMedicos, encaminharParaMedico,
   };
