@@ -8,6 +8,7 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.Observac
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.ParametrosPaciente;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.PlanoNutricional;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.PlanoNutricionalId;
+import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RacaoId;
 import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
@@ -40,6 +41,8 @@ public class SalvarRascunhoPlanoNutricionalUseCase {
         plano.alterarParametros(entrada.parametros);
         if (entrada.cronograma != null) plano.alterarCronograma(entrada.cronograma);
         plano.substituirObservacoes(entrada.observacoes);
+        plano.vincularRacao(entrada.racaoId); // null aceito (desvincula)
+        plano.registrarJustificativaDivergencia(entrada.justificativaDivergencia);
 
         repositorio.salvar(plano);
         return plano;
@@ -51,6 +54,8 @@ public class SalvarRascunhoPlanoNutricionalUseCase {
             MedicoId medicoResponsavel,
             ParametrosPaciente parametros,
             CronogramaTransicao cronograma,
-            List<ObservacaoNutricional> observacoes
+            List<ObservacaoNutricional> observacoes,
+            RacaoId racaoId,
+            String justificativaDivergencia
     ) {}
 }
