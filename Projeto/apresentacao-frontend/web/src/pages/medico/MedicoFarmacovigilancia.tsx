@@ -53,6 +53,8 @@ export function MedicoFarmacovigilancia() {
   const [itens, setItens] = useState<ItemForm[]>([]);
   const [instrucoesGerais, setInstrucoesGerais] = useState<string[]>([]);
   const [novaInstrucao, setNovaInstrucao] = useState("");
+  // Nome do template atualmente aplicado (limpa ao adicionar/remover item manualmente)
+  const [templateAplicado, setTemplateAplicado] = useState<string | null>(null);
 
   // Validação ao vivo
   const [validacao, setValidacao] = useState<ResultadoValidacaoDTO | null>(null);
@@ -90,7 +92,24 @@ export function MedicoFarmacovigilancia() {
     service.interacoes().then(setInteracoes).catch(() => {});
     service.templates().then(setTemplates).catch(() => {});
     service.historico(pacienteId).then(setHistorico).catch(() => {});
-    service.buscarVigente(pacienteId).then(setVigente).catch(() => {});
+    // Carrega a prescrição vigente e PRÉ-PREENCHE a tela com seus itens —
+    // assim o médico vê o que foi prescrito antes e pode ajustar (igual F-11).
+    service.buscarVigente(pacienteId).then(vig => {
+      if (!vig) return;
+      setVigente(vig);
+      setAlergiasTexto(vig.alergiasConsideradas.join(", "));
+      setTagsAtivas(vig.tagsClinicas);
+      setInstrucoesGerais(vig.instrucoesGerais);
+      setItens(vig.itens.map(it => ({
+        medicamentoId: it.medicamentoId,
+        doseMgPorKg: Number(it.doseMgPorKg),
+        duracaoDias: it.duracaoDias,
+        frequencia: it.frequencia,
+        via: it.via,
+        horarios: it.horarios.join(","),
+        notaCuidado: it.notaCuidado ?? "",
+      })));
+    }).catch(() => {});
   }, [service, pacienteId]);
 
   // ── Validação ao vivo (debounced) ─────────────────────────────────────────
@@ -126,11 +145,13 @@ export function MedicoFarmacovigilancia() {
       horarios: HORARIOS_SUGERIDOS[freq].join(","),
       notaCuidado: med.notaCuidado ?? "",
     }]);
+    setTemplateAplicado(null); // mudança manual cancela o template
     setMostrandoAddMedicamento(false);
   }
 
   function removerItem(indice: number) {
     setItens(prev => prev.filter((_, i) => i !== indice));
+    setTemplateAplicado(null);
   }
 
   function atualizarItem(indice: number, mudancas: Partial<ItemForm>) {
@@ -143,6 +164,8 @@ export function MedicoFarmacovigilancia() {
       }
       return novo;
     }));
+    // Não limpa o template aqui — ajustes finos na dose/horários ainda são
+    // considerados parte do template aplicado.
   }
 
   function aplicarTemplate(t: TemplateDTO) {
@@ -159,6 +182,7 @@ export function MedicoFarmacovigilancia() {
       };
     });
     setItens(novos);
+    setTemplateAplicado(t.nome);
     setMostrandoTemplates(false);
   }
 
@@ -352,6 +376,21 @@ export function MedicoFarmacovigilancia() {
           </button>
         </div>
 
+        {templateAplicado && (
+          <div className="flex items-center justify-between rounded-lg border border-brand-300 bg-brand-50/60 px-3 py-2 text-sm">
+            <span className="text-brand-800">
+              📋 Template aplicado: <strong>{templateAplicado}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => { setItens([]); setTemplateAplicado(null); }}
+              className="text-xs text-brand-700 underline hover:text-brand-900"
+            >
+              Limpar template
+            </button>
+          </div>
+        )}
+
         {itens.length === 0 && (
           <p className="text-sm text-ink-500">
             Nenhum medicamento adicionado ainda. Use o botão acima ou aplique um template.
@@ -483,9 +522,9 @@ export function MedicoFarmacovigilancia() {
                   <button
                     type="button"
                     onClick={() => aplicarTemplate(t)}
-                    className="rounded-lg border border-brand-500 bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
+                    className="shrink-0 whitespace-nowrap rounded-lg border border-brand-500 bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
                   >
-                    Aplicar Template
+                    Aplicar
                   </button>
                 </div>
                 <ul className="mt-3 space-y-1">
