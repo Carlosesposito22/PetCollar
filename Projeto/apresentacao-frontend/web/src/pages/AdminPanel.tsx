@@ -165,6 +165,21 @@ export function AdminPanel() {
           <TabelaPlanos
             dados={planos}
             onEditar={p => { setPlanoEditando(p); setPlanoModalAberto(true); }}
+            onExcluir={async p => {
+              setErro(null);
+              setAviso(null);
+              try {
+                const res = await apiFetch(`/api/admin/planos/${p.id}`, { method: "DELETE" });
+                if (!res.ok) {
+                  const body = await res.json().catch(() => ({} as { mensagem?: string }));
+                  throw new Error(body?.mensagem ?? `Falha ao excluir (HTTP ${res.status}).`);
+                }
+                setAviso(`Plano "${p.nome}" excluído`);
+                await recarregar();
+              } catch (err) {
+                setErro((err as Error).message);
+              }
+            }}
           />
         )}
     </main>
@@ -467,10 +482,11 @@ function CriarFuncionarioModal({
 }
 
 function TabelaPlanos({
-  dados, onEditar,
+  dados, onEditar, onExcluir,
 }: {
   dados: Plano[];
   onEditar: (p: Plano) => void;
+  onExcluir: (p: Plano) => void;
 }) {
   if (dados.length === 0) {
     return <Vazio mensagem="Nenhum plano cadastrado ainda." />;
@@ -511,15 +527,49 @@ function TabelaPlanos({
                 )}
               </Td>
               <Td className="text-right">
-                <button onClick={() => onEditar(p)} className="btn-ghost ring-1 ring-ink-300">
-                  Editar
-                </button>
+                <div className="inline-flex gap-2">
+                  <button onClick={() => onEditar(p)} className="btn-ghost ring-1 ring-ink-300">
+                    Editar
+                  </button>
+                  <BotaoExcluirPlano plano={p} onExcluir={onExcluir} />
+                </div>
               </Td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function BotaoExcluirPlano({ plano, onExcluir }: { plano: Plano; onExcluir: (p: Plano) => void }) {
+  const [confirmando, setConfirmando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
+
+  if (!confirmando) {
+    return (
+      <button
+        onClick={() => setConfirmando(true)}
+        className="btn-ghost ring-1 ring-red-200 text-red-700 hover:bg-red-50"
+      >
+        Excluir
+      </button>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="text-xs font-medium text-red-700">Excluir?</span>
+      <button onClick={() => setConfirmando(false)} disabled={excluindo}
+        className="rounded-lg bg-white px-2 py-1 text-xs ring-1 ring-ink-300 hover:bg-ink-50">
+        Não
+      </button>
+      <button
+        onClick={async () => { setExcluindo(true); await onExcluir(plano); }}
+        disabled={excluindo}
+        className="rounded-lg bg-red-500 px-2 py-1 text-xs text-white hover:bg-red-600 disabled:opacity-60">
+        {excluindo ? "…" : "Sim, excluir"}
+      </button>
+    </span>
   );
 }
 

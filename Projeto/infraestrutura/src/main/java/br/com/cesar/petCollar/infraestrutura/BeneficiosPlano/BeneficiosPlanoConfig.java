@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConfigurarBeneficiosDoPlanoUseCase;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsultarBeneficiosTutorUseCase;
+import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.GerarTicketBeneficioUseCase;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ProvisionarBeneficiosDoTutorUseCase;
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.CalculoStatusBeneficioService;
@@ -98,6 +99,18 @@ public class BeneficiosPlanoConfig {
             PublicadorDeAlteracoesBeneficio publicadorDeAlteracoesBeneficio) {
         return new ConfigurarBeneficiosDoPlanoUseCase(
                 beneficioCatalogoRepositorio, publicadorDeAlteracoesBeneficio);
+    }
+
+    /**
+     * Orquestra o consumo/devolução de benefícios a partir de outros subdomínios
+     * (F-05 consultas, F-06 vacinação). Injetado nos controllers de agendamento
+     * e vacinação para gatear cada serviço pelo benefício do plano.
+     */
+    @Bean
+    public ConsumirBeneficioUseCase consumirBeneficioUseCase(
+            IBeneficioTutorRepositorio beneficioTutorRepositorio,
+            IBeneficioCatalogoRepositorio beneficioCatalogoRepositorio) {
+        return new ConsumirBeneficioUseCase(beneficioTutorRepositorio, beneficioCatalogoRepositorio);
     }
 
     @Bean

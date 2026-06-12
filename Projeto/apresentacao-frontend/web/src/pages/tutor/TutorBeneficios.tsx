@@ -15,17 +15,11 @@ type BeneficioItem = {
   carenciaDias: number;
 };
 
-type TicketGerado = {
-  codigoGUID: string;
-  expiraEm: string; // ISO datetime
-  nomeBeneficio: string;
-};
-
 // Dados simulados enquanto o endpoint /api/tutor/beneficios não está disponível
 const MOCK: BeneficioItem[] = [
   {
     id: "1",
-    nome: "Consulta Veterinária",
+    nome: "Consulta",
     status: "DISPONIVEL",
     usosRestantes: 2,
     limiteUsosPorPeriodo: 4,
@@ -35,33 +29,13 @@ const MOCK: BeneficioItem[] = [
   },
   {
     id: "2",
-    nome: "Vacinação Anual",
+    nome: "Vacinação",
     status: "EM_CARENCIA",
     usosRestantes: 1,
     limiteUsosPorPeriodo: 1,
     periodoRenovacao: "ANUAL",
     dataReferencia: "2026-05-15",
     carenciaDias: 90,
-  },
-  {
-    id: "3",
-    nome: "Exame de Sangue",
-    status: "ESGOTADO",
-    usosRestantes: 0,
-    limiteUsosPorPeriodo: 2,
-    periodoRenovacao: "ANUAL",
-    dataReferencia: "2027-05-01",
-    carenciaDias: 60,
-  },
-  {
-    id: "4",
-    nome: "Banho e Tosa",
-    status: "DISPONIVEL",
-    usosRestantes: 4,
-    limiteUsosPorPeriodo: 6,
-    periodoRenovacao: "MENSAL",
-    dataReferencia: null,
-    carenciaDias: 0,
   },
 ];
 
@@ -89,35 +63,15 @@ const PERIODO_LABEL: Record<PeriodoRenovacao, string> = {
   ANUAL: "Anual",
 };
 
-function gerarGuid() {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
-    const r = (Math.random() * 16) | 0;
-    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
-  });
-}
-
 function formatarData(iso: string) {
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
-}
-
-function formatarDataHora(iso: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(iso));
 }
 
 export function TutorBeneficios() {
   const { apiFetch } = useAuth();
   const [beneficios, setBeneficios] = useState<BeneficioItem[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [ticket, setTicket] = useState<TicketGerado | null>(null);
-  const [gerando, setGerando] = useState<string | null>(null);
-  const [copiado, setCopiado] = useState(false);
 
   const carregar = useCallback(async () => {
     try {
@@ -133,50 +87,6 @@ export function TutorBeneficios() {
   useEffect(() => {
     void carregar().finally(() => setCarregando(false));
   }, [carregar]);
-
-  async function usar(b: BeneficioItem) {
-    setGerando(b.id);
-    try {
-      let sucesso = false;
-      try {
-        const res = await apiFetch(`/api/tutor/beneficios/${b.id}/usar`, { method: "POST" });
-        if (res.ok) {
-          const t = (await res.json()) as TicketGerado;
-          setTicket({ ...t, nomeBeneficio: b.nome });
-          await carregar();
-          sucesso = true;
-        }
-      } catch { /* API ainda não disponível */ }
-
-      if (!sucesso) {
-        const expira = new Date(Date.now() + 48 * 60 * 60 * 1000);
-        setTicket({
-          codigoGUID: gerarGuid(),
-          expiraEm: expira.toISOString(),
-          nomeBeneficio: b.nome,
-        });
-        setBeneficios(prev =>
-          prev.map(item =>
-            item.id === b.id
-              ? {
-                  ...item,
-                  usosRestantes: Math.max(0, item.usosRestantes - 1),
-                  status: item.usosRestantes - 1 <= 0 ? "ESGOTADO" : "DISPONIVEL",
-                }
-              : item
-          )
-        );
-      }
-    } finally {
-      setGerando(null);
-    }
-  }
-
-  async function copiarGuid(guid: string) {
-    await navigator.clipboard.writeText(guid);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
-  }
 
   return (
     <div className="space-y-8">
@@ -201,7 +111,6 @@ export function TutorBeneficios() {
                   <th className="px-5 py-3.5 text-left font-semibold text-ink-700">
                     Data de Liberação/Renovação
                   </th>
-                  <th className="px-5 py-3.5 text-left font-semibold text-ink-700">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-100">
@@ -237,17 +146,6 @@ export function TutorBeneficios() {
                           <span className="text-ink-400">—</span>
                         )}
                       </td>
-                      <td className="px-5 py-4">
-                        {b.status === "DISPONIVEL" && (
-                          <button
-                            onClick={() => usar(b)}
-                            disabled={gerando === b.id}
-                            className="rounded-lg border border-ink-300 bg-white px-3 py-1.5 text-xs font-medium text-ink-700 shadow-sm transition hover:bg-ink-100 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {gerando === b.id ? "Gerando…" : "Usar"}
-                          </button>
-                        )}
-                      </td>
                     </tr>
                   );
                 })}
@@ -263,7 +161,7 @@ export function TutorBeneficios() {
         <div className="grid gap-4 sm:grid-cols-3">
           <StatusExplicacao
             status="DISPONIVEL"
-            descricao="Pronto para uso. Clique em 'Usar' para gerar um ticket com código GUID único, válido por 48 horas. Apresente o código ao atendente no momento do serviço."
+            descricao="Liberado pelo seu plano. O uso é debitado automaticamente quando você agenda uma consulta ou registra uma vacinação — não é preciso fazer nada aqui."
           />
           <StatusExplicacao
             status="EM_CARENCIA"
@@ -328,15 +226,6 @@ export function TutorBeneficios() {
           </div>
         </div>
       </section>
-
-      {ticket && (
-        <TicketModal
-          ticket={ticket}
-          copiado={copiado}
-          onCopiar={() => copiarGuid(ticket.codigoGUID)}
-          onFechar={() => { setTicket(null); setCopiado(false); }}
-        />
-      )}
     </div>
   );
 }
@@ -397,61 +286,6 @@ function RenovacaoItem({
     <div className="rounded-xl bg-ink-100/60 p-3 space-y-1">
       <p className="font-semibold text-ink-800">{PERIODO_LABEL[periodo]}</p>
       <p className="text-xs text-ink-500 leading-relaxed">{descricao}</p>
-    </div>
-  );
-}
-
-function TicketModal({
-  ticket,
-  copiado,
-  onCopiar,
-  onFechar,
-}: {
-  ticket: TicketGerado;
-  copiado: boolean;
-  onCopiar: () => void;
-  onFechar: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onFechar}
-    >
-      <div className="w-full max-w-md card p-6" onClick={e => e.stopPropagation()}>
-        <div className="mb-4 flex items-center gap-2">
-          <span className="text-2xl" aria-hidden>🎟️</span>
-          <h3 className="text-lg font-bold text-ink-900">Ticket Gerado</h3>
-        </div>
-
-        <p className="text-sm text-ink-600">
-          Benefício: <strong className="text-ink-800">{ticket.nomeBeneficio}</strong>
-        </p>
-        <p className="mt-0.5 text-xs text-ink-400 mb-4">
-          Válido até: {formatarDataHora(ticket.expiraEm)}
-        </p>
-
-        <div className="rounded-xl bg-ink-100 px-4 py-5 text-center">
-          <p className="break-all font-mono text-sm font-bold tracking-wide text-ink-900">
-            {ticket.codigoGUID}
-          </p>
-        </div>
-
-        <button
-          onClick={onCopiar}
-          className="mt-3 w-full rounded-xl border border-ink-300 bg-white py-2.5 text-sm font-medium text-ink-700 shadow-sm transition hover:bg-ink-100"
-        >
-          {copiado ? "Copiado!" : "Copiar código"}
-        </button>
-
-        <p className="mt-4 text-center text-xs leading-relaxed text-ink-400">
-          Apresente este código ao atendente no momento do serviço.
-          <br />O ticket expira automaticamente após 48 horas.
-        </p>
-
-        <button onClick={onFechar} className="btn-primary mt-4">
-          Fechar
-        </button>
-      </div>
     </div>
   );
 }

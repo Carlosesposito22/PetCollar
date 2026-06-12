@@ -48,4 +48,10 @@ public class GerenciarPlanoUseCase {
     public List<Plano> listar() {
         return planoRepositorio.listar();
     }
+
+    public void excluir(PlanoId id) {
+        Plano plano = planoRepositorio.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Plano não encontrado: " + id.getValor()));
+        planoRepositorio.remover(plano.getId());
+    }
 }

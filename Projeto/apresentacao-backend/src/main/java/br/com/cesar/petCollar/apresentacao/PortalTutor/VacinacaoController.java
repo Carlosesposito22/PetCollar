@@ -7,6 +7,9 @@ import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.StatusDoseVacinal;
 import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.TipoProtocolo;
 import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.VacinaId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
+import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
+import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase;
+import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase.Categoria;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -33,13 +36,19 @@ import jakarta.validation.constraints.NotNull;
 @RequestMapping("/api/tutor/pacientes/{pacienteId}/vacinas")
 public class VacinacaoController {
 
+    private static final String VACINACAO_INDISPONIVEL =
+            "A vacinação não está disponível de acordo com o seu plano.";
+
     private final PortalTutorRepositorio portalRepositorio;
     private final CicloVacinalService cicloVacinalService;
+    private final ConsumirBeneficioUseCase consumirBeneficio;
 
     public VacinacaoController(PortalTutorRepositorio portalRepositorio,
-                                CicloVacinalService cicloVacinalService) {
+                                CicloVacinalService cicloVacinalService,
+                                ConsumirBeneficioUseCase consumirBeneficio) {
         this.portalRepositorio   = portalRepositorio;
         this.cicloVacinalService = cicloVacinalService;
+        this.consumirBeneficio   = consumirBeneficio;
     }
 
     /** Retorna a carteira completa de vacinação do paciente (RN-072). */
@@ -61,13 +70,21 @@ public class VacinacaoController {
                                                  @Valid @RequestBody RequisicaoNovaVacina req,
                                                  Principal principal) {
         obterPacienteDoTutor(pacienteId, principal);
+        TutorId tutorId = TutorId.de(principal.getName());
         TipoProtocolo protocolo = resolverProtocolo(req.tipoProtocolo());
-        CicloVacinal ciclo = cicloVacinalService.criarCicloComPrimeiraDose(
-            PacienteId.de(pacienteId), req.ciclo(), protocolo,
-            req.totalDoses() != null && req.totalDoses() > 0 ? req.totalDoses() : 1,
-            req.intervaloDias(), req.data());
-        LocalDate sugerida = ciclo.podeAgendarProximaDose() ? calcularSugerida(ciclo) : null;
-        return ResponseEntity.status(HttpStatus.CREATED).body(CicloDTO.de(ciclo, sugerida));
+        // Gateia a dose pelo benefício "Vacinação" do plano (carência + limite).
+        consumirBeneficio.consumir(tutorId, Categoria.VACINACAO, VACINACAO_INDISPONIVEL);
+        try {
+            CicloVacinal ciclo = cicloVacinalService.criarCicloComPrimeiraDose(
+                PacienteId.de(pacienteId), req.ciclo(), protocolo,
+                req.totalDoses() != null && req.totalDoses() > 0 ? req.totalDoses() : 1,
+                req.intervaloDias(), req.data());
+            LocalDate sugerida = ciclo.podeAgendarProximaDose() ? calcularSugerida(ciclo) : null;
+            return ResponseEntity.status(HttpStatus.CREATED).body(CicloDTO.de(ciclo, sugerida));
+        } catch (RuntimeException e) {
+            consumirBeneficio.devolver(tutorId, Categoria.VACINACAO);
+            throw e;
+        }
     }
 
     /** Agenda a próxima dose de um ciclo existente; usa a estratégia do protocolo se data omitida (RN-075). */
@@ -76,11 +93,19 @@ public class VacinacaoController {
                                                         @Valid @RequestBody RequisicaoProximaDose req,
                                                         Principal principal) {
         obterPacienteDoTutor(pacienteId, principal);
+        TutorId tutorId = TutorId.de(principal.getName());
         CicloVacinal ciclo = cicloVacinalService.buscarCicloPorNome(
             PacienteId.de(pacienteId), req.ciclo());
-        CicloVacinal atualizado = cicloVacinalService.agendarProximaDose(ciclo.getId(), req.data());
-        LocalDate sugerida = atualizado.podeAgendarProximaDose() ? calcularSugerida(atualizado) : null;
-        return ResponseEntity.status(HttpStatus.CREATED).body(CicloDTO.de(atualizado, sugerida));
+        // Cada dose agendada debita 1 uso do benefício "Vacinação" do plano.
+        consumirBeneficio.consumir(tutorId, Categoria.VACINACAO, VACINACAO_INDISPONIVEL);
+        try {
+            CicloVacinal atualizado = cicloVacinalService.agendarProximaDose(ciclo.getId(), req.data());
+            LocalDate sugerida = atualizado.podeAgendarProximaDose() ? calcularSugerida(atualizado) : null;
+            return ResponseEntity.status(HttpStatus.CREATED).body(CicloDTO.de(atualizado, sugerida));
+        } catch (RuntimeException e) {
+            consumirBeneficio.devolver(tutorId, Categoria.VACINACAO);
+            throw e;
+        }
     }
 
     /** Remove um ciclo vacinal (doses pendentes ou registros importados incorretamente). */

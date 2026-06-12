@@ -20,6 +20,8 @@ import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.ConsultaDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoAgendarConsultaInicialDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoAgendarRetornoDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoRemarcarDTO;
+import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase;
+import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase.Categoria;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -38,33 +40,48 @@ import java.util.List;
 @RequestMapping("/api/agendamentos")
 public class AgendamentoController {
 
+    private static final String CONSULTA_INDISPONIVEL =
+            "O agendamento não está disponível de acordo com o seu plano.";
+
     private final AgendamentoConsultaInicialService inicialService;
     private final AgendamentoRetornoService retornoService;
     private final GestaoAgendamentoService gestaoService;
     private final IConsultaRepositorio consultaRepositorio;
+    private final ConsumirBeneficioUseCase consumirBeneficio;
 
     public AgendamentoController(AgendamentoConsultaInicialService inicialService,
                                  AgendamentoRetornoService retornoService,
                                  GestaoAgendamentoService gestaoService,
-                                 IConsultaRepositorio consultaRepositorio) {
+                                 IConsultaRepositorio consultaRepositorio,
+                                 ConsumirBeneficioUseCase consumirBeneficio) {
         this.inicialService = inicialService;
         this.retornoService = retornoService;
         this.gestaoService = gestaoService;
         this.consultaRepositorio = consultaRepositorio;
+        this.consumirBeneficio = consumirBeneficio;
     }
 
     @PostMapping("/consulta-inicial")
     public ResponseEntity<ConsultaDTO> agendarInicial(
             @RequestBody RequisicaoAgendarConsultaInicialDTO req) {
+        TutorId tutorId = TutorId.de(req.tutorId());
         RequisicaoAgendamento requisicao = new RequisicaoAgendamento(
             PacienteId.de(req.pacienteId()),
-            TutorId.de(req.tutorId()),
+            tutorId,
             MedicoId.de(req.medicoId()),
             EspecialidadeId.de(req.especialidadeId()),
             MotivoConsulta.de(req.motivo()),
             new HorarioConsulta(req.inicio(), req.fim()));
-        Consulta consulta = inicialService.agendar(requisicao);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ConsultaDTO.de(consulta));
+        // Gateia a consulta pelo benefício do plano: debita 1 uso (respeitando
+        // carência e limite) antes de agendar; devolve o uso se o agendamento falhar.
+        consumirBeneficio.consumir(tutorId, Categoria.CONSULTA, CONSULTA_INDISPONIVEL);
+        try {
+            Consulta consulta = inicialService.agendar(requisicao);
+            return ResponseEntity.status(HttpStatus.CREATED).body(ConsultaDTO.de(consulta));
+        } catch (RuntimeException e) {
+            consumirBeneficio.devolver(tutorId, Categoria.CONSULTA);
+            throw e;
+        }
     }
 
     @PostMapping("/retorno")
@@ -91,7 +108,15 @@ public class AgendamentoController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelar(@PathVariable String id) {
-        gestaoService.cancelar(ConsultaId.de(id));
+        ConsultaId consultaId = ConsultaId.de(id);
+        // Captura o tutor antes do cancelamento para devolver o uso do benefício.
+        TutorId tutorId = consultaRepositorio.buscarPorId(consultaId)
+            .map(Consulta::getTutorId)
+            .orElse(null);
+        gestaoService.cancelar(consultaId);
+        if (tutorId != null) {
+            consumirBeneficio.devolver(tutorId, Categoria.CONSULTA);
+        }
         return ResponseEntity.noContent().build();
     }
 

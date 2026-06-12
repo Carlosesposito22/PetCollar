@@ -39,4 +39,9 @@ public class PlanoRepositorioJpa implements IPlanoRepositorio {
     public List<Plano> listar() {
         return jpa.findAll().stream().map(PlanoJpa::toDomain).toList();
     }
+
+    @Override
+    public void remover(PlanoId id) {
+        jpa.deleteById(id.getValor());
+    }
 }

@@ -15,4 +15,6 @@ public interface IPlanoRepositorio {
     Optional<Plano> buscarPorNome(String nome);
 
     List<Plano> listar();
+
+    void remover(PlanoId id);
 }

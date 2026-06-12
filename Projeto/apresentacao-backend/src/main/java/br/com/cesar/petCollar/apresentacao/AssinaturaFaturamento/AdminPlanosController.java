@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -76,6 +77,12 @@ public class AdminPlanosController {
                 req.valorMensalidade().toPlainString());
         configurarBeneficios.configurar(plano.getId(), toConfigs(req));
         return montarDTO(plano);
+    }
+
+    @DeleteMapping("/api/admin/planos/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable String id) {
+        gerenciarPlano.excluir(PlanoId.de(id));
+        return ResponseEntity.noContent().build();
     }
 
     // ── Montagem de DTOs ─────────────────────────────────────────────────────
