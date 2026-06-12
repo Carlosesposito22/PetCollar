@@ -206,11 +206,10 @@ export function MedicoProntuario() {
             destaque
           />
           <BotaoAcao
-            titulo="Prescrição"
+            titulo="Central de Farmacovigilância e Prescrição"
             disabled={ehVacina}
             motivoDesabilitado="Indisponível em atendimento de aplicação de vacina."
-            // TODO: navegar para /medico/prontuario/:id/prescricao quando F-12 (Farmacovigilância) for implementado
-            onClick={() => alert("Prescrição — funcionalidade em desenvolvimento (F-12).")}
+            onClick={() => navigate(`/medico/prontuario/${pacienteId}/farmacovigilancia`)}
           />
           <BotaoAcao
             titulo="Gestão Nutricional"

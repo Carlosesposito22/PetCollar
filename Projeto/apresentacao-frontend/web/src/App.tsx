@@ -17,8 +17,10 @@ import { MedicoProntuario } from "./pages/medico/MedicoProntuario";
 import { MedicoRelatorio } from "./pages/medico/MedicoRelatorio";
 import { MedicoVacinacao } from "./pages/medico/MedicoVacinacao";
 import { MedicoGestaoNutricional } from "./pages/medico/MedicoGestaoNutricional";
+import { MedicoFarmacovigilancia } from "./pages/medico/MedicoFarmacovigilancia";
 import { TutorInicio } from "./pages/tutor/TutorInicio";
 import { TutorNutricao } from "./pages/tutor/TutorNutricao";
+import { TutorMedicamentos } from "./pages/tutor/TutorMedicamentos";
 import { TutorVacinacao } from "./pages/tutor/TutorVacinacao";
 import { TutorBeneficios } from "./pages/tutor/TutorBeneficios";
 import { TutorConquistas } from "./pages/tutor/TutorConquistas";
@@ -62,6 +64,7 @@ export function App() {
         <Route index element={<TutorInicio />} />
         <Route path="vacinacao" element={<TutorVacinacao />} />
         <Route path="nutricao" element={<TutorNutricao />} />
+        <Route path="medicamentos" element={<TutorMedicamentos />} />
         <Route path="financeiro" element={<TutorFinanceiro />} />
         <Route path="financeiro/pagamento/:id" element={<TutorFinanceiroPagamento />} />
         <Route path="beneficios" element={<TutorBeneficios />} />
@@ -106,6 +109,7 @@ export function App() {
         <Route path="prontuario/:pacienteId/relatorio" element={<MedicoRelatorio />} />
         <Route path="prontuario/:pacienteId/vacinacao" element={<MedicoVacinacao />} />
         <Route path="prontuario/:pacienteId/nutricao" element={<MedicoGestaoNutricional />} />
+        <Route path="prontuario/:pacienteId/farmacovigilancia" element={<MedicoFarmacovigilancia />} />
       </Route>
 
       {/* Área do Admin */}

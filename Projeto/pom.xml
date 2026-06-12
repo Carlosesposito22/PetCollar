@@ -32,6 +32,7 @@
         <module>dominio-AssinaturaFaturamento</module>
         <module>dominio-BeneficiosPlano</module>
         <module>dominio-Gamificacao</module>
+        <module>dominio-Farmacovigilancia</module>
         <module>aplicacao</module>
         <module>infraestrutura</module>
         <module>apresentacao-frontend</module>

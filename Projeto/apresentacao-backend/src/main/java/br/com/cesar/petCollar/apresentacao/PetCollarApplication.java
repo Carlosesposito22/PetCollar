@@ -25,7 +25,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         "br.com.cesar.petCollar.infraestrutura.ProtocoloInacessibilidade",
         "br.com.cesar.petCollar.infraestrutura.RecepcaoTriagem",
         "br.com.cesar.petCollar.infraestrutura.SaudePreventiva",
-        "br.com.cesar.petCollar.infraestrutura.RelacaoTutor"
+        "br.com.cesar.petCollar.infraestrutura.RelacaoTutor",
+        "br.com.cesar.petCollar.infraestrutura.Farmacovigilancia"
 })
 public class PetCollarApplication {
     public static void main(String[] args) {
