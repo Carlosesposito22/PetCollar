@@ -40,7 +40,8 @@ export function MedicoFarmacovigilancia() {
   // Cabeçalho/contexto do paciente
   const [contexto, setContexto] = useState<ContextoPacienteDTO | null>(null);
   const [tagsAtivas, setTagsAtivas] = useState<TagClinica[]>([]);
-  const [alergiasTexto, setAlergiasTexto] = useState<string>("");
+  const [alergias, setAlergias] = useState<string[]>([]);
+  const [textoAlergiaEmDigitacao, setTextoAlergiaEmDigitacao] = useState<string>("");
 
   // Catálogo, interações e templates
   const [catalogo, setCatalogo] = useState<MedicamentoDTO[]>([]);
@@ -85,7 +86,7 @@ export function MedicoFarmacovigilancia() {
       .then(ctx => {
         setContexto(ctx);
         setTagsAtivas(ctx.tagsClinicasDerivadas);
-        setAlergiasTexto(ctx.alergiasDoPaciente.join(", "));
+        setAlergias(ctx.alergiasDoPaciente);
       })
       .catch((e: Error) => setErro(`Não foi possível resolver o paciente: ${e.message}`));
     service.catalogo().then(setCatalogo).catch(() => {});
@@ -97,7 +98,7 @@ export function MedicoFarmacovigilancia() {
     service.buscarVigente(pacienteId).then(vig => {
       if (!vig) return;
       setVigente(vig);
-      setAlergiasTexto(vig.alergiasConsideradas.join(", "));
+      setAlergias(vig.alergiasConsideradas);
       setTagsAtivas(vig.tagsClinicas);
       setInstrucoesGerais(vig.instrucoesGerais);
       setItens(vig.itens.map(it => ({
@@ -124,12 +125,12 @@ export function MedicoFarmacovigilancia() {
       service.validar({
         pesoPacienteKg: pesoNumero,
         tagsClinicas: tagsAtivas,
-        alergias: parseAlergias(alergiasTexto),
+        alergias,
         itens: itens.map(toRascunho),
       }).then(setValidacao).catch(() => setValidacao(null));
     }, 350);
     return () => window.clearTimeout(timeout);
-  }, [itens, tagsAtivas, alergiasTexto, contexto, service]);
+  }, [itens, tagsAtivas, alergias, contexto, service]);
 
   // ── Operações do form ─────────────────────────────────────────────────────
 
@@ -235,7 +236,7 @@ export function MedicoFarmacovigilancia() {
         tutorId: contexto.tutorId,
         pesoPacienteKg: pesoNumero,
         tagsClinicas: tagsAtivas,
-        alergias: parseAlergias(alergiasTexto),
+        alergias,
         itens: itens.map(it => ({
           ...toRascunho(it),
           horarios: parseHorarios(it.horarios),
@@ -312,50 +313,36 @@ export function MedicoFarmacovigilancia() {
         />
       </div>
 
-      {/* Alergias e Tags */}
-      <div className="card p-5 space-y-3 border-2 border-red-200 bg-red-50/40">
-        <h2 className="text-base font-semibold text-red-800">⚠ Alergias e Tags Clínicas</h2>
+      {/* Considerações Clínicas do Paciente */}
+      <div className="card p-5 space-y-5 border-2 border-red-200 bg-red-50/40">
         <div>
-          <label className="text-xs text-ink-500">Alergias do paciente (separe por vírgula)</label>
-          <input
-            type="text"
-            value={alergiasTexto}
-            onChange={e => setAlergiasTexto(e.target.value)}
-            placeholder="Ex.: penicilina, cefalosporinas"
-            className="mt-1 w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm"
-          />
-          <p className="mt-1 text-xs text-ink-500">
-            O sistema irá bloquear automaticamente medicamentos que contenham qualquer componente listado.
+          <h2 className="text-base font-semibold text-red-800">⚠ Considerações Clínicas do Paciente</h2>
+          <p className="mt-0.5 text-xs text-ink-600">
+            Tudo o que você marcar aqui é usado em tempo real para bloquear ou reduzir doses inseguras.
           </p>
         </div>
-        <div>
-          <p className="mb-2 text-xs text-ink-500">Tags clínicas ativas (derivadas + médico marca extras)</p>
-          <div className="flex flex-wrap gap-2">
-            {(["GERIATRICO", "INSUFICIENCIA_RENAL", "INSUFICIENCIA_HEPATICA", "CARDIOPATA"] as TagClinica[]).map(tag => {
-              const ativa = tagsAtivas.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => toggleTag(tag)}
-                  className={
-                    "rounded-full border px-3 py-1 text-xs font-medium transition " +
-                    (ativa
-                      ? "border-amber-500 bg-amber-100 text-amber-800"
-                      : "border-ink-300 bg-white text-ink-600 hover:bg-ink-50")
-                  }
-                >
-                  {ativa && "✓ "}{ROTULOS_TAG[tag]}
-                </button>
-              );
-            })}
-          </div>
-          {tagsAtivas.some(t => t !== "CARDIOPATA") && (
-            <p className="mt-2 text-xs text-amber-700">
-              ⚠ Redutor automático de 25% será aplicado no teto de dosagem máxima.
-            </p>
-          )}
-        </div>
+
+        {/* ── Alergias com chips ─────────────────────────────────────────────── */}
+        <SecaoAlergias
+          alergias={alergias}
+          texto={textoAlergiaEmDigitacao}
+          onTextoChange={setTextoAlergiaEmDigitacao}
+          onAdicionar={a => {
+            const nova = a.trim().toLowerCase();
+            if (!nova || alergias.includes(nova)) return;
+            setAlergias(prev => [...prev, nova]);
+            setTextoAlergiaEmDigitacao("");
+          }}
+          onRemover={a => setAlergias(prev => prev.filter(x => x !== a))}
+          sugestoes={componentesDoCatalogo(catalogo, alergias)}
+        />
+
+        {/* ── Tags clínicas com efeito visível ──────────────────────────────── */}
+        <SecaoTags
+          tagsAtivas={tagsAtivas}
+          tagsDerivadas={contexto?.tagsClinicasDerivadas ?? []}
+          onToggle={toggleTag}
+        />
       </div>
 
       {/* Lista de medicamentos */}
@@ -925,10 +912,168 @@ function toRascunho(it: ItemForm): RascunhoItem {
   };
 }
 
-function parseAlergias(texto: string): string[] {
+function parseHorarios(texto: string): string[] {
   return texto.split(",").map(s => s.trim()).filter(s => s.length > 0);
 }
 
-function parseHorarios(texto: string): string[] {
-  return texto.split(",").map(s => s.trim()).filter(s => s.length > 0);
+/**
+ * Lista de sugestões de alergias para autocomplete — pega todos os componentes
+ * únicos dos medicamentos do catálogo (penicilina, AINE, corticoide, etc) e
+ * remove os que já estão selecionados.
+ */
+function componentesDoCatalogo(catalogo: MedicamentoDTO[], jaSelecionadas: string[]): string[] {
+  const set = new Set<string>();
+  catalogo.forEach(med => med.componentes.forEach(c => set.add(c.toLowerCase())));
+  jaSelecionadas.forEach(a => set.delete(a.toLowerCase()));
+  return Array.from(set).sort();
+}
+
+// ── Subcomponentes da seção de considerações clínicas ────────────────────
+
+function SecaoAlergias({
+  alergias, texto, onTextoChange, onAdicionar, onRemover, sugestoes,
+}: {
+  alergias: string[];
+  texto: string;
+  onTextoChange: (s: string) => void;
+  onAdicionar: (a: string) => void;
+  onRemover: (a: string) => void;
+  sugestoes: string[];
+}) {
+  const sugestoesFiltradas = useMemoFiltro(texto, sugestoes);
+
+  return (
+    <div>
+      <label className="text-sm font-semibold text-ink-800">
+        Alergias conhecidas do paciente
+      </label>
+      <p className="text-xs text-ink-500">
+        Digite e tecle Enter para adicionar — qualquer medicamento que contenha o componente será bloqueado.
+      </p>
+
+      {/* Container com chips + input integrados */}
+      <div className="mt-2 rounded-lg border-2 border-red-300 bg-white p-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {alergias.map(a => (
+            <span
+              key={a}
+              className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800"
+            >
+              ⚠ {a}
+              <button
+                type="button"
+                onClick={() => onRemover(a)}
+                className="ml-0.5 text-red-600 hover:text-red-900"
+                aria-label={`Remover ${a}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <input
+            type="text"
+            value={texto}
+            onChange={e => onTextoChange(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter") { e.preventDefault(); onAdicionar(texto); }
+              if (e.key === "Backspace" && texto === "" && alergias.length > 0) {
+                onRemover(alergias[alergias.length - 1]);
+              }
+            }}
+            placeholder={alergias.length === 0 ? "Ex.: penicilina (Enter para adicionar)" : ""}
+            className="min-w-[180px] flex-1 border-0 bg-transparent text-sm outline-none focus:ring-0"
+          />
+        </div>
+      </div>
+
+      {/* Autocomplete: sugestões baseadas no que está digitando */}
+      {texto.length > 0 && sugestoesFiltradas.length > 0 && (
+        <div className="mt-1 rounded-lg border border-ink-200 bg-white p-1 text-sm shadow-sm">
+          <p className="px-2 py-1 text-xs text-ink-500">Sugestões do catálogo:</p>
+          {sugestoesFiltradas.slice(0, 6).map(s => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onAdicionar(s)}
+              className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-red-50 hover:text-red-800"
+            >
+              + {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {alergias.length === 0 && texto.length === 0 && (
+        <p className="mt-2 text-xs text-ink-500">Nenhuma alergia registrada.</p>
+      )}
+    </div>
+  );
+}
+
+function SecaoTags({
+  tagsAtivas, tagsDerivadas, onToggle,
+}: {
+  tagsAtivas: TagClinica[];
+  tagsDerivadas: TagClinica[];
+  onToggle: (tag: TagClinica) => void;
+}) {
+  const todasAsTags: TagClinica[] = [
+    "GERIATRICO", "INSUFICIENCIA_RENAL", "INSUFICIENCIA_HEPATICA", "CARDIOPATA",
+  ];
+  const tagsQueReduzem = tagsAtivas.filter(t => t !== "CARDIOPATA");
+
+  return (
+    <div>
+      <label className="text-sm font-semibold text-ink-800">
+        Condições clínicas do paciente
+      </label>
+      <p className="text-xs text-ink-500">
+        Marque o que se aplica. Tags em <span className="text-brand-700">azul</span> foram detectadas automaticamente
+        do prontuário (idade, comorbidades).
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {todasAsTags.map(tag => {
+          const ativa = tagsAtivas.includes(tag);
+          const derivada = tagsDerivadas.includes(tag);
+          let cor = "border-ink-300 bg-white text-ink-600 hover:bg-ink-50";
+          if (ativa && derivada) cor = "border-brand-500 bg-brand-100 text-brand-800";
+          else if (ativa) cor = "border-amber-500 bg-amber-100 text-amber-800";
+          return (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => onToggle(tag)}
+              className={"rounded-full border-2 px-3 py-1.5 text-xs font-medium transition " + cor}
+              title={derivada ? "Detectada automaticamente do prontuário" : "Marque manualmente"}
+            >
+              {ativa && "✓ "}{ROTULOS_TAG[tag]}
+              {derivada && ativa && <span className="ml-1 text-[10px] opacity-75">(automática)</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Efeito visível em tempo real */}
+      {tagsQueReduzem.length > 0 && (
+        <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+          <p className="font-semibold">⚙ Efeito ativo neste paciente:</p>
+          <p className="mt-1">
+            Por causa de{" "}
+            <strong>{tagsQueReduzem.map(t => ROTULOS_TAG[t]).join(" + ")}</strong>,
+            o teto de dose máxima de cada medicamento foi reduzido em <strong>25%</strong> automaticamente.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Filtra sugestões em memória pelo texto digitado (case-insensitive). */
+function useMemoFiltro(texto: string, lista: string[]): string[] {
+  return useMemo(() => {
+    const q = texto.trim().toLowerCase();
+    if (!q) return [];
+    return lista.filter(s => s.includes(q));
+  }, [texto, lista]);
 }

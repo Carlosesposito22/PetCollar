@@ -8,7 +8,7 @@ const abas = [
   { to: "/app/beneficios", label: "Benefícios" },
   { to: "/app/vacinacao", label: "Vacinação" },
   { to: "/app/nutricao", label: "Nutrição" },
-  { to: "/app/medicamentos", label: "Remédios" },
+  { to: "/app/medicamentos", label: "Medicamentos" },
   { to: "/app/agendamentos", label: "Consultas" },
   { to: "/app/conquistas", label: "Conquistas" },
   { to: "/app/indicacoes", label: "Indicações" },
