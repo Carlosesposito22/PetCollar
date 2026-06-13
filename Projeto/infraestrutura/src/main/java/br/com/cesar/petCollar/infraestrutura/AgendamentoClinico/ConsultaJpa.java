@@ -1,8 +1,10 @@
 package br.com.cesar.petCollar.infraestrutura.AgendamentoClinico;
 
+import br.com.cesar.petCollar.dominio.compartilhado.AtendimentoId;
 import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResumoAtendimento;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.Consulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.ConsultaId;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.EventoAgendamento;
@@ -111,6 +113,23 @@ public class ConsultaJpa {
             .map(EventoAgendamentoJpa::fromDomain)
             .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         return jpa;
+    }
+
+    /**
+     * Projeta esta consulta como {@link ResumoAtendimento} para o protocolo de
+     * inacessibilidade (ACL — §6.2). Uma consulta AGENDADA ou CONFIRMADA é considerada
+     * "em andamento"; a última interação do tutor é a confirmação ou, se ainda não
+     * confirmada, a criação da consulta.
+     */
+    public ResumoAtendimento toResumoAtendimento() {
+        boolean emAndamento = "AGENDADA".equals(status) || "CONFIRMADA".equals(status);
+        java.time.LocalDateTime ultimaInteracao = confirmadaEm != null ? confirmadaEm : criadaEm;
+        return new ResumoAtendimento(
+            AtendimentoId.de(id),
+            PacienteId.de(pacienteId),
+            TutorId.de(tutorId),
+            ultimaInteracao,
+            emAndamento);
     }
 
     public Consulta toDomain() {

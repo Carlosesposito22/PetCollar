@@ -114,7 +114,8 @@ public abstract class EtapaProtocoloService {
                 // Passo 5c — invariante: notifica o destinatário contatado, com a
                 // criticidade da etapa (RN 11 para o tutor, RN 14 para o secundário).
                 servicoNotificacao.notificar(
-                    destinatario.getId(), conteudoDaEtapa(), criticidadeDestaEtapa());
+                    destinatario.getId(), conteudoDaEtapa(), criticidadeDestaEtapa(),
+                    protocoloId.getValor());
 
                 // Passo 5d — invariante: sucesso interrompe os demais canais/destinatários.
                 if (tentativa.houveSucesso()) {
@@ -153,7 +154,8 @@ public abstract class EtapaProtocoloService {
     protected final void notificarTutorPrincipal(ProtocoloInacessibilidade protocolo,
                                                  ConteudoNotificacao conteudo,
                                                  NivelCriticidade criticidade) {
-        servicoNotificacao.notificar(protocolo.getTutorPrincipalId().getValor(), conteudo, criticidade);
+        servicoNotificacao.notificar(protocolo.getTutorPrincipalId().getValor(), conteudo, criticidade,
+            protocolo.getId().getValor());
     }
 
     // ── GANCHOS VARIANTES (protected abstract — as subclasses DEVEM implementar) ─

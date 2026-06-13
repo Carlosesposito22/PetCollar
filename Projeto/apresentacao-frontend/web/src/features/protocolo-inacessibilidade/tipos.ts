@@ -106,6 +106,30 @@ export type RequisicaoConfigurarProtocolo = {
   niveisEscalonamento: NivelEscalonamento[];
 };
 
+/** GET /api/protocolos/:id/notificacoes — registro auditável de notificação (RN 16). */
+export type NotificacaoProtocoloDTO = {
+  id: string;
+  destinatarioId: string;
+  titulo: string;
+  corpo: string;
+  criticidade: NivelCriticidade;
+  registradoEm: string; // ISO LocalDateTime
+};
+
+export type TipoConduta =
+  | "PROCEDIMENTO_INVASIVO"
+  | "MEDICACAO_CONTROLADA"
+  | "INTERNACAO"
+  | "PROCEDIMENTO_ELETIVO"
+  | "EUTANASIA";
+
+/** GET /api/protocolos/:id/diretivas — diretiva de consentimento do tutor (RN 10). */
+export type DiretivaConsentimentoDTO = {
+  conduta: TipoConduta;
+  rotulo: string;
+  autorizado: boolean;
+};
+
 // ── Rótulos (linguagem onipresente, em pt-BR) ───────────────────────────────
 
 export const ROTULO_STATUS: Record<StatusProtocolo, string> = {

@@ -12,6 +12,9 @@ public interface ConsultaJpaRepository extends JpaRepository<ConsultaJpa, String
 
     List<ConsultaJpa> findByPacienteId(String pacienteId);
 
+    /** Consultas com qualquer dos status informados — usado pelo ACL de atendimentos (F-03). */
+    List<ConsultaJpa> findByStatusIn(Collection<String> statuses);
+
     List<ConsultaJpa> findByPacienteIdAndStatusIn(String pacienteId, Collection<String> status);
 
     /** Consultas do médico cujo intervalo intersecta o período (base da disponibilidade — RN 4). */

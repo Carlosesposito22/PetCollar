@@ -4,19 +4,16 @@ import br.com.cesar.petCollar.dominio.compartilhado.AtendimentoId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.IConsultaAtendimento;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResumoAtendimento;
 
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Stand-in da porta {@link IConsultaAtendimento} (anticorrupção para o contexto
- * AtendimentoClinico/RecepcaoTriagem). Mantém os atendimentos em memória; será
- * substituído pelo adapter real quando aqueles contextos expuserem o read-model.
+ * Implementação em memória desativada (não é bean Spring). A persistência real é
+ * feita por {@code AtendimentoConsultaJpa} na camada de infraestrutura.
+ * Mantida apenas como referência/fallback local de desenvolvimento.
  */
-@Component
 public class AtendimentoConsultaEmMemoria implements IConsultaAtendimento {
 
     private final ConcurrentMap<String, ResumoAtendimento> atendimentos = new ConcurrentHashMap<>();

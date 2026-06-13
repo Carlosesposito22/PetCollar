@@ -4,7 +4,9 @@ import { formatarDataHora } from "../../../../utils/formato";
 import { ApiError } from "../../services/protocoloService";
 import { BadgeStatusProtocolo } from "../../components/compartilhados/BadgeStatusProtocolo";
 import { IndicadorEtapaAtual } from "../../components/compartilhados/IndicadorEtapaAtual";
+import { ListaDiretivasConsentimento } from "../../components/compartilhados/ListaDiretivasConsentimento";
 import { ListaEscalonamentos } from "../../components/compartilhados/ListaEscalonamentos";
+import { ListaNotificacoesProtocolo } from "../../components/compartilhados/ListaNotificacoesProtocolo";
 import { ListaTentativas } from "../../components/compartilhados/ListaTentativas";
 import { BannerErro, EstadoVazio, Skeleton } from "../../components/compartilhados/Primitivos";
 import { PollingIndicator } from "../../components/compartilhados/PollingIndicator";
@@ -69,7 +71,7 @@ function DetalheInterno() {
     );
   }
 
-  const { resumo, tentativas, escalonamentos } = dados;
+  const { resumo, tentativas, escalonamentos, notificacoes, diretivas } = dados;
   const ativo = resumo != null;
 
   async function confirmarEncerramento(detalhes: string) {
@@ -184,23 +186,21 @@ function DetalheInterno() {
         </section>
       )}
 
-      {aba === "notificacoes" && (
-        <section className="card p-6">
-          <EstadoVazio
-            icone="🔔"
-            titulo="Histórico de notificações (RN 16)"
-            descricao="As notificações são persistidas de forma auditável no contexto Notificacao do backend, mas ainda não há endpoint REST exposto para listá-las. Cada tentativa registrada na aba “Tentativas” corresponde a uma notificação enviada ao destinatário contatado."
-          />
+      {aba === “notificacoes” && (
+        <section className=”card p-6”>
+          <h2 className=”mb-4 text-sm font-semibold text-ink-700”>
+            Histórico de notificações
+          </h2>
+          <ListaNotificacoesProtocolo notificacoes={notificacoes} />
         </section>
       )}
 
-      {aba === "diretivas" && (
-        <section className="card p-6">
-          <EstadoVazio
-            icone="📜"
-            titulo="Diretivas de consentimento (RN 10)"
-            descricao="A consulta às diretivas existe no domínio (ConsultaDiretivaConsentimentoService), porém ainda não é exposta por um endpoint REST. Quando publicada, esta aba listará as condutas autorizadas/bloqueadas do paciente."
-          />
+      {aba === “diretivas” && (
+        <section className=”card p-6”>
+          <h2 className=”mb-4 text-sm font-semibold text-ink-700”>
+            Diretivas de consentimento do tutor
+          </h2>
+          <ListaDiretivasConsentimento diretivas={diretivas} />
         </section>
       )}
 

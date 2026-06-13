@@ -19,6 +19,9 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.configuracao.Con
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.configuracao.ConfiguracaoProtocoloId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato.CanalContato;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato.NivelEscalonamento;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResponsavelSecundario;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResponsavelSecundarioId;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.TipoConduta;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,6 +118,58 @@ public class ProtocoloInacessibilidadeConfig {
                                 NivelEscalonamento.NIVEL_3_CLINICO,
                                 NivelEscalonamento.NIVEL_4_DIRECAO)));
                 log.info("[SEED] Configuração padrão do ProtocoloInacessibilidade criada.");
+            }
+        };
+    }
+
+    /** Seed de responsáveis secundários de exemplo para os pacientes demo. */
+    @Bean
+    public CommandLineRunner seedResponsaveisSecundarios(
+            ResponsavelSecundarioJpaRepository responsavelJpaRepository) {
+        return args -> {
+            if (responsavelJpaRepository.findByPacienteId("p-001").isEmpty()) {
+                responsavelJpaRepository.save(ResponsavelSecundarioJpa.fromDomain("p-001",
+                    new ResponsavelSecundario(ResponsavelSecundarioId.gerar(),
+                        "Maria Silva (mãe)", 1,
+                        List.of(CanalContato.TELEFONE, CanalContato.SMS))));
+                responsavelJpaRepository.save(ResponsavelSecundarioJpa.fromDomain("p-001",
+                    new ResponsavelSecundario(ResponsavelSecundarioId.gerar(),
+                        "João Silva (pai)", 2,
+                        List.of(CanalContato.TELEFONE))));
+                log.info("[SEED] Responsáveis secundários criados para paciente p-001.");
+            }
+            if (responsavelJpaRepository.findByPacienteId("p-002").isEmpty()) {
+                responsavelJpaRepository.save(ResponsavelSecundarioJpa.fromDomain("p-002",
+                    new ResponsavelSecundario(ResponsavelSecundarioId.gerar(),
+                        "Ana Costa (tutora)", 1,
+                        List.of(CanalContato.EMAIL, CanalContato.SMS))));
+                log.info("[SEED] Responsáveis secundários criados para paciente p-002.");
+            }
+        };
+    }
+
+    /**
+     * Seed de diretivas de consentimento (RN 10): cria entradas de exemplo para os
+     * pacientes demo.
+     */
+    @Bean
+    public CommandLineRunner seedDiretivasConsentimento(
+            DiretivaConsentimentoJpaRepository diretivaJpaRepository) {
+        return args -> {
+            // Paciente demo "p-001" — autoriza procedimentos comuns mas bloqueia eutanásia.
+            if (diretivaJpaRepository.findByPacienteId("p-001").isEmpty()) {
+                diretivaJpaRepository.save(DiretivaConsentimentoJpa.criar("p-001",
+                    List.of(TipoConduta.PROCEDIMENTO_INVASIVO,
+                            TipoConduta.MEDICACAO_CONTROLADA,
+                            TipoConduta.INTERNACAO,
+                            TipoConduta.PROCEDIMENTO_ELETIVO)));
+                log.info("[SEED] Diretivas de consentimento criadas para paciente p-001.");
+            }
+            // Paciente demo "p-002" — autoriza apenas medicação controlada.
+            if (diretivaJpaRepository.findByPacienteId("p-002").isEmpty()) {
+                diretivaJpaRepository.save(DiretivaConsentimentoJpa.criar("p-002",
+                    List.of(TipoConduta.MEDICACAO_CONTROLADA)));
+                log.info("[SEED] Diretivas de consentimento criadas para paciente p-002.");
             }
         };
     }

@@ -1,6 +1,8 @@
 import type {
   ConfiguracaoProtocoloDTO,
+  DiretivaConsentimentoDTO,
   EventoEscalonamentoDTO,
+  NotificacaoProtocoloDTO,
   ProtocoloDTO,
   RequisicaoConfigurarProtocolo,
   StatusProtocoloDTO,
@@ -69,6 +71,18 @@ export function criarProtocoloService(apiFetch: ApiFetch) {
     listarEscalonamentos: (protocoloId: string) =>
       json<EventoEscalonamentoDTO[]>(
         apiFetch(`/api/protocolos/${encodeURIComponent(protocoloId)}/escalonamentos`),
+      ),
+
+    /** RN 16 — histórico auditável de notificações enviadas pelo protocolo. */
+    listarNotificacoes: (protocoloId: string) =>
+      json<NotificacaoProtocoloDTO[]>(
+        apiFetch(`/api/protocolos/${encodeURIComponent(protocoloId)}/notificacoes`),
+      ),
+
+    /** RN 10 — diretivas de consentimento do tutor para o paciente do protocolo. */
+    listarDiretivas: (protocoloId: string) =>
+      json<DiretivaConsentimentoDTO[]>(
+        apiFetch(`/api/protocolos/${encodeURIComponent(protocoloId)}/diretivas`),
       ),
 
     // ── Ações (recepcionista) ────────────────────────────────────────────────

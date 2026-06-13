@@ -6,16 +6,11 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.IServicoNo
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-
 /**
- * Stand-in da porta {@link IServicoNotificacao} que registra as notificações em log
- * (RN 9, 11, 12, 13, 14). Substituível pela integração real com o contexto
- * Notificacao, responsável pela persistência auditável (RN 16).
+ * Implementação alternativa (desativada — não é bean) que apenas loga notificações.
+ * O bean primário é {@link ServicoNotificacaoEmMemoria}, que loga E persiste em memória
+ * satisfazendo a auditabilidade da RN 16.
  */
-@Component
-@Service("servicoNotificacaoLogProtocolo")
 public class ServicoNotificacaoLog implements IServicoNotificacao {
 
     private static final Logger log = LoggerFactory.getLogger(ServicoNotificacaoLog.class);

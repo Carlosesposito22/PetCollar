@@ -14,4 +14,13 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato.NivelCri
 public interface IServicoNotificacao {
 
     void notificar(String destinatarioId, ConteudoNotificacao conteudo, NivelCriticidade criticidade);
+
+    /**
+     * Notifica associando ao protocolo em execução (RN 16 — auditabilidade). A
+     * implementação padrão delega ao método sem contexto; sobrescreva para persistir.
+     */
+    default void notificar(String destinatarioId, ConteudoNotificacao conteudo,
+                           NivelCriticidade criticidade, String protocoloId) {
+        notificar(destinatarioId, conteudo, criticidade);
+    }
 }

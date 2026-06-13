@@ -113,7 +113,8 @@ public class AtivacaoProtocoloService {
 
         // RN 12 — notifica o tutor imediatamente após a ativação.
         notificacao.notificar(resumo.getTutorPrincipalId().getValor(),
-            ConteudoNotificacao.ativacaoProtocolo(), NivelCriticidade.BAIXA);
+            ConteudoNotificacao.ativacaoProtocolo(), NivelCriticidade.BAIXA,
+            protocolo.getId().getValor());
 
         return protocolo;
     }
