@@ -22,7 +22,12 @@ Domain InteligenciaPetCollar {
 
     Subdomain SaudePreventivaSubdomain {
         type CORE_DOMAIN
-        domainVisionStatement = "Jornada preventiva e de continuidade do pet: vincula consultas de retorno aos exames solicitados e centraliza a carteira digital de vacinacao com calculo preditivo de proximas doses."
+        domainVisionStatement = "Ciclo vacinal digital do pet: protocolo de vacinacao personalizado por especie, registro de doses com validacao do medico e calculo preditivo das proximas aplicacoes."
+    }
+
+    Subdomain AgendamentoClinicoSubdomain {
+        type CORE_DOMAIN
+        domainVisionStatement = "Orquestra a jornada de consultas do tutor: agendamento inicial com validacao de prontuario e disponibilidade, retorno vinculado a exames concluidos, e gestao do ciclo completo (remarcar/cancelar) com auditoria imutavel de eventos."
     }
 
     Subdomain AtendimentoClinicoSubdomain {
@@ -941,105 +946,191 @@ BoundedContext ContextoImunizacao implements SaudePreventivaSubdomain {
     }
 }
 
-BoundedContext ContextoAgendamentoRetorno implements SaudePreventivaSubdomain {
+BoundedContext ContextoAgendamentoClinico implements AgendamentoClinicoSubdomain {
     type = FEATURE
 
-    Aggregate ExameSolicitado {
+    Aggregate Consulta {
 
-        Entity ExameSolicitado {
+        Entity Consulta {
             aggregateRoot
-            - @ExameSolicitadoId exameId
-            - @AtendimentoId     consultaOrigemId
-            - @PacienteId        pacienteId
-            - @MedicoId          medicoSolicitanteId
-            String               tipoExame
-            Date                 solicitadoEm
-            - @StatusExame       status
-            String               arquivoLaudoUploadUrl
-            Date                 concluidoEm
+            - @ConsultaId                consultaId
+            - @PacienteId                pacienteId
+            - @TutorId                   tutorId
+            - @MedicoId                  medicoId
+            - @EspecialidadeId           especialidadeId
+            - @TipoConsulta              tipo
+            - @MotivoConsulta            motivo
+            - @HorarioConsulta           horario
+            - @StatusConsulta            status
+            - @ConsultaId                consultaOrigemId
+            Integer                      quantidadeRemarcacoes
+            DateTime                     criadaEm
+            DateTime                     confirmadaEm
+            DateTime                     canceladaEm
+            - List<@EventoAgendamento>   eventos
+            - List<@HistoricoRemarcacao> historicoRemarcacoes
         }
 
-        enum StatusExame              { SOLICITADO, AGUARDANDO_RESULTADO, CONCLUIDO, CANCELADO }
-        ValueObject ExameSolicitadoId { String id }
-
-        Service ConfirmacaoExameService {
-            @ExameSolicitado anexarLaudoEMarcarConcluido(@ExameSolicitadoId id, String urlArquivo);
-            @ExameSolicitado marcarConcluidoPorEmissaoLaudo(@ExameSolicitadoId id);
+        Entity EventoAgendamento {
+            - @TipoEventoAgendamento tipo
+            DateTime                 ocorridoEm
+            String                   detalhe
         }
 
-        Repository ExameSolicitadoRepository {
-            List<@ExameSolicitado> findByConsultaOrigem(@AtendimentoId consultaId);
-            List<@ExameSolicitado> findByPacientePendentes(@PacienteId pacienteId);
-            @ExameSolicitado save(@ExameSolicitado exame);
-        }
-    }
-
-    Aggregate DisponibilidadeMedico {
-
-        Entity DisponibilidadeMedico {
-            aggregateRoot
-            - @DisponibilidadeId   id
-            - @MedicoId            medicoId
-            - List<@JanelaHorario> janelasDisponiveis
+        Entity HistoricoRemarcacao {
+            - @HorarioConsulta horarioAnterior
+            - @HorarioConsulta horarioNovo
+            DateTime           remarcadoEm
         }
 
-        ValueObject JanelaHorario {
+        ValueObject ConsultaId    { String id }
+        ValueObject MotivoConsulta { String valor }
+
+        ValueObject HorarioConsulta {
             DateTime inicio
             DateTime fim
-            Boolean  ocupada
-        }
-        ValueObject DisponibilidadeId { String id }
-
-        Service ConsultaDisponibilidadeService {
-            List<@JanelaHorario> listarJanelasLivres(@MedicoId medicoId, Date dataInicio, Date dataFim);
-            Boolean validarJanelaLivre(@MedicoId medicoId, DateTime horarioDesejado);
         }
 
-        Repository DisponibilidadeMedicoRepository {
-            @DisponibilidadeMedico findByMedico(@MedicoId medicoId);
-            @DisponibilidadeMedico save(@DisponibilidadeMedico disponibilidade);
-        }
-    }
-
-    Aggregate AgendamentoRetorno {
-
-        Entity AgendamentoRetorno {
-            aggregateRoot
-            - @AgendamentoRetornoId     agendamentoId
-            - @TutorId                  tutorId
-            - @PacienteId               pacienteId
-            - @AtendimentoId            consultaOrigemId
-            - @MedicoId                 medicoResponsavelId
-            - List<@ExameSolicitadoId>  examesVinculados
-            DateTime                    horarioAgendado
-            - @StatusAgendamentoRetorno status
-            Integer                     vezesReagendado
+        ValueObject FiltroConsulta {
+            - @StatusConsulta status
+            - @TipoConsulta   tipo
+            DateTime          inicio
+            DateTime          fim
         }
 
-        enum StatusAgendamentoRetorno    { CONFIRMADO, CANCELADO, REAGENDADO, REALIZADO }
-        ValueObject AgendamentoRetornoId { String id }
+        ValueObject ExameResumo {
+            String        exameId
+            String        descricao
+            - @StatusExame status
+        }
 
-        Service ValidacaoPreAgendamentoService {
-            Boolean consultaOrigemPermiteRetorno(@AtendimentoId atendimentoId);
-            Boolean possuiAoMenosUmExameConcluido(@AtendimentoId atendimentoId);
+        enum StatusConsulta {
+            AGENDADA, CONFIRMADA, REALIZADA, CANCELADA,
+            AGUARDANDO_RETORNO, EXAMES_SOLICITADOS, RETORNO_AGENDADO
+        }
+        enum TipoConsulta { INICIAL, RETORNO }
+        enum TipoEventoAgendamento {
+            CRIADA, CONFIRMADA, REMARCADA, CANCELADA, REALIZADA,
+            AGUARDANDO_RETORNO, EXAMES_SOLICITADOS, RETORNO_AGENDADO
+        }
+        enum StatusExame     { SOLICITADO, CONCLUIDO }
+        enum StatusProntuario { ATIVO, INATIVO }
+
+        Service AgendamentoConsultaInicialService {
+            @Consulta agendar(@PacienteId pacienteId, @TutorId tutorId, @MedicoId medicoId, @EspecialidadeId especialidadeId, @MotivoConsulta motivo, @HorarioConsulta horario);
         }
 
         Service AgendamentoRetornoService {
-            @AgendamentoRetorno agendar(@TutorId tutorId, @AtendimentoId consultaOrigemId, DateTime horario);
-            void cancelar(@AgendamentoRetornoId id);
+            @Consulta agendar(@PacienteId pacienteId, @TutorId tutorId, @ConsultaId consultaOrigemId, @HorarioConsulta horario);
         }
 
-        DomainEvent RetornoConfirmadoEvent {
-            - @AgendamentoRetornoId agendamentoId
-            - @TutorId tutorId
-            - @MedicoId medicoId
-            DateTime confirmadoEm
+        Service GestaoAgendamentoService {
+            @Consulta remarcar(@ConsultaId consultaId, @HorarioConsulta novoHorario);
+            void cancelar(@ConsultaId consultaId);
         }
 
-        Repository AgendamentoRetornoRepository {
-            List<@AgendamentoRetorno> findByTutor(@TutorId tutorId);
-            List<@AgendamentoRetorno> findFuturosByPaciente(@PacienteId pacienteId);
-            @AgendamentoRetorno save(@AgendamentoRetorno agendamento);
+        Service PortaProntuario {
+            @StatusProntuario obterStatus(@PacienteId pacienteId);
+        }
+
+        Service PortaExame {
+            List<@ExameResumo> listarPorConsultaOrigem(@ConsultaId consultaOrigemId);
+            Integer contarConcluidosPorConsultaOrigem(@ConsultaId consultaOrigemId);
+            void adicionar(@ConsultaId consultaId, String descricao);
+            void confirmar(String exameId);
+            void registrarLaudo(String exameId, String laudoBase64);
+        }
+
+        Service PortaNotificacao {
+            void notificarMedico(@MedicoId medicoId, String mensagem);
+            void notificarTutor(@TutorId tutorId, String mensagem);
+        }
+
+        DomainEvent ConsultaAgendadaEvent {
+            - @ConsultaId    consultaId
+            - @PacienteId   pacienteId
+            - @TutorId      tutorId
+            - @MedicoId     medicoId
+            - @TipoConsulta tipo
+            DateTime        inicio
+        }
+
+        DomainEvent ConsultaRemarcadaEvent {
+            - @ConsultaId      consultaId
+            - @HorarioConsulta horarioAnterior
+            - @HorarioConsulta horarioNovo
+            DateTime           remarcadaEm
+        }
+
+        DomainEvent ConsultaCanceladaEvent {
+            - @ConsultaId consultaId
+            - @PacienteId pacienteId
+            DateTime      canceladaEm
+        }
+
+        DomainEvent RetornoAgendadoEvent {
+            - @ConsultaId retornoId
+            - @ConsultaId consultaOrigemId
+            - @PacienteId pacienteId
+            - @MedicoId   medicoId
+            DateTime      inicio
+        }
+
+        Repository IConsultaRepositorio {
+            void salvar(@Consulta consulta);
+            @Consulta buscarPorId(@ConsultaId consultaId);
+            List<@Consulta> listarPorPaciente(@PacienteId pacienteId, @FiltroConsulta filtro);
+            List<@Consulta> listarPorMedicoEPeriodo(@MedicoId medicoId, DateTime inicio, DateTime fim);
+            List<@Consulta> listarElegiveisRetorno(@PacienteId pacienteId);
+            Boolean existeConflitoNoPaciente(@PacienteId pacienteId, @HorarioConsulta horario);
+        }
+    }
+
+    Aggregate Especialidade {
+
+        Entity Especialidade {
+            aggregateRoot
+            - @EspecialidadeId id
+            String             nome
+            String             descricao
+            - List<@MedicoId>  medicoIds
+        }
+
+        ValueObject EspecialidadeId { String id }
+
+        Repository IEspecialidadeRepositorio {
+            List<@Especialidade> listarTodas();
+            @Especialidade buscarPorId(@EspecialidadeId especialidadeId);
+            List<@MedicoId> listarMedicosDaEspecialidade(@EspecialidadeId especialidadeId);
+        }
+    }
+
+    Aggregate AgendaMedico {
+
+        ValueObject Expediente {
+            String  horaInicio
+            String  horaFim
+            Integer duracaoConsultaMinutos
+        }
+
+        ValueObject BloqueioAgenda {
+            - @HorarioConsulta periodo
+            String             motivo
+        }
+
+        ValueObject HorarioDisponivel {
+            DateTime inicio
+            DateTime fim
+        }
+
+        Service DisponibilidadeAgendaService {
+            List<@HorarioDisponivel> listarHorariosLivres(@MedicoId medicoId, DateTime dataInicio, DateTime dataFim);
+            Boolean estaDisponivel(@MedicoId medicoId, @HorarioConsulta horario);
+        }
+
+        Repository IAgendaRepositorio {
+            List<@BloqueioAgenda> listarBloqueios(@MedicoId medicoId);
+            @Expediente obterExpediente(@MedicoId medicoId);
         }
     }
 }
