@@ -178,6 +178,16 @@ public class Consulta {
         registrarEvento(TipoEventoAgendamento.EXAMES_SOLICITADOS, "Exames solicitados para retorno.");
     }
 
+    /** Marca a consulta como com retorno já agendado, bloqueando novo agendamento (RN 7). */
+    public void marcarRetornoAgendado() {
+        if (this.status != StatusConsulta.AGUARDANDO_RETORNO
+                && this.status != StatusConsulta.EXAMES_SOLICITADOS)
+            throw new IllegalStateException(
+                "Só consultas AGUARDANDO_RETORNO ou EXAMES_SOLICITADOS podem ter retorno agendado.");
+        this.status = StatusConsulta.RETORNO_AGENDADO;
+        registrarEvento(TipoEventoAgendamento.RETORNO_AGENDADO, "Retorno agendado pelo tutor.");
+    }
+
     public boolean isElegivelParaRetorno() {
         return this.status == StatusConsulta.AGUARDANDO_RETORNO
             || this.status == StatusConsulta.EXAMES_SOLICITADOS;

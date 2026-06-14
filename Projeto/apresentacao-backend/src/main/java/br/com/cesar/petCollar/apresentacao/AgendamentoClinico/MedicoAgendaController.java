@@ -305,7 +305,13 @@ public class MedicoAgendaController {
         }
 
         consultas.salvar(consulta);
-        return ResponseEntity.ok(ConsultaDTO.de(consulta));
+        return ResponseEntity.ok(ConsultaDTO.de(consulta, resolverNomeMedico(consulta.getMedicoId())));
+    }
+
+    private String resolverNomeMedico(MedicoId medicoId) {
+        return usuarios.buscar(Perfil.MEDICO_VETERINARIO, medicoId.getValor())
+            .map(u -> u.nome())
+            .orElse(medicoId.getValor());
     }
 
     /**

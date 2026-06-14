@@ -8,7 +8,8 @@ export type StatusConsulta =
   | "REALIZADA"
   | "CANCELADA"
   | "AGUARDANDO_RETORNO"
-  | "EXAMES_SOLICITADOS";
+  | "EXAMES_SOLICITADOS"
+  | "RETORNO_AGENDADO";
 
 export type StatusExame = "SOLICITADO" | "CONCLUIDO";
 
@@ -20,6 +21,7 @@ export type EspecialidadeDTO = {
 
 export type MedicoDTO = {
   id: string;
+  nome: string;
 };
 
 export type HorarioDTO = {
@@ -40,6 +42,7 @@ export type ConsultaDTO = {
   pacienteId: string;
   tutorId: string;
   medicoId: string;
+  medicoNome: string;
   especialidadeId: string;
   tipo: TipoConsulta;
   motivo: string;
@@ -55,6 +58,7 @@ export type ConsultaElegivelDTO = {
   id: string;
   pacienteId: string;
   medicoId: string;
+  medicoNome: string;
   especialidadeId: string;
   status: StatusConsulta;
   inicio: string;
@@ -95,6 +99,7 @@ export const ROTULO_STATUS: Record<StatusConsulta, string> = {
   CANCELADA: "Cancelada",
   AGUARDANDO_RETORNO: "Aguardando retorno",
   EXAMES_SOLICITADOS: "Exames solicitados",
+  RETORNO_AGENDADO: "Retorno agendado",
 };
 
 export const ROTULO_TIPO: Record<TipoConsulta, string> = {

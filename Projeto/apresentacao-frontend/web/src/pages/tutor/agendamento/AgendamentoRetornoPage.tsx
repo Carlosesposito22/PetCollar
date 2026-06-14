@@ -12,7 +12,6 @@ import { WizardContainer } from "./WizardContainer";
 import { SelecaoPaciente } from "./SelecaoPaciente";
 import { CalendarioDisponibilidade } from "./CalendarioDisponibilidade";
 import { ListaExames } from "./ListaExames";
-import { rotuloMedico } from "./medico";
 
 const PASSOS = ["Consulta de origem", "Exames", "Horário", "Confirmação"];
 const MOTIVO_RETORNO = "Retorno de acompanhamento";
@@ -42,7 +41,9 @@ function RetornoInner() {
 
   const onConcluidosChange = useCallback((c: number) => setConcluidos(c), []);
 
-  const habilitado = [!!origem, concluidos >= 1, !!horario, !!horario][passo];
+  // Retorno simples (AGUARDANDO_RETORNO) não requer exames concluídos — apenas retorno com exames.
+  const requerExames = origem?.status === "EXAMES_SOLICITADOS";
+  const habilitado = [!!origem, requerExames ? concluidos >= 1 : true, !!horario, !!horario][passo];
 
   async function confirmar() {
     if (!paciente || !origem || !horario || !session) return;
@@ -97,19 +98,27 @@ function RetornoInner() {
 
       {passo === 1 && origem && (
         <div>
-          {concluidos < 1 && (
-            <div role="alert" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              Conclua pelo menos um exame para prosseguir com o agendamento.
+          {!requerExames ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+              Esta consulta foi marcada para retorno simples, sem necessidade de exames. Prossiga para escolher o horário.
             </div>
+          ) : (
+            <>
+              {concluidos < 1 && (
+                <div role="alert" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  Conclua pelo menos um exame para prosseguir com o agendamento.
+                </div>
+              )}
+              <ListaExames consultaId={origem.id} onConcluidosChange={onConcluidosChange} />
+            </>
           )}
-          <ListaExames consultaId={origem.id} onConcluidosChange={onConcluidosChange} />
         </div>
       )}
 
       {passo === 2 && origem && (
         <div>
           <p className="mb-4 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-800 ring-1 ring-brand-100">
-            Retorno com <strong>{rotuloMedico(origem.medicoId)}</strong> — o mesmo médico da consulta de origem.
+            Retorno com <strong>{origem.medicoNome}</strong> — o mesmo médico da consulta de origem.
           </p>
           <CalendarioDisponibilidade
             medicoId={origem.medicoId}
@@ -129,8 +138,8 @@ function RetornoInner() {
           <h3 className="mb-3 text-base font-semibold text-ink-900">Revise os dados</h3>
           <dl className="grid gap-2 text-sm">
             <Resumo rotulo="Paciente" valor={`${paciente.nome} (${paciente.especie})`} />
-            <Resumo rotulo="Consulta de origem" valor={`${formatarDataHora(origem.inicio)} · ${rotuloMedico(origem.medicoId)}`} />
-            <Resumo rotulo="Exames concluídos" valor={String(concluidos)} />
+            <Resumo rotulo="Consulta de origem" valor={`${formatarDataHora(origem.inicio)} · ${origem.medicoNome}`} />
+            <Resumo rotulo="Exames concluídos" valor={requerExames ? String(concluidos) : "N/A (retorno simples)"} />
             <Resumo rotulo="Novo horário" valor={formatarDataHora(horario.inicio)} />
           </dl>
         </div>
@@ -206,7 +215,7 @@ function PassoOrigem({
                             }>
                       <div>
                         <p className="font-semibold text-ink-900">{formatarDataHora(c.inicio)}</p>
-                        <p className="text-sm text-ink-500">{rotuloMedico(c.medicoId)}</p>
+                        <p className="text-sm text-ink-500">{c.medicoNome}</p>
                       </div>
                       <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
                         {ROTULO_STATUS[c.status]}

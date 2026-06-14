@@ -79,9 +79,16 @@ public class FarmacovigilanciaConfig {
     // ── Seeds (idempotentes — só populam tabelas vazias) ─────────────────────
 
     @Bean
-    public CommandLineRunner seedMedicamentos(IMedicamentoRepositorio repositorio) {
+    public CommandLineRunner seedFarmacovigilancia(IMedicamentoRepositorio repositorio,
+                                                   ITemplatePrescricaoRepositorio templates) {
         return args -> {
-            if (repositorio.contar() > 0) return;
+            seedMedicamentos(repositorio);
+            seedTemplates(repositorio, templates);
+        };
+    }
+
+    private void seedMedicamentos(IMedicamentoRepositorio repositorio) {
+        if (repositorio.contar() > 0) return;
 
             Map<String, MedicamentoId> ids = new HashMap<>();
             // Cada chamada aceita: nome, doseMax mg/kg, concentração mg/ml, vias, componentes, manejo, nota
@@ -159,53 +166,49 @@ public class FarmacovigilanciaConfig {
                     ids.get("carprofeno"), ids.get("furosemida"),
                     InteracaoMedicamentosa.Gravidade.MODERADA,
                     "AINE reduz a eficácia do diurético e aumenta risco de nefrotoxicidade."));
-        };
     }
 
-    @Bean
-    public CommandLineRunner seedTemplates(ITemplatePrescricaoRepositorio templates,
-                                           IMedicamentoRepositorio medicamentos) {
-        return args -> {
-            if (templates.contar() > 0) return;
+    private void seedTemplates(IMedicamentoRepositorio medicamentos,
+                               ITemplatePrescricaoRepositorio templates) {
+        if (templates.contar() > 0) return;
 
-            // Resolve por nome (catálogo já populado pelo seedMedicamentos)
-            Map<String, MedicamentoId> porNome = new HashMap<>();
-            for (Medicamento m : medicamentos.listarTodos())
-                porNome.put(m.getNome(), m.getId());
+        // Resolve por nome — catálogo já garantido por seedMedicamentos (mesmo runner).
+        Map<String, MedicamentoId> porNome = new HashMap<>();
+        for (Medicamento m : medicamentos.listarTodos())
+            porNome.put(m.getNome(), m.getId());
 
-            templates.salvar(new TemplatePrescricao(
-                    TemplatePrescricaoId.gerar(),
-                    "Gastroproteção Básica",
-                    "Omeprazol + Sucralfato (esofagite/gastrite leve a moderada).",
-                    List.of(
-                            new TemplatePrescricao.ItemTemplate(
-                                    porNome.get("Omeprazol"), new BigDecimal("0.5"), 7,
-                                    Frequencia.UMA_VEZ_DIA, ViaAdministracao.ORAL),
-                            new TemplatePrescricao.ItemTemplate(
-                                    porNome.get("Sucralfato"), new BigDecimal("0.5"), 7,
-                                    Frequencia.DUAS_VEZES_DIA, ViaAdministracao.ORAL))));
+        templates.salvar(new TemplatePrescricao(
+                TemplatePrescricaoId.gerar(),
+                "Gastroproteção Básica",
+                "Omeprazol + Sucralfato (esofagite/gastrite leve a moderada).",
+                List.of(
+                        new TemplatePrescricao.ItemTemplate(
+                                porNome.get("Omeprazol"), new BigDecimal("0.5"), 7,
+                                Frequencia.UMA_VEZ_DIA, ViaAdministracao.ORAL),
+                        new TemplatePrescricao.ItemTemplate(
+                                porNome.get("Sucralfato"), new BigDecimal("0.5"), 7,
+                                Frequencia.DUAS_VEZES_DIA, ViaAdministracao.ORAL))));
 
-            templates.salvar(new TemplatePrescricao(
-                    TemplatePrescricaoId.gerar(),
-                    "Antiemético Padrão",
-                    "Metoclopramida + Maropitant (vômitos persistentes).",
-                    List.of(
-                            new TemplatePrescricao.ItemTemplate(
-                                    porNome.get("Metoclopramida"), new BigDecimal("0.3"), 5,
-                                    Frequencia.DUAS_VEZES_DIA, ViaAdministracao.ORAL),
-                            new TemplatePrescricao.ItemTemplate(
-                                    porNome.get("Maropitant"), new BigDecimal("1.0"), 5,
-                                    Frequencia.UMA_VEZ_DIA, ViaAdministracao.SUBCUTANEA))));
+        templates.salvar(new TemplatePrescricao(
+                TemplatePrescricaoId.gerar(),
+                "Antiemético Padrão",
+                "Metoclopramida + Maropitant (vômitos persistentes).",
+                List.of(
+                        new TemplatePrescricao.ItemTemplate(
+                                porNome.get("Metoclopramida"), new BigDecimal("0.3"), 5,
+                                Frequencia.DUAS_VEZES_DIA, ViaAdministracao.ORAL),
+                        new TemplatePrescricao.ItemTemplate(
+                                porNome.get("Maropitant"), new BigDecimal("1.0"), 5,
+                                Frequencia.UMA_VEZ_DIA, ViaAdministracao.SUBCUTANEA))));
 
-            templates.salvar(new TemplatePrescricao(
-                    TemplatePrescricaoId.gerar(),
-                    "Antibiótico Amplo Espectro",
-                    "Amoxicilina + Clavulanato — primeira escolha para infecções de pele e tecidos moles.",
-                    List.of(
-                            new TemplatePrescricao.ItemTemplate(
-                                    porNome.get("Amoxicilina + Clavulanato"), new BigDecimal("12.5"), 10,
-                                    Frequencia.DUAS_VEZES_DIA, ViaAdministracao.ORAL))));
-        };
+        templates.salvar(new TemplatePrescricao(
+                TemplatePrescricaoId.gerar(),
+                "Antibiótico Amplo Espectro",
+                "Amoxicilina + Clavulanato — primeira escolha para infecções de pele e tecidos moles.",
+                List.of(
+                        new TemplatePrescricao.ItemTemplate(
+                                porNome.get("Amoxicilina + Clavulanato"), new BigDecimal("12.5"), 10,
+                                Frequencia.DUAS_VEZES_DIA, ViaAdministracao.ORAL))));
     }
 
     private static MedicamentoId criar(IMedicamentoRepositorio repo, String nome,

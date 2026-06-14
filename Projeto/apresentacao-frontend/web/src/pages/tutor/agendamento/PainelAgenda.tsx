@@ -14,7 +14,6 @@ import { ApiError } from "./agendamentoService";
 import { useAgendamentoService } from "./useAgendamentoService";
 import { useToast } from "./Toast";
 import { CalendarioDisponibilidade } from "./CalendarioDisponibilidade";
-import { rotuloMedico } from "./medico";
 
 const ANTECEDENCIA_MINIMA_HORAS = 24;
 
@@ -29,6 +28,7 @@ const STATUS_BADGE: Record<StatusConsulta, string> = {
   CANCELADA: "bg-paw-100 text-paw-700",
   AGUARDANDO_RETORNO: "bg-amber-100 text-amber-800",
   EXAMES_SOLICITADOS: "bg-amber-100 text-amber-800",
+  RETORNO_AGENDADO: "bg-violet-100 text-violet-800",
 };
 
 /** Painel da agenda do tutor (RN 17): filtros + cards diferenciados + ações. */
@@ -153,18 +153,13 @@ export function PainelAgenda() {
           Nenhum agendamento encontrado para o filtro selecionado.
         </div>
       ) : (
-        <div className="space-y-3">
-          {consultas.map(c => (
-            <CardAgendamento
-              key={c.id}
-              consulta={c}
-              pacienteNome={pacienteNome[c.pacienteId] ?? c.pacienteId}
-              especialidadeNome={especialidades[c.especialidadeId]}
-              onRemarcar={() => setRemarcando(c)}
-              onCancelar={() => setCancelando(c)}
-            />
-          ))}
-        </div>
+        <ListaConsultas
+          consultas={consultas}
+          pacienteNome={pacienteNome}
+          especialidades={especialidades}
+          onRemarcar={setRemarcando}
+          onCancelar={setCancelando}
+        />
       )}
 
       {remarcando && (
@@ -195,60 +190,157 @@ export function PainelAgenda() {
   );
 }
 
-function CardAgendamento({
-  consulta, pacienteNome, especialidadeNome, onRemarcar, onCancelar,
+/** Renderiza a lista agrupando pares origem → retorno num único card com seta central. */
+function ListaConsultas({
+  consultas, pacienteNome, especialidades, onRemarcar, onCancelar,
 }: {
-  consulta: ConsultaDTO;
-  pacienteNome: string;
-  especialidadeNome?: string;
-  onRemarcar: () => void;
-  onCancelar: () => void;
+  consultas: ConsultaDTO[];
+  pacienteNome: Record<string, string>;
+  especialidades: Record<string, string>;
+  onRemarcar: (c: ConsultaDTO) => void;
+  onCancelar: (c: ConsultaDTO) => void;
 }) {
-  const ativa = consulta.status === "AGENDADA" || consulta.status === "CONFIRMADA";
-  const dentroDe24h = horasAte(consulta.inicio) < ANTECEDENCIA_MINIMA_HORAS;
-  const retorno = consulta.tipo === "RETORNO";
+  const idsFilhos = new Set(
+    consultas
+      .filter(c => c.tipo === "RETORNO" && c.consultaOrigemId != null)
+      .filter(c => consultas.some(o => o.id === c.consultaOrigemId))
+      .map(c => c.id)
+  );
+  const retornoPorOrigem = new Map(
+    consultas
+      .filter(c => c.tipo === "RETORNO" && c.consultaOrigemId != null && idsFilhos.has(c.id))
+      .map(c => [c.consultaOrigemId as string, c])
+  );
 
   return (
-    <div className={"card border-l-4 p-5 " + (retorno ? "border-l-amber-400" : "border-l-brand-400")}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className={
-              "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold " +
-              (retorno ? "bg-amber-100 text-amber-800" : "bg-brand-100 text-brand-700")
-            }>
-              {ROTULO_TIPO[consulta.tipo]}
-            </span>
-            <span className={"inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold " + STATUS_BADGE[consulta.status]}>
-              {ROTULO_STATUS[consulta.status]}
-            </span>
-          </div>
-          <p className="mt-2 text-lg font-bold text-ink-900">{formatarDataHora(consulta.inicio)}</p>
-          <dl className="mt-1 space-y-0.5 text-sm text-ink-700">
-            <Linha rotulo="Paciente" valor={pacienteNome} />
-            <Linha rotulo="Médico" valor={rotuloMedico(consulta.medicoId)} />
-            {especialidadeNome && <Linha rotulo="Especialidade" valor={especialidadeNome} />}
-            <Linha rotulo="Motivo" valor={consulta.motivo} />
-            {consulta.quantidadeRemarcacoes > 0 && (
-              <Linha rotulo="Remarcações" valor={String(consulta.quantidadeRemarcacoes)} />
-            )}
-          </dl>
-        </div>
+    <div className="space-y-3">
+      {consultas
+        .filter(c => !idsFilhos.has(c.id))
+        .map(c => (
+          <CardAgendamento
+            key={c.id}
+            consulta={c}
+            retorno={retornoPorOrigem.get(c.id)}
+            pacienteNome={pacienteNome[c.pacienteId] ?? c.pacienteId}
+            especialidadeNome={especialidades[c.especialidadeId]}
+            retornoPacienteNome={retornoPorOrigem.get(c.id) ? (pacienteNome[retornoPorOrigem.get(c.id)!.pacienteId] ?? retornoPorOrigem.get(c.id)!.pacienteId) : undefined}
+            retornoEspecialidadeNome={retornoPorOrigem.get(c.id) ? especialidades[retornoPorOrigem.get(c.id)!.especialidadeId] : undefined}
+            onRemarcar={() => onRemarcar(c)}
+            onCancelar={() => onCancelar(c)}
+            onRemarcarRetorno={retornoPorOrigem.get(c.id) ? () => onRemarcar(retornoPorOrigem.get(c.id)!) : undefined}
+            onCancelarRetorno={retornoPorOrigem.get(c.id) ? () => onCancelar(retornoPorOrigem.get(c.id)!) : undefined}
+          />
+        ))}
+    </div>
+  );
+}
 
-        {ativa && (
-          <div className="flex flex-col gap-2">
-            <button onClick={onRemarcar} className="btn-ghost ring-1 ring-ink-300">Remarcar</button>
-            <button
-              onClick={onCancelar}
-              disabled={dentroDe24h}
-              title={dentroDe24h ? "Cancelamento exige antecedência mínima de 24 horas." : undefined}
-              aria-label={dentroDe24h ? "Cancelamento indisponível: menos de 24 horas de antecedência." : "Cancelar"}
-              className="btn-ghost ring-1 ring-paw-200 text-paw-700 hover:bg-paw-50 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Cancelar
-            </button>
-          </div>
+function InfoConsulta({
+  consulta, pacienteNome, especialidadeNome,
+}: { consulta: ConsultaDTO; pacienteNome: string; especialidadeNome?: string }) {
+  const ehRetorno = consulta.tipo === "RETORNO";
+  return (
+    <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={
+          "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold " +
+          (ehRetorno ? "bg-amber-100 text-amber-800" : "bg-brand-100 text-brand-700")
+        }>
+          {ROTULO_TIPO[consulta.tipo]}
+        </span>
+        <span className={"inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold " + STATUS_BADGE[consulta.status]}>
+          {ROTULO_STATUS[consulta.status]}
+        </span>
+      </div>
+      <p className="mt-2 text-base font-bold text-ink-900">{formatarDataHora(consulta.inicio)}</p>
+      <dl className="mt-1 space-y-0.5 text-sm text-ink-700">
+        <Linha rotulo="Paciente" valor={pacienteNome} />
+        <Linha rotulo="Médico" valor={consulta.medicoNome} />
+        {especialidadeNome && <Linha rotulo="Especialidade" valor={especialidadeNome} />}
+        <Linha rotulo="Motivo" valor={consulta.motivo} />
+        {consulta.quantidadeRemarcacoes > 0 && (
+          <Linha rotulo="Remarcações" valor={String(consulta.quantidadeRemarcacoes)} />
         )}
+      </dl>
+    </div>
+  );
+}
+
+function AcoesConsulta({
+  consulta, onRemarcar, onCancelar,
+}: { consulta: ConsultaDTO; onRemarcar: () => void; onCancelar: () => void }) {
+  const ativa = consulta.status === "AGENDADA" || consulta.status === "CONFIRMADA";
+  const dentroDe24h = horasAte(consulta.inicio) < ANTECEDENCIA_MINIMA_HORAS;
+  if (!ativa) return null;
+  return (
+    <div className="flex flex-col gap-2 shrink-0">
+      <button onClick={onRemarcar} className="btn-ghost ring-1 ring-ink-300">Remarcar</button>
+      <button
+        onClick={onCancelar}
+        disabled={dentroDe24h}
+        title={dentroDe24h ? "Cancelamento exige antecedência mínima de 24 horas." : undefined}
+        aria-label={dentroDe24h ? "Cancelamento indisponível: menos de 24 horas de antecedência." : "Cancelar"}
+        className="btn-ghost ring-1 ring-paw-200 text-paw-700 hover:bg-paw-50 disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Cancelar
+      </button>
+    </div>
+  );
+}
+
+function CardAgendamento({
+  consulta, retorno, pacienteNome, especialidadeNome,
+  retornoPacienteNome, retornoEspecialidadeNome,
+  onRemarcar, onCancelar, onRemarcarRetorno, onCancelarRetorno,
+}: {
+  consulta: ConsultaDTO;
+  retorno?: ConsultaDTO;
+  pacienteNome: string;
+  especialidadeNome?: string;
+  retornoPacienteNome?: string;
+  retornoEspecialidadeNome?: string;
+  onRemarcar: () => void;
+  onCancelar: () => void;
+  onRemarcarRetorno?: () => void;
+  onCancelarRetorno?: () => void;
+}) {
+  const ehRetornoCard = consulta.tipo === "RETORNO";
+  const borderColor = retorno
+    ? "border-l-brand-500"
+    : ehRetornoCard
+    ? "border-l-amber-400"
+    : "border-l-brand-400";
+
+  if (retorno && onRemarcarRetorno && onCancelarRetorno) {
+    // Card unificado: origem à esquerda, seta central, retorno à direita.
+    return (
+      <div className={`card border-l-4 p-5 ${borderColor}`}>
+        <div className="flex items-start gap-4">
+          <InfoConsulta consulta={consulta} pacienteNome={pacienteNome} especialidadeNome={especialidadeNome} />
+
+          {/* Divisor com seta — identidade brand */}
+          <div className="flex shrink-0 flex-col items-center self-stretch px-3">
+            <div className="w-px flex-1 bg-gradient-to-b from-transparent via-brand-200 to-brand-300" />
+            <div className="my-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white shadow-card">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="w-px flex-1 bg-gradient-to-b from-brand-300 via-brand-200 to-transparent" />
+          </div>
+
+          <InfoConsulta consulta={retorno} pacienteNome={retornoPacienteNome ?? pacienteNome} especialidadeNome={retornoEspecialidadeNome} />
+          <AcoesConsulta consulta={retorno} onRemarcar={onRemarcarRetorno} onCancelar={onCancelarRetorno} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`card border-l-4 p-5 ${borderColor}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <InfoConsulta consulta={consulta} pacienteNome={pacienteNome} especialidadeNome={especialidadeNome} />
+        <AcoesConsulta consulta={consulta} onRemarcar={onRemarcar} onCancelar={onCancelar} />
       </div>
     </div>
   );
@@ -292,7 +384,7 @@ function RemarcarModal({
       <div className="w-full max-w-2xl card p-6" onClick={e => e.stopPropagation()}>
         <h3 className="mb-1 text-lg font-bold text-ink-900">Remarcar consulta</h3>
         <p className="mb-4 text-sm text-ink-500">
-          {rotuloMedico(consulta.medicoId)} · atual: {formatarDataHora(consulta.inicio)}
+          {consulta.medicoNome} · atual: {formatarDataHora(consulta.inicio)}
         </p>
         {erro && (
           <div role="alert" className="mb-4 rounded-xl border border-paw-200 bg-paw-50 p-3 text-sm text-paw-700">{erro}</div>

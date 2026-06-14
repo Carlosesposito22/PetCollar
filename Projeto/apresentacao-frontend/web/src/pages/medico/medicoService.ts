@@ -303,6 +303,7 @@ function mapearStatus(status: string): AtendimentoDoDiaDTO["status"] {
     case "REALIZADA":
     case "AGUARDANDO_RETORNO":
     case "EXAMES_SOLICITADOS":
+    case "RETORNO_AGENDADO":
       return "CONCLUIDO";
     default:
       return "AGUARDANDO";

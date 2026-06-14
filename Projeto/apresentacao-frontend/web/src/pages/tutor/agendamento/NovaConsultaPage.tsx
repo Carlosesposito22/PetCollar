@@ -10,7 +10,6 @@ import { ToastProvider, useToast } from "./Toast";
 import { WizardContainer } from "./WizardContainer";
 import { SelecaoPaciente } from "./SelecaoPaciente";
 import { CalendarioDisponibilidade } from "./CalendarioDisponibilidade";
-import { rotuloMedico, inicialMedico } from "./medico";
 
 const PASSOS = ["Paciente", "Motivo", "Especialidade", "Horário", "Confirmação"];
 const MOTIVO_MINIMO = 10;
@@ -33,7 +32,8 @@ function NovaConsultaInner() {
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [motivo, setMotivo] = useState("");
   const [especialidade, setEspecialidade] = useState<EspecialidadeDTO | null>(null);
-  const [medicoId, setMedicoId] = useState<string | null>(null);
+  const [medico, setMedico] = useState<MedicoDTO | null>(null);
+  const medicoId = medico?.id ?? null;
   const [horario, setHorario] = useState<HorarioDTO | null>(null);
 
   const [avancando, setAvancando] = useState(false);
@@ -116,8 +116,8 @@ function NovaConsultaInner() {
         <PassoEspecialidadeMedico
           especialidade={especialidade}
           medicoId={medicoId}
-          onEspecialidade={esp => { setEspecialidade(esp); setMedicoId(null); }}
-          onMedico={setMedicoId}
+          onEspecialidade={esp => { setEspecialidade(esp); setMedico(null); }}
+          onMedico={setMedico}
         />
       )}
 
@@ -141,7 +141,7 @@ function NovaConsultaInner() {
             <Resumo rotulo="Paciente" valor={`${paciente.nome} (${paciente.especie})`} />
             <Resumo rotulo="Motivo" valor={motivo.trim()} />
             <Resumo rotulo="Especialidade" valor={especialidade.nome} />
-            <Resumo rotulo="Médico" valor={rotuloMedico(medicoId)} />
+            <Resumo rotulo="Médico" valor={medico?.nome ?? medicoId ?? ""} />
             <Resumo rotulo="Data e horário" valor={formatarDataHora(horario.inicio)} />
           </dl>
         </div>
@@ -165,7 +165,7 @@ function PassoEspecialidadeMedico({
   especialidade: EspecialidadeDTO | null;
   medicoId: string | null;
   onEspecialidade: (e: EspecialidadeDTO) => void;
-  onMedico: (id: string) => void;
+  onMedico: (m: MedicoDTO) => void;
 }) {
   const api = useAgendamentoService();
   const [especialidades, setEspecialidades] = useState<EspecialidadeDTO[]>([]);
@@ -245,17 +245,17 @@ function PassoEspecialidadeMedico({
               {medicos.map(m => {
                 const sel = m.id === medicoId;
                 return (
-                  <button key={m.id} type="button" onClick={() => onMedico(m.id)}
+                  <button key={m.id} type="button" onClick={() => onMedico(m)}
                           aria-pressed={sel}
                           className={
                             "card flex items-center gap-3 p-4 text-left transition " +
                             (sel ? "ring-2 ring-brand-500" : "ring-1 ring-black/5 hover:ring-brand-200")
                           }>
                     <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700">
-                      {inicialMedico(m.id)}
+                      {m.nome.charAt(0).toUpperCase()}
                     </span>
                     <span>
-                      <span className="block font-semibold text-ink-900">{rotuloMedico(m.id)}</span>
+                      <span className="block font-semibold text-ink-900">{m.nome}</span>
                       <span className="block text-xs text-ink-500">{especialidade.nome}</span>
                     </span>
                   </button>

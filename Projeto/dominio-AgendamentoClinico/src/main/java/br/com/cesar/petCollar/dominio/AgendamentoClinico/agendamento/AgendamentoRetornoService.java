@@ -48,6 +48,10 @@ public class AgendamentoRetornoService extends AgendamentoService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Consulta de origem não encontrada."));
 
+        if (origem.getStatus() == StatusConsulta.RETORNO_AGENDADO)
+            throw new IllegalStateException(
+                    "Esta consulta já possui um retorno agendado.");
+
         boolean elegivel =
                 origem.getStatus() == StatusConsulta.AGUARDANDO_RETORNO
                 || origem.getStatus() == StatusConsulta.EXAMES_SOLICITADOS;
@@ -60,12 +64,17 @@ public class AgendamentoRetornoService extends AgendamentoService {
 
     @Override
     protected void executarValidacoesExtras(RequisicaoAgendamento requisicao) {
-        // RN 10 — ao menos um exame da consulta de origem deve estar concluído.
+        // RN 10 — ao menos um exame concluído, mas SOMENTE quando há exames solicitados.
         ConsultaId origemId = requisicao.getConsultaOrigemId()
                 .orElseThrow(() -> new IllegalArgumentException(
                         "O agendamento de retorno exige uma consulta de origem."));
 
-        if (exames.contarConcluidosPorConsultaOrigem(origemId) < 1)
+        Consulta origem = consultaRepositorio.buscarPorId(origemId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Consulta de origem não encontrada."));
+
+        if (origem.getStatus() == StatusConsulta.EXAMES_SOLICITADOS
+                && exames.contarConcluidosPorConsultaOrigem(origemId) < 1)
             throw new IllegalStateException(
                     "O agendamento de retorno requer que ao menos um exame "
                     + "solicitado na consulta de origem esteja concluído.");

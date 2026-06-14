@@ -7,5 +7,6 @@ public enum TipoEventoAgendamento {
     CANCELADA,
     REALIZADA,
     AGUARDANDO_RETORNO,
-    EXAMES_SOLICITADOS
+    EXAMES_SOLICITADOS,
+    RETORNO_AGENDADO
 }

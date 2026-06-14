@@ -149,16 +149,18 @@ function UploadLaudo({
 }: { consultaId: string; exame: ExameDTO; onFechar: () => void; onEnviado: () => void }) {
   const api = useAgendamentoService();
   const toast = useToast();
-  const [laudo, setLaudo] = useState("");
+  const [arquivo, setArquivo] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
+    if (!arquivo) return;
     setErro(null);
     setEnviando(true);
     try {
-      await api.registrarLaudo(consultaId, exame.exameId, laudo.trim());
+      const base64 = await lerArquivoBase64(arquivo);
+      await api.registrarLaudo(consultaId, exame.exameId, base64);
       toast.sucesso("Laudo anexado e exame concluído.");
       onEnviado();
     } catch (e2) {
@@ -181,17 +183,22 @@ function UploadLaudo({
         )}
         <form onSubmit={enviar} className="grid gap-4">
           <div>
-            <label className="label" htmlFor="laudo">Conteúdo / observações do laudo</label>
-            <textarea id="laudo" required rows={4} className="input"
-                      placeholder="Cole o resultado do exame ou descreva o laudo…"
-                      value={laudo} onChange={e => setLaudo(e.target.value)} />
+            <label className="label" htmlFor="laudo-arquivo">Arquivo do laudo (imagem ou PDF)</label>
+            <input
+              id="laudo-arquivo"
+              type="file"
+              accept="image/*,.pdf"
+              required
+              className="block w-full rounded-xl border border-ink-300 bg-white px-3 py-2 text-sm text-ink-800 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
+              onChange={e => setArquivo(e.target.files?.[0] ?? null)}
+            />
             <p className="mt-1 text-xs text-ink-500">
-              Ao anexar o laudo, o exame é marcado como concluído automaticamente.
+              Formatos aceitos: imagens (JPG, PNG, etc.) e PDF. Ao enviar, o exame é marcado como concluído.
             </p>
           </div>
           <div className="mt-2 flex justify-end gap-2">
             <button type="button" onClick={onFechar} className="btn-ghost ring-1 ring-ink-300">Cancelar</button>
-            <button type="submit" disabled={enviando || laudo.trim().length === 0}
+            <button type="submit" disabled={enviando || !arquivo}
                     aria-busy={enviando} className="btn-primary w-auto">
               {enviando ? "Enviando…" : "Anexar laudo"}
             </button>
@@ -200,4 +207,13 @@ function UploadLaudo({
       </div>
     </div>
   );
+}
+
+function lerArquivoBase64(arquivo: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Falha ao ler o arquivo."));
+    reader.readAsDataURL(arquivo);
+  });
 }

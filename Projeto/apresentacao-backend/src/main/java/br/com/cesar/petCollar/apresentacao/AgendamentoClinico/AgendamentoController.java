@@ -22,6 +22,8 @@ import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoAgen
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoFinalizarConsultaDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoRemarcarDTO;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaExame;
+import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.Perfil;
+import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioRepositorio;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase.Categoria;
 
@@ -51,19 +53,28 @@ public class AgendamentoController {
     private final IConsultaRepositorio consultaRepositorio;
     private final ConsumirBeneficioUseCase consumirBeneficio;
     private final IConsultaExame exameRepositorio;
+    private final UsuarioRepositorio usuarioRepositorio;
 
     public AgendamentoController(AgendamentoConsultaInicialService inicialService,
                                  AgendamentoRetornoService retornoService,
                                  GestaoAgendamentoService gestaoService,
                                  IConsultaRepositorio consultaRepositorio,
                                  ConsumirBeneficioUseCase consumirBeneficio,
-                                 IConsultaExame exameRepositorio) {
+                                 IConsultaExame exameRepositorio,
+                                 UsuarioRepositorio usuarioRepositorio) {
         this.inicialService = inicialService;
         this.retornoService = retornoService;
         this.gestaoService = gestaoService;
         this.consultaRepositorio = consultaRepositorio;
         this.consumirBeneficio = consumirBeneficio;
         this.exameRepositorio = exameRepositorio;
+        this.usuarioRepositorio = usuarioRepositorio;
+    }
+
+    private String resolverNomeMedico(MedicoId medicoId) {
+        return usuarioRepositorio.buscar(Perfil.MEDICO_VETERINARIO, medicoId.getValor())
+            .map(u -> u.nome())
+            .orElse(medicoId.getValor());
     }
 
     @PostMapping("/consulta-inicial")
@@ -82,7 +93,7 @@ public class AgendamentoController {
         consumirBeneficio.consumir(tutorId, Categoria.CONSULTA, CONSULTA_INDISPONIVEL);
         try {
             Consulta consulta = inicialService.agendar(requisicao);
-            return ResponseEntity.status(HttpStatus.CREATED).body(ConsultaDTO.de(consulta));
+            return ResponseEntity.status(HttpStatus.CREATED).body(ConsultaDTO.de(consulta, resolverNomeMedico(consulta.getMedicoId())));
         } catch (RuntimeException e) {
             consumirBeneficio.devolver(tutorId, Categoria.CONSULTA);
             throw e;
@@ -101,7 +112,13 @@ public class AgendamentoController {
             new HorarioConsulta(req.inicio(), req.fim()),
             ConsultaId.de(req.consultaOrigemId()));
         Consulta retorno = retornoService.agendar(requisicao);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ConsultaDTO.de(retorno));
+        // Marca a consulta de origem como com retorno agendado, bloqueando novo agendamento.
+        consultaRepositorio.buscarPorId(ConsultaId.de(req.consultaOrigemId()))
+                .ifPresent(origem -> {
+                    origem.marcarRetornoAgendado();
+                    consultaRepositorio.salvar(origem);
+                });
+        return ResponseEntity.status(HttpStatus.CREATED).body(ConsultaDTO.de(retorno, resolverNomeMedico(retorno.getMedicoId())));
     }
 
     /**
@@ -137,14 +154,14 @@ public class AgendamentoController {
         }
 
         consultaRepositorio.salvar(consulta);
-        return ResponseEntity.ok(ConsultaDTO.de(consulta));
+        return ResponseEntity.ok(ConsultaDTO.de(consulta, resolverNomeMedico(consulta.getMedicoId())));
     }
 
     @PutMapping("/{id}/remarcar")
     public ConsultaDTO remarcar(@PathVariable String id, @RequestBody RequisicaoRemarcarDTO req) {
         Consulta consulta = gestaoService.remarcar(
             ConsultaId.de(id), new HorarioConsulta(req.inicio(), req.fim()));
-        return ConsultaDTO.de(consulta);
+        return ConsultaDTO.de(consulta, resolverNomeMedico(consulta.getMedicoId()));
     }
 
     @DeleteMapping("/{id}")
@@ -173,7 +190,7 @@ public class AgendamentoController {
             tipo == null ? null : TipoConsulta.valueOf(tipo),
             inicio, fim);
         return consultaRepositorio.listarPorPaciente(PacienteId.de(pacienteId), filtro).stream()
-            .map(ConsultaDTO::de)
+            .map(c -> ConsultaDTO.de(c, resolverNomeMedico(c.getMedicoId())))
             .toList();
     }
 }
