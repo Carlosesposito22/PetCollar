@@ -83,9 +83,9 @@ public class PacienteController {
 
     private Paciente obterDoTutor(String id, Principal principal) {
         Paciente p = repositorio.buscarPaciente(id).orElseThrow(PacienteNaoEncontradoException::new);
-        if (!p.tutorId().equalsIgnoreCase(principal.getName())) {
-            throw new PacienteNaoEncontradoException();
-        }
+        boolean pertence = repositorio.listarPacientesDoTutor(principal.getName())
+                .stream().anyMatch(x -> x.id().equalsIgnoreCase(id));
+        if (!pertence) throw new PacienteNaoEncontradoException();
         return p;
     }
 

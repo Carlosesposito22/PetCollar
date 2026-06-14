@@ -16,6 +16,9 @@ public interface IConsultaExame {
 
     long contarConcluidosPorConsultaOrigem(ConsultaId consultaOrigemId);
 
+    /** Médico solicita um exame para o retorno (chamado ao liberar/finalizar consulta com exames). */
+    void adicionar(ConsultaId consultaOrigemId, String descricao);
+
     /** Tutor confirma a realização do exame, levando-o a CONCLUIDO (RN 9). */
     void confirmar(String exameId);
 

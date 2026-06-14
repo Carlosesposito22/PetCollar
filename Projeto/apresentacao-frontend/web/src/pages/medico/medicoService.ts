@@ -251,12 +251,12 @@ export function criarMedicoService(apiFetch: ApiFetch) {
       );
     },
 
-    liberarRetorno: async (pacienteId: string, comExames: boolean): Promise<void> => {
+    liberarRetorno: async (pacienteId: string, comExames: boolean, examesSolicitados: string[]): Promise<void> => {
       await lancarSeErro(
         await apiFetch(`/api/medico/pacientes/${pacienteId}/liberar-retorno`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ comExames }),
+          body: JSON.stringify({ comExames, examesSolicitados }),
         })
       );
     },
@@ -264,13 +264,14 @@ export function criarMedicoService(apiFetch: ApiFetch) {
     finalizarConsulta: async (
       consultaId: string,
       temRetorno: boolean,
-      comExames: boolean
+      comExames: boolean,
+      examesSolicitados: string[]
     ): Promise<void> => {
       await lancarSeErro(
         await apiFetch(`/api/agendamentos/${consultaId}/finalizar`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ temRetorno, comExames }),
+          body: JSON.stringify({ temRetorno, comExames, examesSolicitados }),
         })
       );
     },

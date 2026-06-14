@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Adapter JPA da porta {@link IConsultaExame} — exames persistidos na tabela
@@ -22,6 +23,13 @@ public class ExameConsultaJpa implements IConsultaExame {
 
     public ExameConsultaJpa(ExameJpaRepository jpa) {
         this.jpa = jpa;
+    }
+
+    @Override
+    public void adicionar(ConsultaId consultaOrigemId, String descricao) {
+        ExameJpa novo = new ExameJpa(UUID.randomUUID().toString(),
+                consultaOrigemId.getValor(), descricao, StatusExame.SOLICITADO);
+        jpa.save(novo);
     }
 
     @Override

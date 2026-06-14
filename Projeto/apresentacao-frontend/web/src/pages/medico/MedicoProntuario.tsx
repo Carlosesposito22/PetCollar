@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import {
   criarMedicoService,
+  type MedicoService,
   type ProntuarioDTO,
   type VacinaAplicadaDTO,
   type VacinaPendenteDTO,
@@ -19,27 +20,10 @@ export function MedicoProntuario() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [relatorios, setRelatorios] = useState<RelatorioSalvo[]>([]);
-  const [etapaFinalizar, setEtapaFinalizar] = useState<"idle" | "pergunta" | "enviando">("idle");
-  const [erroFinalizar, setErroFinalizar] = useState<string | null>(null);
   const [vacinasAplicadas, setVacinasAplicadas] = useState<VacinaAplicadaDTO[]>([]);
   const [vacinasPendentes, setVacinasPendentes] = useState<VacinaPendenteDTO[]>([]);
   const [modalHistVacina, setModalHistVacina] = useState(false);
-
-  async function concluirAtendimento(temRetorno: boolean, comExames: boolean) {
-    if (!pacienteId) return;
-    setEtapaFinalizar("enviando");
-    setErroFinalizar(null);
-    try {
-      if (temRetorno) {
-        await service.liberarRetorno(pacienteId, comExames);
-      }
-      await service.finalizarAtendimento(pacienteId);
-      navigate("/medico");
-    } catch (e) {
-      setErroFinalizar((e as Error).message || "Não foi possível finalizar o atendimento.");
-      setEtapaFinalizar("pergunta");
-    }
-  }
+  const [modalFinalizar, setModalFinalizar] = useState(false);
 
   useEffect(() => {
     if (!pacienteId) return;
@@ -233,72 +217,18 @@ export function MedicoProntuario() {
       </div>
 
       {/* ── Seção 5: Finalizar Atendimento ────────────────────────────────── */}
-      <div className="rounded-2xl border-2 border-brand-300 bg-gradient-to-r from-brand-50 to-white p-6">
-        <h2 className="text-base font-semibold text-ink-900">Finalizar Atendimento</h2>
-        <p className="mt-0.5 text-sm text-ink-500">
-          Encerra o atendimento e remove o paciente da fila de espera.
-        </p>
-
-        {etapaFinalizar === "idle" && (
-          <button
-            type="button"
-            onClick={() => setEtapaFinalizar("pergunta")}
-            className="btn-primary mt-4 sm:w-auto"
-          >
-            ✓ Finalizar Atendimento
-          </button>
-        )}
-
-        {(etapaFinalizar === "pergunta" || etapaFinalizar === "enviando") && (
-          <div className="mt-4 space-y-3">
-            <p className="text-sm font-semibold text-ink-800">
-              Esta consulta dá direito a retorno?
-            </p>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                disabled={etapaFinalizar === "enviando"}
-                onClick={() => concluirAtendimento(false, false)}
-                className="flex-1 rounded-xl border border-ink-200 bg-white px-4 py-3 text-left text-sm transition hover:bg-ink-50 disabled:opacity-50"
-              >
-                <span className="block font-semibold text-ink-900">Não — encerrar sem retorno</span>
-                <span className="text-xs text-ink-500">Atendimento concluído normalmente.</span>
-              </button>
-              <button
-                type="button"
-                disabled={etapaFinalizar === "enviando"}
-                onClick={() => concluirAtendimento(true, false)}
-                className="flex-1 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-left text-sm transition hover:bg-brand-100 disabled:opacity-50"
-              >
-                <span className="block font-semibold text-brand-900">Sim — retorno simples</span>
-                <span className="text-xs text-brand-700">Tutor poderá agendar retorno diretamente.</span>
-              </button>
-              <button
-                type="button"
-                disabled={etapaFinalizar === "enviando"}
-                onClick={() => concluirAtendimento(true, true)}
-                className="flex-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm transition hover:bg-amber-100 disabled:opacity-50"
-              >
-                <span className="block font-semibold text-amber-900">Sim — com exames pendentes</span>
-                <span className="text-xs text-amber-700">Tutor confirma exames antes do retorno.</span>
-              </button>
-            </div>
-            <button
-              type="button"
-              disabled={etapaFinalizar === "enviando"}
-              onClick={() => { setEtapaFinalizar("idle"); setErroFinalizar(null); }}
-              className="text-sm text-ink-500 underline hover:text-ink-700 disabled:opacity-50"
-            >
-              {etapaFinalizar === "enviando" ? "Finalizando..." : "Cancelar"}
-            </button>
-          </div>
-        )}
-
-        {erroFinalizar && (
-          <div role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-            {erroFinalizar}
-          </div>
-        )}
+      <div className="flex items-center justify-between rounded-2xl border border-ink-200 bg-white px-6 py-4">
+        <div>
+          <p className="text-sm font-semibold text-ink-900">Finalizar Atendimento</p>
+          <p className="text-xs text-ink-500">Encerra o atendimento e remove o paciente da fila.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setModalFinalizar(true)}
+          className="btn-primary w-auto px-5 py-2.5 text-sm"
+        >
+          Finalizar
+        </button>
       </div>
 
       {modalHistVacina && (
@@ -307,11 +237,208 @@ export function MedicoProntuario() {
           onFechar={() => setModalHistVacina(false)}
         />
       )}
+
+      {modalFinalizar && pacienteId && (
+        <ModalFinalizarAtendimento
+          service={service}
+          pacienteId={pacienteId}
+          onFechado={() => setModalFinalizar(false)}
+          onFinalizado={() => navigate("/medico")}
+        />
+      )}
     </div>
   );
 }
 
 // ── Subcomponentes ─────────────────────────────────────────────────────────────
+
+const EXAMES_PREDEFINIDOS_PRONT = [
+  "Hemograma completo",
+  "Bioquímico sérico",
+  "Urinálise (EAS)",
+  "Radiografia",
+  "Ultrassonografia abdominal",
+  "Cultura e antibiograma",
+  "PCR / Teste sorológico",
+  "Exame parasitológico de fezes",
+];
+
+type EtapaPront = "retorno" | "tipo" | "exames";
+
+function ModalFinalizarAtendimento({
+  service, pacienteId, onFechado, onFinalizado,
+}: {
+  service: MedicoService;
+  pacienteId: string;
+  onFechado: () => void;
+  onFinalizado: () => void;
+}) {
+  const [etapa, setEtapa] = useState<EtapaPront>("retorno");
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [examesSelecionados, setExamesSelecionados] = useState<Set<string>>(new Set());
+  const [examesExtras, setExamesExtras] = useState<string[]>([]);
+  const [novoExame, setNovoExame] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function toggleExame(nome: string) {
+    setExamesSelecionados(prev => {
+      const next = new Set(prev);
+      next.has(nome) ? next.delete(nome) : next.add(nome);
+      return next;
+    });
+  }
+
+  function adicionarExameExtra() {
+    const trim = novoExame.trim();
+    if (trim && !examesSelecionados.has(trim) && !examesExtras.includes(trim)) {
+      setExamesExtras(prev => [...prev, trim]);
+      setExamesSelecionados(prev => new Set([...prev, trim]));
+    }
+    setNovoExame("");
+    inputRef.current?.focus();
+  }
+
+  function listaFinal() {
+    return [...examesSelecionados];
+  }
+
+  async function concluir(temRetorno: boolean, comExames: boolean, exames: string[]) {
+    setEnviando(true);
+    setErro(null);
+    try {
+      if (temRetorno) {
+        await service.liberarRetorno(pacienteId, comExames, exames);
+      }
+      await service.finalizarAtendimento(pacienteId);
+      onFinalizado();
+    } catch (e) {
+      setErro((e as Error).message || "Não foi possível finalizar o atendimento.");
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget && !enviando) onFechado(); }}
+    >
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <h2 className="text-lg font-bold text-ink-900">Finalizar Atendimento</h2>
+
+        {erro && (
+          <div role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            {erro}
+          </div>
+        )}
+
+        {/* Etapa 1: retorno? */}
+        {etapa === "retorno" && (
+          <>
+            <p className="mt-4 text-sm font-semibold text-ink-800">Esta consulta dá direito a retorno?</p>
+            <div className="mt-3 flex flex-col gap-3">
+              <button disabled={enviando} onClick={() => concluir(false, false, [])}
+                className="w-full rounded-xl border border-ink-200 bg-ink-50 px-4 py-3 text-left text-sm transition hover:bg-ink-100 disabled:opacity-50">
+                <span className="block font-semibold text-ink-900">Não — encerrar normalmente</span>
+                <span className="text-xs text-ink-500">Atendimento concluído sem elegibilidade de retorno.</span>
+              </button>
+              <button disabled={enviando} onClick={() => setEtapa("tipo")}
+                className="w-full rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-left text-sm transition hover:bg-brand-100 disabled:opacity-50">
+                <span className="block font-semibold text-brand-900">Sim — liberar retorno</span>
+                <span className="text-xs text-brand-700">O tutor poderá agendar retorno pela plataforma.</span>
+              </button>
+            </div>
+            <button onClick={onFechado} disabled={enviando}
+              className="mt-4 w-full rounded-xl border border-ink-200 py-2 text-sm text-ink-600 transition hover:bg-ink-50 disabled:opacity-50">
+              Cancelar
+            </button>
+          </>
+        )}
+
+        {/* Etapa 2: tipo de retorno */}
+        {etapa === "tipo" && (
+          <>
+            <p className="mt-4 text-sm font-semibold text-ink-800">Tipo de retorno:</p>
+            <div className="mt-3 flex flex-col gap-3">
+              <button disabled={enviando} onClick={() => concluir(true, false, [])}
+                className="w-full rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-left text-sm transition hover:bg-brand-100 disabled:opacity-50">
+                <span className="block font-semibold text-brand-900">Retorno simples</span>
+                <span className="text-xs text-brand-700">Tutor agenda diretamente, sem etapa de exames.</span>
+              </button>
+              <button disabled={enviando} onClick={() => setEtapa("exames")}
+                className="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm transition hover:bg-amber-100 disabled:opacity-50">
+                <span className="block font-semibold text-amber-900">Com exames pendentes</span>
+                <span className="text-xs text-amber-700">Defina os exames que o tutor precisará confirmar.</span>
+              </button>
+            </div>
+            <button onClick={() => setEtapa("retorno")} disabled={enviando}
+              className="mt-4 text-xs text-ink-400 underline hover:text-ink-600 disabled:opacity-50">
+              ← Voltar
+            </button>
+          </>
+        )}
+
+        {/* Etapa 3: selecionar exames */}
+        {etapa === "exames" && (
+          <>
+            <p className="mt-4 text-sm font-semibold text-ink-800">
+              Exames solicitados para o retorno:
+            </p>
+            <p className="mt-0.5 text-xs text-ink-500">
+              O tutor verá esta lista e precisará confirmar cada item antes de agendar.
+            </p>
+            <ul className="mt-3 max-h-48 space-y-1.5 overflow-y-auto pr-1">
+              {[...EXAMES_PREDEFINIDOS_PRONT, ...examesExtras].map(nome => (
+                <li key={nome}>
+                  <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-ink-200 px-3 py-2 text-sm transition hover:bg-ink-50 has-[:checked]:border-brand-300 has-[:checked]:bg-brand-50">
+                    <input
+                      type="checkbox"
+                      className="accent-brand-600"
+                      checked={examesSelecionados.has(nome)}
+                      onChange={() => toggleExame(nome)}
+                    />
+                    <span className="text-ink-800">{nome}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 flex gap-2">
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Adicionar exame personalizado…"
+                value={novoExame}
+                onChange={e => setNovoExame(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); adicionarExameExtra(); }}}
+                className="flex-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm focus:border-brand-400 focus:outline-none"
+              />
+              <button type="button" onClick={adicionarExameExtra} disabled={!novoExame.trim()}
+                className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-40">
+                + Adicionar
+              </button>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <button onClick={() => setEtapa("tipo")} disabled={enviando}
+                className="flex-1 rounded-xl border border-ink-200 py-2.5 text-sm text-ink-600 transition hover:bg-ink-50 disabled:opacity-50">
+                ← Voltar
+              </button>
+              <button
+                disabled={enviando || listaFinal().length === 0}
+                onClick={() => concluir(true, true, listaFinal())}
+                className="flex-1 rounded-xl border border-amber-300 bg-amber-50 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-100 disabled:opacity-50">
+                {enviando
+                  ? "Finalizando…"
+                  : `Finalizar (${listaFinal().length} exame${listaFinal().length !== 1 ? "s" : ""})`}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function CampoInfo({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (

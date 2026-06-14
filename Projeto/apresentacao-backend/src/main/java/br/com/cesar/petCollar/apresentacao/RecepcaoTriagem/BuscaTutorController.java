@@ -97,11 +97,29 @@ public class BuscaTutorController {
                 .body(Map.of("mensagem", "CPF inválido. Informe 11 dígitos."));
 
         Optional<TutorRecepcaoJpa> opt = tutorRepo.findByCpf(cpfLimpo);
-        if (opt.isEmpty())
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("mensagem", "Tutor não encontrado no sistema"));
+        if (opt.isPresent())
+            return ResponseEntity.ok(montarRespostaTutor(opt.get()));
 
-        return ResponseEntity.ok(montarRespostaTutor(opt.get()));
+        // Tutor não está em tutores_recepcao — verificar se já existe como usuário portal.
+        // Se existir, cria o vínculo automaticamente para unificar identidades.
+        Optional<TutorRecepcaoJpa> vinculado = usuarioRepositorio
+            .listarPorPerfil(Perfil.TUTOR)
+            .stream()
+            .filter(u -> u.cpf() != null && cpfLimpo.equals(u.cpf().replaceAll("[^0-9]", "")))
+            .findFirst()
+            .map(u -> {
+                TutorRecepcaoJpa novo = new TutorRecepcaoJpa(
+                    UUID.randomUUID().toString(), u.nome(), cpfLimpo,
+                    u.telefone(), u.identificador(), LocalDateTime.now());
+                tutorRepo.save(novo);
+                return novo;
+            });
+
+        if (vinculado.isPresent())
+            return ResponseEntity.ok(montarRespostaTutor(vinculado.get()));
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(Map.of("mensagem", "Tutor não encontrado no sistema"));
     }
 
     @PostMapping("/tutores")

@@ -7,7 +7,9 @@ package br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto;
  * <ul>
  *   <li>{@code temRetorno = false} → consulta encerrada sem elegibilidade de retorno</li>
  *   <li>{@code temRetorno = true, comExames = false} → retorno simples (status AGUARDANDO_RETORNO)</li>
- *   <li>{@code temRetorno = true, comExames = true} → retorno com exames pendentes (status EXAMES_SOLICITADOS)</li>
+ *   <li>{@code temRetorno = true, comExames = true} → retorno com exames pendentes (status EXAMES_SOLICITADOS);
+ *       {@code examesSolicitados} lista as descrições dos exames que o tutor precisará confirmar</li>
  * </ul>
  */
-public record RequisicaoFinalizarConsultaDTO(boolean temRetorno, boolean comExames) {}
+public record RequisicaoFinalizarConsultaDTO(boolean temRetorno, boolean comExames,
+                                             java.util.List<String> examesSolicitados) {}

@@ -21,6 +21,7 @@ import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoAgen
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoAgendarRetornoDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoFinalizarConsultaDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoRemarcarDTO;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaExame;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase.Categoria;
 
@@ -49,17 +50,20 @@ public class AgendamentoController {
     private final GestaoAgendamentoService gestaoService;
     private final IConsultaRepositorio consultaRepositorio;
     private final ConsumirBeneficioUseCase consumirBeneficio;
+    private final IConsultaExame exameRepositorio;
 
     public AgendamentoController(AgendamentoConsultaInicialService inicialService,
                                  AgendamentoRetornoService retornoService,
                                  GestaoAgendamentoService gestaoService,
                                  IConsultaRepositorio consultaRepositorio,
-                                 ConsumirBeneficioUseCase consumirBeneficio) {
+                                 ConsumirBeneficioUseCase consumirBeneficio,
+                                 IConsultaExame exameRepositorio) {
         this.inicialService = inicialService;
         this.retornoService = retornoService;
         this.gestaoService = gestaoService;
         this.consultaRepositorio = consultaRepositorio;
         this.consumirBeneficio = consumirBeneficio;
+        this.exameRepositorio = exameRepositorio;
     }
 
     @PostMapping("/consulta-inicial")
@@ -122,6 +126,11 @@ public class AgendamentoController {
         if (req.temRetorno()) {
             if (req.comExames()) {
                 consulta.solicitarExames();
+                if (req.examesSolicitados() != null) {
+                    req.examesSolicitados().stream()
+                        .filter(e -> e != null && !e.isBlank())
+                        .forEach(e -> exameRepositorio.adicionar(consulta.getId(), e.trim()));
+                }
             } else {
                 consulta.aguardarRetorno();
             }

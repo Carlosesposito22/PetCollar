@@ -10,6 +10,7 @@ import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.IConsultaRepos
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.MotivoConsulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.StatusConsulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade.EspecialidadeId;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaExame;
 import br.com.cesar.petCollar.infraestrutura.AgendamentoClinico.EspecialidadeJpaRepository;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.ConsultaDTO;
 import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.CicloVacinalService;
@@ -65,6 +66,7 @@ public class MedicoAgendaController {
     private final CicloVacinalService cicloVacinalService;
     private final CuidadosPosOperatoriosEmMemoria cuidadosPosOp;
     private final EspecialidadeJpaRepository especialidades;
+    private final IConsultaExame exameRepositorio;
 
     public MedicoAgendaController(IConsultaRepositorio consultas,
                                   PacienteJpaRepository pacientes,
@@ -75,7 +77,8 @@ public class MedicoAgendaController {
                                   TutorRecepcaoJpaRepository tutoresRecepcao,
                                   CicloVacinalService cicloVacinalService,
                                   CuidadosPosOperatoriosEmMemoria cuidadosPosOp,
-                                  EspecialidadeJpaRepository especialidades) {
+                                  EspecialidadeJpaRepository especialidades,
+                                  IConsultaExame exameRepositorio) {
         this.consultas           = consultas;
         this.pacientes           = pacientes;
         this.usuarios            = usuarios;
@@ -86,6 +89,7 @@ public class MedicoAgendaController {
         this.cicloVacinalService = cicloVacinalService;
         this.cuidadosPosOp       = cuidadosPosOp;
         this.especialidades      = especialidades;
+        this.exameRepositorio    = exameRepositorio;
     }
 
     @GetMapping("/atendimentos")
@@ -291,6 +295,11 @@ public class MedicoAgendaController {
         consulta.marcarComoRealizada();
         if (req.comExames()) {
             consulta.solicitarExames();
+            if (req.examesSolicitados() != null) {
+                req.examesSolicitados().stream()
+                    .filter(e -> e != null && !e.isBlank())
+                    .forEach(e -> exameRepositorio.adicionar(consulta.getId(), e.trim()));
+            }
         } else {
             consulta.aguardarRetorno();
         }
@@ -420,7 +429,7 @@ public class MedicoAgendaController {
 
     record RequisicaoCuidadosPosOpDTO(String cuidados, String tempoRecuperacao, int diasCuidado) {}
 
-    record RequisicaoLiberarRetornoDTO(boolean comExames) {}
+    record RequisicaoLiberarRetornoDTO(boolean comExames, List<String> examesSolicitados) {}
 
     record TagDTO(String rotulo, boolean alerta) {}
 
