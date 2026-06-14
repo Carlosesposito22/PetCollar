@@ -80,6 +80,13 @@ public class BuscaTutorController {
             : t.getId();
     }
 
+    /** Aceita tanto o e-mail quanto o ID de recepção como tutorId válido do paciente. */
+    private boolean pertenceAoTutor(String pacienteTutorId, TutorRecepcaoJpa t) {
+        if (pacienteTutorId == null) return false;
+        return pacienteTutorId.equalsIgnoreCase(chaveTutor(t))
+            || pacienteTutorId.equalsIgnoreCase(t.getId());
+    }
+
     // ── F01: Busca tutor por CPF ──────────────────────────────────────────────
 
     @GetMapping("/tutores")
@@ -163,7 +170,7 @@ public class BuscaTutorController {
             @Valid @RequestBody RequisicaoPaciente req) {
         TutorRecepcaoJpa t = tutorRepo.findById(tutorId).orElseThrow(TutorNaoEncontradoException::new);
         Paciente p = portal.buscarPaciente(pacienteId)
-            .filter(x -> x.tutorId().equalsIgnoreCase(chaveTutor(t)))
+            .filter(x -> pertenceAoTutor(x.tutorId(), t))
             .orElseThrow(() -> new RuntimeException("Paciente não encontrado."));
         p.atualizar(req.nome(), req.especie(), req.raca(), req.nascimento(),
             req.pesoKg(), req.sexo());
@@ -177,7 +184,7 @@ public class BuscaTutorController {
             @PathVariable String pacienteId) {
         TutorRecepcaoJpa t = tutorRepo.findById(tutorId).orElseThrow(TutorNaoEncontradoException::new);
         Paciente p = portal.buscarPaciente(pacienteId)
-            .filter(x -> x.tutorId().equalsIgnoreCase(chaveTutor(t)))
+            .filter(x -> pertenceAoTutor(x.tutorId(), t))
             .orElseThrow(() -> new RuntimeException("Paciente não encontrado."));
         portal.removerPaciente(p.id());
         return ResponseEntity.noContent().build();
@@ -201,7 +208,7 @@ public class BuscaTutorController {
 
         TutorRecepcaoJpa t = tutorRepo.findById(tutorId).orElseThrow(TutorNaoEncontradoException::new);
         Paciente paciente = portal.buscarPaciente(pacienteId)
-            .filter(x -> x.tutorId().equalsIgnoreCase(chaveTutor(t)))
+            .filter(x -> pertenceAoTutor(x.tutorId(), t))
             .orElseThrow(() -> new RuntimeException("Paciente não encontrado."));
 
         // RN: não faz sentido triar/atender de novo um paciente que já está na fila.

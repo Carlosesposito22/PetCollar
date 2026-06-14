@@ -90,10 +90,12 @@ export type AtendimentoMedicoDTO = {
 };
 
 export type AtendimentoDoDiaDTO = {
+  consultaId: string;
   horario: string;
   nomePet: string;
   nomeTutor: string;
   status: "AGUARDANDO" | "EM_ATENDIMENTO" | "CONCLUIDO";
+  statusRaw: string;
   pacienteId: string;
 };
 
@@ -160,10 +162,12 @@ export function criarMedicoService(apiFetch: ApiFetch) {
     listarAtendimentosDoDia: async (): Promise<AtendimentoDoDiaDTO[]> => {
       const lista = await json<AtendimentoMedicoDTO[]>(apiFetch("/api/medico/atendimentos"));
       return lista.map((a) => ({
+        consultaId: a.consultaId,
         horario: formatarQuando(a.inicio),
         nomePet: a.pacienteNome,
         nomeTutor: a.tutorNome,
         status: mapearStatus(a.status),
+        statusRaw: a.status,
         pacienteId: a.pacienteId,
       }));
     },
@@ -243,6 +247,30 @@ export function criarMedicoService(apiFetch: ApiFetch) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(dados),
+        })
+      );
+    },
+
+    liberarRetorno: async (pacienteId: string, comExames: boolean): Promise<void> => {
+      await lancarSeErro(
+        await apiFetch(`/api/medico/pacientes/${pacienteId}/liberar-retorno`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ comExames }),
+        })
+      );
+    },
+
+    finalizarConsulta: async (
+      consultaId: string,
+      temRetorno: boolean,
+      comExames: boolean
+    ): Promise<void> => {
+      await lancarSeErro(
+        await apiFetch(`/api/agendamentos/${consultaId}/finalizar`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ temRetorno, comExames }),
         })
       );
     },

@@ -2,10 +2,16 @@ package br.com.cesar.petCollar.apresentacao.AgendamentoClinico;
 
 import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
+import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.Consulta;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.ConsultaId;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.HorarioConsulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.IConsultaRepositorio;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.MotivoConsulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.StatusConsulta;
-import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.CicloVacinal;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade.EspecialidadeId;
+import br.com.cesar.petCollar.infraestrutura.AgendamentoClinico.EspecialidadeJpaRepository;
+import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.ConsultaDTO;
 import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.CicloVacinalService;
 import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.DoseVacinal;
 import br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal.StatusDoseVacinal;
@@ -58,6 +64,7 @@ public class MedicoAgendaController {
     private final TutorRecepcaoJpaRepository tutoresRecepcao;
     private final CicloVacinalService cicloVacinalService;
     private final CuidadosPosOperatoriosEmMemoria cuidadosPosOp;
+    private final EspecialidadeJpaRepository especialidades;
 
     public MedicoAgendaController(IConsultaRepositorio consultas,
                                   PacienteJpaRepository pacientes,
@@ -67,7 +74,8 @@ public class MedicoAgendaController {
                                   TriagemJpaRepository triagensRepo,
                                   TutorRecepcaoJpaRepository tutoresRecepcao,
                                   CicloVacinalService cicloVacinalService,
-                                  CuidadosPosOperatoriosEmMemoria cuidadosPosOp) {
+                                  CuidadosPosOperatoriosEmMemoria cuidadosPosOp,
+                                  EspecialidadeJpaRepository especialidades) {
         this.consultas           = consultas;
         this.pacientes           = pacientes;
         this.usuarios            = usuarios;
@@ -77,6 +85,7 @@ public class MedicoAgendaController {
         this.tutoresRecepcao     = tutoresRecepcao;
         this.cicloVacinalService = cicloVacinalService;
         this.cuidadosPosOp       = cuidadosPosOp;
+        this.especialidades      = especialidades;
     }
 
     @GetMapping("/atendimentos")
@@ -239,6 +248,58 @@ public class MedicoAgendaController {
     }
 
     /**
+     * Libera o direito de retorno para o paciente: cria uma {@link Consulta} já
+     * realizada e marcada como {@code AGUARDANDO_RETORNO} ou {@code EXAMES_SOLICITADOS},
+     * tornando-a visível no portal do tutor para agendamento do retorno (RN 7).
+     * Chamado pelo médico ao final de um atendimento vindo da triagem (sem consulta
+     * prévia agendada). Usa a especialidade do médico autenticado; se ele pertencer
+     * a mais de uma, usa a primeira encontrada.
+     */
+    @PostMapping("/pacientes/{pacienteId}/liberar-retorno")
+    public ResponseEntity<ConsultaDTO> liberarRetorno(
+            @PathVariable String pacienteId,
+            @RequestBody RequisicaoLiberarRetornoDTO req,
+            Principal principal) {
+
+        MedicoId medicoId = MedicoId.de(principal.getName());
+
+        // Busca o tutorId do paciente (portal unificado).
+        Paciente paciente = pacientes.findById(pacienteId)
+            .map(PacienteJpa::toDomain)
+            .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado: " + pacienteId));
+        TutorId tutorId = TutorId.de(paciente.tutorId());
+
+        // Encontra a especialidade do médico logado; cai em Clínica Geral se nenhuma.
+        EspecialidadeId especialidadeId = especialidades.findAll().stream()
+            .filter(e -> e.medicos().stream()
+                .anyMatch(m -> m.getValor().equalsIgnoreCase(principal.getName())))
+            .map(e -> EspecialidadeId.de(e.toDomain().getId().getValor()))
+            .findFirst()
+            .orElseGet(() -> especialidades.findAll().stream()
+                .findFirst()
+                .map(e -> EspecialidadeId.de(e.toDomain().getId().getValor()))
+                .orElseThrow(() -> new IllegalStateException("Nenhuma especialidade cadastrada.")));
+
+        LocalDateTime agora = LocalDateTime.now();
+        Consulta consulta = new Consulta(
+            ConsultaId.gerar(),
+            PacienteId.de(pacienteId), tutorId, medicoId, especialidadeId,
+            MotivoConsulta.de("Atendimento clínico"),
+            new HorarioConsulta(agora.minusHours(1), agora));
+
+        consulta.confirmar();
+        consulta.marcarComoRealizada();
+        if (req.comExames()) {
+            consulta.solicitarExames();
+        } else {
+            consulta.aguardarRetorno();
+        }
+
+        consultas.salvar(consulta);
+        return ResponseEntity.ok(ConsultaDTO.de(consulta));
+    }
+
+    /**
      * Finaliza o atendimento do paciente: remove-o da fila de espera, encerrando o
      * fluxo dentro da recepção. Os cuidados pós-operatórios permanecem ativos até
      * sua validade, pois o tutor precisa deles durante a recuperação.
@@ -358,6 +419,8 @@ public class MedicoAgendaController {
     record RequisicaoAplicarVacinaDTO(String cicloId, String doseId, String lote) {}
 
     record RequisicaoCuidadosPosOpDTO(String cuidados, String tempoRecuperacao, int diasCuidado) {}
+
+    record RequisicaoLiberarRetornoDTO(boolean comExames) {}
 
     record TagDTO(String rotulo, boolean alerta) {}
 

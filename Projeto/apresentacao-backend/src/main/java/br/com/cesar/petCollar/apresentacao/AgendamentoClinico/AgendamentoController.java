@@ -19,6 +19,7 @@ import br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade.Especiali
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.ConsultaDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoAgendarConsultaInicialDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoAgendarRetornoDTO;
+import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoFinalizarConsultaDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoRemarcarDTO;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase.Categoria;
@@ -97,6 +98,37 @@ public class AgendamentoController {
             ConsultaId.de(req.consultaOrigemId()));
         Consulta retorno = retornoService.agendar(requisicao);
         return ResponseEntity.status(HttpStatus.CREATED).body(ConsultaDTO.de(retorno));
+    }
+
+    /**
+     * Médico finaliza a consulta após o atendimento (RN 7/8). Confirma a consulta se
+     * ainda estiver AGENDADA, marca como REALIZADA e, conforme a escolha do médico,
+     * transiciona para AGUARDANDO_RETORNO ou EXAMES_SOLICITADOS, tornando o retorno
+     * visível para agendamento pelo tutor.
+     */
+    @PatchMapping("/{id}/finalizar")
+    public ResponseEntity<ConsultaDTO> finalizar(@PathVariable String id,
+                                                 @RequestBody RequisicaoFinalizarConsultaDTO req) {
+        ConsultaId consultaId = ConsultaId.de(id);
+        Consulta consulta = consultaRepositorio.buscarPorId(consultaId)
+            .orElseThrow(() -> new IllegalArgumentException("Consulta não encontrada: " + id));
+
+        // Aceita tanto AGENDADA quanto CONFIRMADA: se o médico atendeu, confirma implicitamente.
+        if (consulta.getStatus() == StatusConsulta.AGENDADA) {
+            consulta.confirmar();
+        }
+        consulta.marcarComoRealizada();
+
+        if (req.temRetorno()) {
+            if (req.comExames()) {
+                consulta.solicitarExames();
+            } else {
+                consulta.aguardarRetorno();
+            }
+        }
+
+        consultaRepositorio.salvar(consulta);
+        return ResponseEntity.ok(ConsultaDTO.de(consulta));
     }
 
     @PutMapping("/{id}/remarcar")

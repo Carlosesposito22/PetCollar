@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { formatarDataHora } from "../../../../utils/formato";
 import { ApiError } from "../../services/protocoloService";
@@ -186,18 +186,18 @@ function DetalheInterno() {
         </section>
       )}
 
-      {aba === “notificacoes” && (
-        <section className=”card p-6”>
-          <h2 className=”mb-4 text-sm font-semibold text-ink-700”>
+      {aba === "notificacoes" && (
+        <section className="card p-6">
+          <h2 className="mb-4 text-sm font-semibold text-ink-700">
             Histórico de notificações
           </h2>
           <ListaNotificacoesProtocolo notificacoes={notificacoes} />
         </section>
       )}
 
-      {aba === “diretivas” && (
-        <section className=”card p-6”>
-          <h2 className=”mb-4 text-sm font-semibold text-ink-700”>
+      {aba === "diretivas" && (
+        <section className="card p-6">
+          <h2 className="mb-4 text-sm font-semibold text-ink-700">
             Diretivas de consentimento do tutor
           </h2>
           <ListaDiretivasConsentimento diretivas={diretivas} />

@@ -5,6 +5,7 @@ import {
   criarMedicoService,
   type AtendimentoDoDiaDTO,
   type FilaItemDTO,
+  type MedicoService,
 } from "./medicoService";
 
 const INTERVALO_POLLING_MS = 15_000;
@@ -42,11 +43,17 @@ export function MedicoPainel() {
   const [atendimentos, setAtendimentos] = useState<AtendimentoDoDiaDTO[]>([]);
   const [carregandoAtend, setCarregandoAtend] = useState(true);
 
-  useEffect(() => {
+  const recarregarAtendimentos = useCallback(() => {
     service.listarAtendimentosDoDia()
       .then(setAtendimentos)
       .finally(() => setCarregandoAtend(false));
   }, [service]);
+
+  useEffect(() => { recarregarAtendimentos(); }, [recarregarAtendimentos]);
+
+  // ── Modal de finalização de consulta ─────────────────────────────────────
+  const [consultaParaFinalizar, setConsultaParaFinalizar] =
+    useState<AtendimentoDoDiaDTO | null>(null);
 
   const medicoNome = session?.user.nome ?? session?.user.identificador ?? "Médico";
 
@@ -141,11 +148,16 @@ export function MedicoPainel() {
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-ink-500">
                       Status
                     </th>
+                    <th className="px-6 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ink-100">
                   {atendimentos.map((a, i) => (
-                    <AtendimentoLinha key={i} atendimento={a} />
+                    <AtendimentoLinha
+                      key={i}
+                      atendimento={a}
+                      onFinalizar={() => setConsultaParaFinalizar(a)}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -158,6 +170,18 @@ export function MedicoPainel() {
         Painel esquerdo: pacientes encaminhados pela recepcionista para este médico.
         Painel direito: consultas agendadas previamente pelos tutores.
       </div>
+
+      {consultaParaFinalizar && (
+        <ModalFinalizarConsulta
+          atendimento={consultaParaFinalizar}
+          service={service}
+          onFechado={() => setConsultaParaFinalizar(null)}
+          onFinalizado={() => {
+            setConsultaParaFinalizar(null);
+            recarregarAtendimentos();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -206,12 +230,21 @@ function BadgeCorDeRisco({ cor }: { cor: "VERMELHO" | "AMARELO" | "VERDE" }) {
   );
 }
 
-function AtendimentoLinha({ atendimento }: { atendimento: AtendimentoDoDiaDTO }) {
+const STATUSES_FINALIZAVEIS = new Set(["AGENDADA", "CONFIRMADA"]);
+
+function AtendimentoLinha({
+  atendimento,
+  onFinalizar,
+}: {
+  atendimento: AtendimentoDoDiaDTO;
+  onFinalizar: () => void;
+}) {
   const statusConfig = {
     CONCLUIDO:      { texto: "Concluído",      cor: "#38A169" },
     EM_ATENDIMENTO: { texto: "Em Atendimento", cor: "#D69E2E" },
     AGUARDANDO:     { texto: "Aguardando",     cor: "#718096" },
   }[atendimento.status];
+  const podeFinalizarr = STATUSES_FINALIZAVEIS.has(atendimento.statusRaw);
   return (
     <tr className="hover:bg-ink-50/40 transition-colors">
       <td className="whitespace-nowrap px-6 py-3 font-medium text-ink-800">
@@ -227,6 +260,107 @@ function AtendimentoLinha({ atendimento }: { atendimento: AtendimentoDoDiaDTO })
           {statusConfig.texto}
         </span>
       </td>
+      <td className="whitespace-nowrap px-6 py-3">
+        {podeFinalizarr && (
+          <button
+            onClick={onFinalizar}
+            className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 transition hover:bg-brand-100"
+          >
+            Finalizar consulta
+          </button>
+        )}
+      </td>
     </tr>
+  );
+}
+
+// ── Modal de finalização ───────────────────────────────────────────────────────
+
+function ModalFinalizarConsulta({
+  atendimento,
+  service,
+  onFechado,
+  onFinalizado,
+}: {
+  atendimento: AtendimentoDoDiaDTO;
+  service: MedicoService;
+  onFechado: () => void;
+  onFinalizado: () => void;
+}) {
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function finalizar(temRetorno: boolean, comExames: boolean) {
+    setEnviando(true);
+    setErro(null);
+    try {
+      await service.finalizarConsulta(atendimento.consultaId, temRetorno, comExames);
+      onFinalizado();
+    } catch (e) {
+      setErro((e as Error).message ?? "Erro ao finalizar a consulta.");
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onFechado(); }}
+    >
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <h2 className="text-lg font-bold text-ink-900">Finalizar Consulta</h2>
+        <p className="mt-1 text-sm text-ink-600">
+          <span className="font-medium">{atendimento.nomePet}</span> · {atendimento.nomeTutor}
+        </p>
+        <p className="mt-4 text-sm font-medium text-ink-800">
+          Esta consulta dá direito a retorno?
+        </p>
+
+        {erro && (
+          <div role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            {erro}
+          </div>
+        )}
+
+        <div className="mt-4 flex flex-col gap-3">
+          <button
+            disabled={enviando}
+            onClick={() => finalizar(false, false)}
+            className="w-full rounded-xl border border-ink-200 bg-ink-50 px-4 py-3 text-left text-sm transition hover:bg-ink-100 disabled:opacity-50"
+          >
+            <span className="block font-semibold text-ink-900">Não — encerrar sem retorno</span>
+            <span className="text-xs text-ink-500">Consulta finalizada, sem agendamento de retorno.</span>
+          </button>
+
+          <button
+            disabled={enviando}
+            onClick={() => finalizar(true, false)}
+            className="w-full rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-left text-sm transition hover:bg-brand-100 disabled:opacity-50"
+          >
+            <span className="block font-semibold text-brand-900">Sim — retorno simples</span>
+            <span className="text-xs text-brand-700">Tutor poderá agendar retorno diretamente.</span>
+          </button>
+
+          <button
+            disabled={enviando}
+            onClick={() => finalizar(true, true)}
+            className="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm transition hover:bg-amber-100 disabled:opacity-50"
+          >
+            <span className="block font-semibold text-amber-900">Sim — retorno com exames pendentes</span>
+            <span className="text-xs text-amber-700">Tutor precisará confirmar os exames antes de agendar o retorno.</span>
+          </button>
+        </div>
+
+        <button
+          onClick={onFechado}
+          disabled={enviando}
+          className="mt-4 w-full rounded-xl border border-ink-200 py-2 text-sm text-ink-600 transition hover:bg-ink-50 disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
   );
 }

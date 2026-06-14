@@ -19,23 +19,25 @@ export function MedicoProntuario() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [relatorios, setRelatorios] = useState<RelatorioSalvo[]>([]);
-  const [confirmarFinalizar, setConfirmarFinalizar] = useState(false);
-  const [finalizando, setFinalizando] = useState(false);
+  const [etapaFinalizar, setEtapaFinalizar] = useState<"idle" | "pergunta" | "enviando">("idle");
   const [erroFinalizar, setErroFinalizar] = useState<string | null>(null);
   const [vacinasAplicadas, setVacinasAplicadas] = useState<VacinaAplicadaDTO[]>([]);
   const [vacinasPendentes, setVacinasPendentes] = useState<VacinaPendenteDTO[]>([]);
   const [modalHistVacina, setModalHistVacina] = useState(false);
 
-  async function finalizarAtendimento() {
+  async function concluirAtendimento(temRetorno: boolean, comExames: boolean) {
     if (!pacienteId) return;
-    setFinalizando(true);
+    setEtapaFinalizar("enviando");
     setErroFinalizar(null);
     try {
+      if (temRetorno) {
+        await service.liberarRetorno(pacienteId, comExames);
+      }
       await service.finalizarAtendimento(pacienteId);
       navigate("/medico");
     } catch (e) {
       setErroFinalizar((e as Error).message || "Não foi possível finalizar o atendimento.");
-      setFinalizando(false);
+      setEtapaFinalizar("pergunta");
     }
   }
 
@@ -232,44 +234,66 @@ export function MedicoProntuario() {
 
       {/* ── Seção 5: Finalizar Atendimento ────────────────────────────────── */}
       <div className="rounded-2xl border-2 border-brand-300 bg-gradient-to-r from-brand-50 to-white p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-ink-900">Finalizar Atendimento</h2>
-            <p className="mt-0.5 text-sm text-ink-500">
-              Encerra o atendimento deste paciente e o remove da fila de espera,
-              concluindo o fluxo na recepção.
+        <h2 className="text-base font-semibold text-ink-900">Finalizar Atendimento</h2>
+        <p className="mt-0.5 text-sm text-ink-500">
+          Encerra o atendimento e remove o paciente da fila de espera.
+        </p>
+
+        {etapaFinalizar === "idle" && (
+          <button
+            type="button"
+            onClick={() => setEtapaFinalizar("pergunta")}
+            className="btn-primary mt-4 sm:w-auto"
+          >
+            ✓ Finalizar Atendimento
+          </button>
+        )}
+
+        {(etapaFinalizar === "pergunta" || etapaFinalizar === "enviando") && (
+          <div className="mt-4 space-y-3">
+            <p className="text-sm font-semibold text-ink-800">
+              Esta consulta dá direito a retorno?
             </p>
-          </div>
-          {!confirmarFinalizar ? (
-            <button
-              type="button"
-              onClick={() => setConfirmarFinalizar(true)}
-              className="btn-primary shrink-0 sm:w-auto"
-            >
-              ✓ Finalizar Atendimento
-            </button>
-          ) : (
-            <div className="flex shrink-0 items-center gap-3">
-              <span className="text-sm font-medium text-ink-700">Confirmar?</span>
+            <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
-                onClick={() => setConfirmarFinalizar(false)}
-                disabled={finalizando}
-                className="rounded-xl border border-ink-300 bg-white px-4 py-2.5 text-sm font-medium text-ink-700 transition hover:bg-ink-50"
+                disabled={etapaFinalizar === "enviando"}
+                onClick={() => concluirAtendimento(false, false)}
+                className="flex-1 rounded-xl border border-ink-200 bg-white px-4 py-3 text-left text-sm transition hover:bg-ink-50 disabled:opacity-50"
               >
-                Cancelar
+                <span className="block font-semibold text-ink-900">Não — encerrar sem retorno</span>
+                <span className="text-xs text-ink-500">Atendimento concluído normalmente.</span>
               </button>
               <button
                 type="button"
-                onClick={finalizarAtendimento}
-                disabled={finalizando}
-                className="btn-primary sm:w-auto"
+                disabled={etapaFinalizar === "enviando"}
+                onClick={() => concluirAtendimento(true, false)}
+                className="flex-1 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-left text-sm transition hover:bg-brand-100 disabled:opacity-50"
               >
-                {finalizando ? "Finalizando..." : "Sim, finalizar"}
+                <span className="block font-semibold text-brand-900">Sim — retorno simples</span>
+                <span className="text-xs text-brand-700">Tutor poderá agendar retorno diretamente.</span>
+              </button>
+              <button
+                type="button"
+                disabled={etapaFinalizar === "enviando"}
+                onClick={() => concluirAtendimento(true, true)}
+                className="flex-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm transition hover:bg-amber-100 disabled:opacity-50"
+              >
+                <span className="block font-semibold text-amber-900">Sim — com exames pendentes</span>
+                <span className="text-xs text-amber-700">Tutor confirma exames antes do retorno.</span>
               </button>
             </div>
-          )}
-        </div>
+            <button
+              type="button"
+              disabled={etapaFinalizar === "enviando"}
+              onClick={() => { setEtapaFinalizar("idle"); setErroFinalizar(null); }}
+              className="text-sm text-ink-500 underline hover:text-ink-700 disabled:opacity-50"
+            >
+              {etapaFinalizar === "enviando" ? "Finalizando..." : "Cancelar"}
+            </button>
+          </div>
+        )}
+
         {erroFinalizar && (
           <div role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
             {erroFinalizar}
