@@ -7,7 +7,7 @@ Domain InteligenciaPetCollar {
 
     Subdomain RelacaoTutorSubdomain {
         type CORE_DOMAIN
-        domainVisionStatement = "Relacao contratual e de engajamento entre tutor e plataforma: assinatura com cobrancas e juros, beneficios com carencia e tickets digitais, e badges progressivas. Nucleo de monetizacao e fidelizacao."
+        domainVisionStatement = "Relacao contratual e de engajamento entre tutor e plataforma: assinatura com cobrancas e juros, beneficios com carencia e tickets digitais, badges progressivas e programa de indicacao com recompensas. Nucleo de monetizacao, fidelizacao e crescimento organico."
     }
 
     Subdomain RecepcaoTriagemSubdomain {
@@ -432,6 +432,130 @@ BoundedContext ContextoGamificacao implements RelacaoTutorSubdomain {
         }
     }
 }
+
+BoundedContext ContextoIndicacao implements RelacaoTutorSubdomain {
+    type = FEATURE
+
+    Aggregate LinkIndicacao {
+
+        Entity LinkIndicacao {
+            aggregateRoot
+            - @LinkIndicacaoId   id
+            - @TutorId           tutorId
+            - @CodigoIndicacao   codigo
+            DateTime             criadoEm
+        }
+
+        ValueObject LinkIndicacaoId  { String id }
+
+        ValueObject CodigoIndicacao {
+            String valor
+        }
+
+        Repository ILinkIndicacaoRepositorio {
+            void salvar(@LinkIndicacao link);
+            @LinkIndicacao buscarPorId(@LinkIndicacaoId id);
+            @LinkIndicacao buscarPorTutorId(@TutorId tutorId);
+            @LinkIndicacao buscarPorCodigo(@CodigoIndicacao codigo);
+            Boolean existePorCodigo(@CodigoIndicacao codigo);
+        }
+    }
+
+    Aggregate Indicacao {
+
+        Entity Indicacao {
+            aggregateRoot
+            - @IndicacaoId       id
+            - @TutorId           tutorIndicadorId
+            - @LinkIndicacaoId   linkId
+            - @CPF               cpfIndicado
+            DateTime             timestampClique
+            - @StatusIndicacao   status
+            String               cobrancaIndicadorId  
+            DateTime             convertidaEm         
+            String               motivoInvalidacao    
+        }
+
+        enum StatusIndicacao { PENDENTE, CONVERTIDA, INVALIDA }
+
+        ValueObject IndicacaoId { String id }
+
+        ValueObject CPF { String valor }  
+
+        Service ProgramaIndicacaoService {
+            @LinkIndicacao obterOuGerarLink(@TutorId tutorId, Boolean contaAtiva);
+            @Indicacao criarIndicacaoParaInscrito(@CPF cpfIndicado, @CPF cpfIndicador);
+            void confirmarConversao(@IndicacaoId indicacaoId, String tokenMetodoPagamento);
+            void confirmarConversaoManual(@IndicacaoId indicacaoId);
+            String resgatarDescontoIndicador(@IndicacaoId indicacaoId, @TutorId tutorId);
+            List<@Indicacao> consultarHistorico(@TutorId tutorId);
+            @LinkIndicacao buscarLinkPorCodigo(String codigo);
+        }
+
+        DomainEvent IndicacaoConvertidaEvent {
+            - @IndicacaoId indicacaoId
+            - @TutorId     tutorIndicadorId
+            - @CPF         cpfIndicado
+            DateTime       convertidaEm
+        }
+
+        Repository IIndicacaoRepositorio {
+            void salvar(@Indicacao indicacao);
+            @Indicacao buscarPorId(@IndicacaoId id);
+            Boolean existeConversaoPorCpf(@CPF cpfIndicado);       
+            @Indicacao buscarPendenteParaCpfIndicado(@CPF cpfIndicado);
+            List<@Indicacao> listarPorTutorIndicador(@TutorId tutorId);
+        }
+    }
+
+    Aggregate RegistroClique {
+
+        Entity RegistroClique {
+            aggregateRoot
+            - @RegistroCliqueId  id
+            - @CPF               cpfIndicado
+            - @LinkIndicacaoId   linkId
+            - @TutorId           tutorIndicadorId
+            DateTime             timestamp
+        }
+
+        ValueObject RegistroCliqueId { String id }
+
+        Repository IRegistroCliqueRepositorio {
+            void salvar(@RegistroClique clique);
+        }
+    }
+
+    Aggregate EventoAuditoria {
+
+        Entity EventoAuditoria {
+            aggregateRoot
+            - @EventoAuditoriaId    id
+            - @TipoEventoAuditoria  tipo
+            - @TutorId              tutorId      
+            - @IndicacaoId          indicacaoId 
+            String                  descricao
+            DateTime                ocorridoEm
+        }
+
+        enum TipoEventoAuditoria {
+            LINK_GERADO,
+            CLIQUE_REGISTRADO,
+            INDICADO_INSCRITO,
+            FRAUDE_BLOQUEADA,
+            PAGAMENTO_CONFIRMADO,
+            DESCONTO_INDICADOR_APLICADO,
+            CONQUISTA_CONCEDIDA
+        }
+
+        ValueObject EventoAuditoriaId { String id }
+
+        Repository IEventoAuditoriaRepositorio {
+            void salvar(@EventoAuditoria evento);
+        }
+    }
+}
+
 
 BoundedContext ContextoRecepcaoTriagem implements RecepcaoTriagemSubdomain {
     type = FEATURE
