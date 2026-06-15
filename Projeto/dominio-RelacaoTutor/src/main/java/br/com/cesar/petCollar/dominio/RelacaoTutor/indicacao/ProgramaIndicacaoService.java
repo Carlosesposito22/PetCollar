@@ -28,7 +28,7 @@ import java.util.Optional;
  */
 public class ProgramaIndicacaoService {
 
-    static final BigDecimal PERCENTUAL_DESCONTO_INDICADO = new BigDecimal("0.30");
+    public static final BigDecimal PERCENTUAL_DESCONTO_INDICADO = new BigDecimal("0.30");
 
     private final ILinkIndicacaoRepositorio linkRepositorio;
     private final IRegistroCliqueRepositorio registroCliqueRepositorio;

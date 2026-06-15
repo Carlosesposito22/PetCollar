@@ -1,5 +1,7 @@
 package br.com.cesar.petCollar.apresentacao.RelacaoTutor;
 
+import br.com.cesar.petCollar.aplicacao.RelacaoTutor.ConfirmarConversaoIndicacaoUseCase;
+import br.com.cesar.petCollar.aplicacao.RelacaoTutor.ObterOuGerarLinkIndicacaoUseCase;
 import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.CPF;
 import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.Indicacao;
 import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.IndicacaoId;
@@ -11,9 +13,7 @@ import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.StatusConta;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioRepositorio;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.Perfil;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,14 +35,20 @@ import java.util.Map;
 public class IndicacaoController {
 
     private final String baseUrl;
+    private final ObterOuGerarLinkIndicacaoUseCase obterOuGerarLinkUseCase;
+    private final ConfirmarConversaoIndicacaoUseCase confirmarConversaoUseCase;
     private final ProgramaIndicacaoService programaIndicacao;
     private final UsuarioRepositorio usuarioRepositorio;
 
     public IndicacaoController(
             @Value("${petcollar.indicacao.base-url:http://localhost:3000}") String baseUrl,
+            ObterOuGerarLinkIndicacaoUseCase obterOuGerarLinkUseCase,
+            ConfirmarConversaoIndicacaoUseCase confirmarConversaoUseCase,
             ProgramaIndicacaoService programaIndicacao,
             UsuarioRepositorio usuarioRepositorio) {
         this.baseUrl = baseUrl;
+        this.obterOuGerarLinkUseCase = obterOuGerarLinkUseCase;
+        this.confirmarConversaoUseCase = confirmarConversaoUseCase;
         this.programaIndicacao = programaIndicacao;
         this.usuarioRepositorio = usuarioRepositorio;
     }
@@ -53,7 +59,7 @@ public class IndicacaoController {
     public LinkIndicacaoDTO obterLink(Principal principal) {
         TutorId tutorId = TutorId.de(principal.getName());
         boolean ativa = contaAtiva(tutorId);
-        LinkIndicacao link = programaIndicacao.obterOuGerarLink(tutorId, ativa);
+        LinkIndicacao link = obterOuGerarLinkUseCase.executar(tutorId, ativa);
         return LinkIndicacaoDTO.de(link, baseUrl);
     }
 
@@ -90,7 +96,7 @@ public class IndicacaoController {
 
     @PostMapping("/webhook/pagamento")
     public ResponseEntity<Void> webhookPagamento(@RequestBody RequisicaoWebhookDTO req) {
-        programaIndicacao.confirmarConversao(
+        confirmarConversaoUseCase.executar(
             IndicacaoId.de(req.indicacaoId()), req.tokenMetodoPagamento());
         return ResponseEntity.ok().build();
     }
@@ -173,19 +179,4 @@ public class IndicacaoController {
     public record RequisicaoInscricaoDTO(String cpfIndicado, String cpfIndicador) {}
     public record RequisicaoWebhookDTO(String indicacaoId, String tokenMetodoPagamento) {}
 
-    // ── Tratamento de exceções ────────────────────────────────────────────────
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> requisicaoInvalida(IllegalArgumentException e) {
-        return ResponseEntity.badRequest().body(Map.of(
-            "status", "REQUISICAO_INVALIDA",
-            "mensagem", e.getMessage()));
-    }
-
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Map<String, String>> conflito(IllegalStateException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-            "status", "REGRA_VIOLADA",
-            "mensagem", e.getMessage()));
-    }
 }

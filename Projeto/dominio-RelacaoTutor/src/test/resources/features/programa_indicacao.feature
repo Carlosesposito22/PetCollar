@@ -70,3 +70,11 @@ Funcionalidade: Programa de indicacao com recompensas
     Quando o gateway confirmar o pagamento da primeira mensalidade do indicado
     Entao deve ocorrer o erro "Recompensa invalidada: método de pagamento idêntico ao do Tutor indicador (RN-8)."
     E a indicacao deve estar invalidada
+
+  # RN-3
+  Cenario: Desconto de boas-vindas de 30 porcento fica disponivel para aplicacao na primeira mensalidade do indicado
+    Dado um Tutor indicador com conta ativa
+    E uma indicacao pendente para o indicado com CPF "77788899900"
+    Quando o sistema consultar a indicacao pendente para o CPF "77788899900"
+    Entao a indicacao pendente deve ser encontrada com status "PENDENTE"
+    E o percentual de desconto de boas-vindas deve ser de 30 porcento

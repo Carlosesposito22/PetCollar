@@ -30,7 +30,7 @@ public class IndicacaoRepositorioJpa implements IIndicacaoRepositorio {
 
     @Override
     public boolean existeConversaoPorCpf(CPF cpf) {
-        return jpa.existsByCpfIndicadoAndStatus(cpf.getValor(), StatusIndicacao.CONVERTIDA);
+        return jpa.existsByCpfIndicadoAndStatus(cpf.getValor(), StatusIndicacao.CONVERTIDA.name());
     }
 
     @Override
@@ -42,7 +42,7 @@ public class IndicacaoRepositorioJpa implements IIndicacaoRepositorio {
 
     @Override
     public Optional<Indicacao> buscarPendenteParaCpfIndicado(CPF cpf) {
-        return jpa.findTopByCpfIndicadoAndStatus(cpf.getValor(), StatusIndicacao.PENDENTE)
+        return jpa.findTopByCpfIndicadoAndStatus(cpf.getValor(), StatusIndicacao.PENDENTE.name())
                   .map(IndicacaoJpa::toDomain);
     }
 }

@@ -48,5 +48,6 @@ public class ContextoCenario {
     public LinkIndicacao linkRetornado;
     public LinkIndicacao linkPreExistente;
     public Indicacao indicacaoCriada;
+    public Indicacao indicacaoConsultada;
     public Exception excecaoCapturada;
 }

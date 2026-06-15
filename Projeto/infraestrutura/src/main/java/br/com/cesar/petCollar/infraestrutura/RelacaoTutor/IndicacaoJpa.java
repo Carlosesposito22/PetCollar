@@ -8,8 +8,6 @@ import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.StatusIndicacao;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -35,8 +33,7 @@ public class IndicacaoJpa {
     private LocalDateTime timestampClique;
 
     @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private StatusIndicacao status;
+    private String status;
 
     private String cobrancaIndicadorId;
 
@@ -53,7 +50,7 @@ public class IndicacaoJpa {
         j.linkId = ind.getLinkId().getValor();
         j.cpfIndicado = ind.getCpfIndicado().getValor();
         j.timestampClique = ind.getTimestampClique();
-        j.status = ind.getStatus();
+        j.status = ind.getStatus().name();
         j.cobrancaIndicadorId = ind.getCobrancaIndicadorId();
         j.convertidaEm = ind.getConvertidaEm();
         j.motivoInvalidacao = ind.getMotivoInvalidacao();
@@ -67,7 +64,7 @@ public class IndicacaoJpa {
             LinkIndicacaoId.de(linkId),
             CPF.de(cpfIndicado),
             timestampClique,
-            status,
+            StatusIndicacao.valueOf(status),
             cobrancaIndicadorId,
             convertidaEm,
             motivoInvalidacao
@@ -77,5 +74,5 @@ public class IndicacaoJpa {
     public String getId()              { return id; }
     public String getTutorIndicadorId(){ return tutorIndicadorId; }
     public String getCpfIndicado()     { return cpfIndicado; }
-    public StatusIndicacao getStatus() { return status; }
+    public String getStatus()          { return status; }
 }

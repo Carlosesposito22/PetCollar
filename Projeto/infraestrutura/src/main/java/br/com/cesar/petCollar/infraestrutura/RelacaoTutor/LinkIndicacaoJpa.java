@@ -9,6 +9,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "links_indicacao")
 public class LinkIndicacaoJpa {
@@ -22,6 +24,9 @@ public class LinkIndicacaoJpa {
     @Column(nullable = false, unique = true, length = 8)
     private String codigo;
 
+    @Column(nullable = false)
+    private LocalDateTime criadoEm;
+
     protected LinkIndicacaoJpa() {}
 
     public static LinkIndicacaoJpa fromDomain(LinkIndicacao link) {
@@ -29,18 +34,22 @@ public class LinkIndicacaoJpa {
         j.id = link.getId().getValor();
         j.tutorId = link.getTutorId().getValor();
         j.codigo = link.getCodigo().getValor();
+        j.criadoEm = link.getCriadoEm();
         return j;
     }
 
+    // Construtor de RECONSTRUÇÃO — preserva criadoEm original
     public LinkIndicacao toDomain() {
         return new LinkIndicacao(
             LinkIndicacaoId.de(id),
             TutorId.de(tutorId),
-            CodigoIndicacao.de(codigo)
+            CodigoIndicacao.de(codigo),
+            criadoEm
         );
     }
 
-    public String getId()     { return id; }
-    public String getTutorId(){ return tutorId; }
-    public String getCodigo() { return codigo; }
+    public String getId()             { return id; }
+    public String getTutorId()        { return tutorId; }
+    public String getCodigo()         { return codigo; }
+    public LocalDateTime getCriadoEm(){ return criadoEm; }
 }

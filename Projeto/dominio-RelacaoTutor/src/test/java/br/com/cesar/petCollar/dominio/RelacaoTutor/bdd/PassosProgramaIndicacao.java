@@ -8,6 +8,7 @@ import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.LinkIndicacao;
 import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.LinkIndicacaoId;
 import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.RegistroClique;
 import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.RegistroCliqueId;
+import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.ProgramaIndicacaoService;
 import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.StatusIndicacao;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import io.cucumber.java.pt.Dado;
@@ -266,6 +267,34 @@ public class PassosProgramaIndicacao {
         } catch (Exception e) {
             ctx.excecaoCapturada = e;
         }
+    }
+
+    // ── Cenário de desconto de boas-vindas (RN-3) ────────────────────────────
+
+    @Quando("o sistema consultar a indicacao pendente para o CPF {string}")
+    public void quandoConsultarIndicacaoPendentePorCpf(String cpf) {
+        CPF cpfIndicado = CPF.de(cpf);
+        when(ctx.indicacaoRepositorio.buscarPendenteParaCpfIndicado(cpfIndicado))
+            .thenReturn(Optional.of(ctx.indicacaoCriada));
+        ctx.indicacaoConsultada = ctx.servico
+            .buscarIndicacaoPendenteParaCpfIndicado(cpfIndicado)
+            .orElse(null);
+    }
+
+    @Entao("a indicacao pendente deve ser encontrada com status {string}")
+    public void entaoIndicacaoPendenteEncontradaComStatus(String statusEsperado) {
+        assertNotNull(ctx.indicacaoConsultada,
+            "A indicação pendente deveria ter sido encontrada.");
+        assertEquals(StatusIndicacao.valueOf(statusEsperado),
+            ctx.indicacaoConsultada.getStatus());
+    }
+
+    @E("o percentual de desconto de boas-vindas deve ser de 30 porcento")
+    public void ePercentualDescontoBebindasDeve30() {
+        assertEquals(0,
+            ProgramaIndicacaoService.PERCENTUAL_DESCONTO_INDICADO
+                .compareTo(new BigDecimal("0.30")),
+            "O percentual de desconto de boas-vindas deve ser 30%.");
     }
 
     // ── Passo genérico de verificação de erro ────────────────────────────────

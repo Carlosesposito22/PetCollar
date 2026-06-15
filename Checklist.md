@@ -188,7 +188,7 @@ está 100% implementada apenas quando **todos** os itens abaixo estiverem marcad
 | F-01 | Prontuário Unificado + Análise Epidemiológica | | | | | | |
 | F-02 | Triagem Clínica com Classificação de Risco | | | | | | |
 | F-03 | Protocolo de Tutor Inacessível | | | | | | |
-| F-04 | Programa de Indicação | | | | | | |
+| F-04 | Programa de Indicação | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | F-05 | Agendamento de consulta inicial e de Retorno | | | | | | |
 | F-06 | Ciclo Vacinal Inteligente | | | | | | |
 | F-07 | Assinatura de Plano e Gestão Financeira | | | | | | |

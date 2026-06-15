@@ -7,8 +7,6 @@ import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.TipoEventoAuditoria
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -22,8 +20,7 @@ public class EventoAuditoriaJpa {
     private String id;
 
     @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private TipoEventoAuditoria tipo;
+    private String tipo;
 
     private String tutorId;
 
@@ -40,7 +37,7 @@ public class EventoAuditoriaJpa {
     public static EventoAuditoriaJpa fromDomain(EventoAuditoria e) {
         EventoAuditoriaJpa j = new EventoAuditoriaJpa();
         j.id = e.getId().getValor();
-        j.tipo = e.getTipo();
+        j.tipo = e.getTipo().name();
         j.tutorId = e.getTutorId() != null ? e.getTutorId().getValor() : null;
         j.indicacaoId = e.getIndicacaoId() != null ? e.getIndicacaoId().getValor() : null;
         j.descricao = e.getDescricao();
@@ -51,7 +48,7 @@ public class EventoAuditoriaJpa {
     public EventoAuditoria toDomain() {
         return new EventoAuditoria(
             EventoAuditoriaId.de(id),
-            tipo,
+            TipoEventoAuditoria.valueOf(tipo),
             tutorId != null ? TutorId.de(tutorId) : null,
             indicacaoId != null ? IndicacaoId.de(indicacaoId) : null,
             descricao,

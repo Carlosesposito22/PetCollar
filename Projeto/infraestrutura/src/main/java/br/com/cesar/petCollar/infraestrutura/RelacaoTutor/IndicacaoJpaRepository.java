@@ -1,12 +1,11 @@
 package br.com.cesar.petCollar.infraestrutura.RelacaoTutor;
 
-import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.StatusIndicacao;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
 public interface IndicacaoJpaRepository extends JpaRepository<IndicacaoJpa, String> {
-    boolean existsByCpfIndicadoAndStatus(String cpfIndicado, StatusIndicacao status);
+    boolean existsByCpfIndicadoAndStatus(String cpfIndicado, String status);
     List<IndicacaoJpa> findByTutorIndicadorId(String tutorIndicadorId);
-    java.util.Optional<IndicacaoJpa> findTopByCpfIndicadoAndStatus(String cpfIndicado, StatusIndicacao status);
+    java.util.Optional<IndicacaoJpa> findTopByCpfIndicadoAndStatus(String cpfIndicado, String status);
 }
