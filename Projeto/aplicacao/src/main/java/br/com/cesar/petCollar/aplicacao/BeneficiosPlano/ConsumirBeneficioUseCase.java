@@ -3,6 +3,7 @@ package br.com.cesar.petCollar.aplicacao.BeneficiosPlano;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.BeneficioCatalogo;
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.BeneficioTutor;
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.IBeneficioCatalogoRepositorio;
@@ -35,18 +36,24 @@ public class ConsumirBeneficioUseCase {
     }
 
     /**
-     * Debita um uso do benefício do tutor na categoria informada. Lança
-     * {@link IllegalStateException} com {@code mensagemIndisponivel} quando o
-     * tutor não possui o benefício no plano, ainda está em carência ou esgotou
-     * os usos do período.
+     * Debita um uso do benefício do tutor na categoria informada.
+     *
+     * <p>Se o tutor não possui nenhum benefício provisionado para a categoria
+     * (ex.: ainda não contratou um plano), o consumo é ignorado e o serviço
+     * segue normalmente — a restrição só se aplica quando o benefício existe mas
+     * está {@code EM_CARENCIA} ou {@code ESGOTADO}.
+     *
+     * @throws IllegalStateException com {@code mensagemIndisponivel} quando o
+     *         benefício existe mas não está {@code DISPONIVEL}.
      */
     public void consumir(TutorId tutorId, Categoria categoria, String mensagemIndisponivel) {
         if (tutorId == null) throw new IllegalArgumentException("TutorId é obrigatório.");
         if (categoria == null) throw new IllegalArgumentException("Categoria é obrigatória.");
 
-        BeneficioTutor beneficio = localizar(tutorId, categoria)
-                .orElseThrow(() -> new IllegalStateException(mensagemIndisponivel));
+        Optional<BeneficioTutor> encontrado = localizar(tutorId, categoria);
+        if (encontrado.isEmpty()) return; // sem plano = sem restrição
 
+        BeneficioTutor beneficio = encontrado.get();
         LocalDateTime agora = LocalDateTime.now();
         beneficio.reiniciarPeriodoSeNecessario(agora);
         beneficio.recalcularStatus(agora);

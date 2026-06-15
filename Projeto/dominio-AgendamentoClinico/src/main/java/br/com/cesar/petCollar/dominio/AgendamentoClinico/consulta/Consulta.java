@@ -188,6 +188,21 @@ public class Consulta {
         registrarEvento(TipoEventoAgendamento.RETORNO_AGENDADO, "Retorno agendado pelo tutor.");
     }
 
+    /**
+     * Encerra o ciclo de retorno da consulta original quando a consulta de retorno
+     * é finalizada. Permite transição de AGUARDANDO_RETORNO, EXAMES_SOLICITADOS ou
+     * RETORNO_AGENDADO para REALIZADA, concluindo o acompanhamento (RN 7).
+     */
+    public void concluirCicloDeRetorno() {
+        if (this.status != StatusConsulta.AGUARDANDO_RETORNO
+                && this.status != StatusConsulta.EXAMES_SOLICITADOS
+                && this.status != StatusConsulta.RETORNO_AGENDADO)
+            throw new IllegalStateException(
+                "O ciclo de retorno só pode ser concluído a partir dos status AGUARDANDO_RETORNO, EXAMES_SOLICITADOS ou RETORNO_AGENDADO.");
+        this.status = StatusConsulta.REALIZADA;
+        registrarEvento(TipoEventoAgendamento.REALIZADA, "Ciclo de retorno concluído.");
+    }
+
     public boolean isElegivelParaRetorno() {
         return this.status == StatusConsulta.AGUARDANDO_RETORNO
             || this.status == StatusConsulta.EXAMES_SOLICITADOS;

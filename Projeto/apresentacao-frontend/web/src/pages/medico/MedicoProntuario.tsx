@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import {
   criarMedicoService,
@@ -13,6 +13,10 @@ import { gerarPdfRelatorio, listarRelatorios, type RelatorioSalvo } from "./rela
 export function MedicoProntuario() {
   const { pacienteId } = useParams<{ pacienteId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const navState = (location.state ?? {}) as { consultaId?: string; tipoConsulta?: string };
+  const consultaIdAgendado = navState.consultaId ?? null;
+  const tipoConsultaAgendado = navState.tipoConsulta ?? null;
   const { apiFetch } = useAuth();
   const service = useMemo(() => criarMedicoService(apiFetch), [apiFetch]);
 
@@ -242,6 +246,8 @@ export function MedicoProntuario() {
         <ModalFinalizarAtendimento
           service={service}
           pacienteId={pacienteId}
+          consultaId={consultaIdAgendado}
+          tipoConsulta={tipoConsultaAgendado}
           onFechado={() => setModalFinalizar(false)}
           onFinalizado={() => navigate("/medico")}
         />
@@ -266,13 +272,16 @@ const EXAMES_PREDEFINIDOS_PRONT = [
 type EtapaPront = "retorno" | "tipo" | "exames";
 
 function ModalFinalizarAtendimento({
-  service, pacienteId, onFechado, onFinalizado,
+  service, pacienteId, consultaId, tipoConsulta, onFechado, onFinalizado,
 }: {
   service: MedicoService;
   pacienteId: string;
+  consultaId?: string | null;
+  tipoConsulta?: string | null;
   onFechado: () => void;
   onFinalizado: () => void;
 }) {
+  const ehRetornoAgendado = tipoConsulta === "RETORNO" && !!consultaId;
   const [etapa, setEtapa] = useState<EtapaPront>("retorno");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -307,7 +316,10 @@ function ModalFinalizarAtendimento({
     setEnviando(true);
     setErro(null);
     try {
-      if (temRetorno) {
+      if (ehRetornoAgendado) {
+        // Finaliza a consulta de retorno agendada — sem nova elegibilidade de retorno.
+        await service.finalizarConsulta(consultaId!, false, false, []);
+      } else if (temRetorno) {
         await service.liberarRetorno(pacienteId, comExames, exames);
       }
       await service.finalizarAtendimento(pacienteId);
@@ -334,8 +346,28 @@ function ModalFinalizarAtendimento({
           </div>
         )}
 
-        {/* Etapa 1: retorno? */}
-        {etapa === "retorno" && (
+        {/* Consulta de retorno agendada: encerramento direto sem nova elegibilidade */}
+        {ehRetornoAgendado && (
+          <>
+            <p className="mt-4 text-sm text-ink-600">
+              Esta é uma consulta de <span className="font-semibold">retorno</span> — ao finalizar, encerrará o ciclo de acompanhamento sem gerar nova elegibilidade de retorno.
+            </p>
+            <button
+              disabled={enviando}
+              onClick={() => concluir(false, false, [])}
+              className="mt-4 w-full rounded-xl border border-brand-300 bg-brand-50 py-3 text-sm font-semibold text-brand-900 transition hover:bg-brand-100 disabled:opacity-50"
+            >
+              {enviando ? "Finalizando…" : "Finalizar atendimento"}
+            </button>
+            <button onClick={onFechado} disabled={enviando}
+              className="mt-3 w-full rounded-xl border border-ink-200 py-2 text-sm text-ink-600 transition hover:bg-ink-50 disabled:opacity-50">
+              Cancelar
+            </button>
+          </>
+        )}
+
+        {/* Etapa 1: retorno? (apenas para atendimentos da fila, não agendados de retorno) */}
+        {!ehRetornoAgendado && etapa === "retorno" && (
           <>
             <p className="mt-4 text-sm font-semibold text-ink-800">Esta consulta dá direito a retorno?</p>
             <div className="mt-3 flex flex-col gap-3">
@@ -358,7 +390,7 @@ function ModalFinalizarAtendimento({
         )}
 
         {/* Etapa 2: tipo de retorno */}
-        {etapa === "tipo" && (
+        {!ehRetornoAgendado && etapa === "tipo" && (
           <>
             <p className="mt-4 text-sm font-semibold text-ink-800">Tipo de retorno:</p>
             <div className="mt-3 flex flex-col gap-3">
@@ -381,7 +413,7 @@ function ModalFinalizarAtendimento({
         )}
 
         {/* Etapa 3: selecionar exames */}
-        {etapa === "exames" && (
+        {!ehRetornoAgendado && etapa === "exames" && (
           <>
             <p className="mt-4 text-sm font-semibold text-ink-800">
               Exames solicitados para o retorno:

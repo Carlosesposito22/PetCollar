@@ -4,6 +4,7 @@ import { useAuth } from "../../auth/AuthContext";
 import {
   criarMedicoService,
   type AtendimentoDoDiaDTO,
+  type ExameSolicitadoDTO,
   type FilaItemDTO,
   type MedicoService,
 } from "./medicoService";
@@ -53,6 +54,10 @@ export function MedicoPainel() {
 
   // ── Modal de finalização de consulta ─────────────────────────────────────
   const [consultaParaFinalizar, setConsultaParaFinalizar] =
+    useState<AtendimentoDoDiaDTO | null>(null);
+
+  // ── Modal de contexto de retorno (ao clicar em Atender numa consulta de retorno) ──
+  const [consultaRetornoContexto, setConsultaRetornoContexto] =
     useState<AtendimentoDoDiaDTO | null>(null);
 
   const medicoNome = session?.user.nome ?? session?.user.identificador ?? "Médico";
@@ -156,7 +161,13 @@ export function MedicoPainel() {
                     <AtendimentoLinha
                       key={i}
                       atendimento={a}
-                      onFinalizar={() => setConsultaParaFinalizar(a)}
+                      onAtender={() => {
+                        if (a.tipo === "RETORNO") {
+                          setConsultaRetornoContexto(a);
+                        } else {
+                          navigate(`/medico/prontuario/${a.pacienteId}`);
+                        }
+                      }}
                     />
                   ))}
                 </tbody>
@@ -179,6 +190,21 @@ export function MedicoPainel() {
           onFinalizado={() => {
             setConsultaParaFinalizar(null);
             recarregarAtendimentos();
+          }}
+        />
+      )}
+
+      {consultaRetornoContexto && (
+        <ModalContextoRetorno
+          atendimento={consultaRetornoContexto}
+          service={service}
+          onFechado={() => setConsultaRetornoContexto(null)}
+          onIrAoProntuario={() => {
+            const ctx = consultaRetornoContexto;
+            setConsultaRetornoContexto(null);
+            navigate(`/medico/prontuario/${ctx.pacienteId}`, {
+              state: { consultaId: ctx.consultaId, tipoConsulta: "RETORNO" },
+            });
           }}
         />
       )}
@@ -234,25 +260,32 @@ const STATUSES_FINALIZAVEIS = new Set(["AGENDADA", "CONFIRMADA"]);
 
 function AtendimentoLinha({
   atendimento,
-  onFinalizar,
+  onAtender,
 }: {
   atendimento: AtendimentoDoDiaDTO;
-  onFinalizar: () => void;
+  onAtender: () => void;
 }) {
   const statusConfig = {
-    CONCLUIDO:      { texto: "Concluído",      cor: "#38A169" },
-    EM_ATENDIMENTO: { texto: "Em Atendimento", cor: "#D69E2E" },
-    AGUARDANDO:     { texto: "Aguardando",     cor: "#718096" },
+    CONCLUIDO:          { texto: "Concluído",        cor: "#38A169" },
+    EM_ATENDIMENTO:     { texto: "Em Atendimento",   cor: "#D69E2E" },
+    AGUARDANDO:         { texto: "Aguardando",       cor: "#718096" },
+    AGUARDANDO_RETORNO: { texto: "Aguardando retorno", cor: "#C05621" },
   }[atendimento.status];
-  const podeFinalizarr = STATUSES_FINALIZAVEIS.has(atendimento.statusRaw);
+  const podeAtender = STATUSES_FINALIZAVEIS.has(atendimento.statusRaw);
   return (
     <tr className="hover:bg-ink-50/40 transition-colors">
       <td className="whitespace-nowrap px-6 py-3 font-medium text-ink-800">
         {atendimento.horario}
       </td>
       <td className="px-6 py-3">
-        <span className="font-medium text-ink-900">{atendimento.nomePet}</span>
-        <br />
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-ink-900">{atendimento.nomePet}</span>
+          {atendimento.tipo === "RETORNO" && (
+            <span className="inline-flex items-center rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-purple-700 ring-1 ring-purple-200">
+              Retorno
+            </span>
+          )}
+        </div>
         <span className="text-xs text-ink-500">{atendimento.nomeTutor}</span>
       </td>
       <td className="whitespace-nowrap px-6 py-3">
@@ -261,16 +294,147 @@ function AtendimentoLinha({
         </span>
       </td>
       <td className="whitespace-nowrap px-6 py-3">
-        {podeFinalizarr && (
+        {podeAtender && (
           <button
-            onClick={onFinalizar}
-            className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 transition hover:bg-brand-100"
+            onClick={onAtender}
+            className="btn-primary w-auto shrink-0 px-3 py-1.5 text-xs"
           >
-            Finalizar consulta
+            Atender
           </button>
         )}
       </td>
     </tr>
+  );
+}
+
+// ── Modal de contexto de retorno ──────────────────────────────────────────────
+
+function ModalContextoRetorno({
+  atendimento,
+  service,
+  onFechado,
+  onIrAoProntuario,
+}: {
+  atendimento: AtendimentoDoDiaDTO;
+  service: MedicoService;
+  onFechado: () => void;
+  onIrAoProntuario: () => void;
+}) {
+  const [exames, setExames] = useState<ExameSolicitadoDTO[]>([]);
+  const [carregando, setCarregando] = useState(false);
+
+  useEffect(() => {
+    if (!atendimento.consultaOrigemId) return;
+    setCarregando(true);
+    service
+      .buscarExamesDaOrigem(atendimento.consultaOrigemId)
+      .then(setExames)
+      .catch(() => setExames([]))
+      .finally(() => setCarregando(false));
+  }, [atendimento.consultaOrigemId, service]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onFechado(); }}
+    >
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+        {/* Cabeçalho */}
+        <div className="rounded-t-2xl bg-purple-50 px-6 py-4 border-b border-purple-100">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-purple-700 ring-1 ring-purple-200">
+              Retorno
+            </span>
+            <h2 className="text-base font-bold text-ink-900">Consulta de Retorno</h2>
+          </div>
+          <p className="mt-1 text-sm text-ink-600">
+            <span className="font-medium">{atendimento.nomePet}</span> · {atendimento.nomeTutor}
+          </p>
+        </div>
+
+        {/* Corpo */}
+        <div className="px-6 py-4 space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-1">
+              Contexto da consulta de origem
+            </p>
+            {atendimento.consultaOrigemId ? (
+              <p className="text-sm text-ink-600">
+                ID da consulta original:{" "}
+                <span className="font-mono text-xs text-ink-500">
+                  {atendimento.consultaOrigemId.slice(0, 8)}…
+                </span>
+              </p>
+            ) : (
+              <p className="text-sm text-ink-400 italic">Vínculo de origem não disponível.</p>
+            )}
+          </div>
+
+          {/* Exames solicitados */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-2">
+              Exames solicitados na consulta anterior
+            </p>
+            {carregando ? (
+              <div className="space-y-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-8 animate-pulse rounded-lg bg-ink-100" />
+                ))}
+              </div>
+            ) : exames.length === 0 ? (
+              <p className="text-sm text-ink-400 italic">
+                Nenhum exame solicitado registrado.
+              </p>
+            ) : (
+              <ul className="space-y-1.5">
+                {exames.map((e) => {
+                  const concluido = e.status === "CONCLUIDO";
+                  return (
+                    <li
+                      key={e.exameId}
+                      className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
+                        concluido
+                          ? "border-green-200 bg-green-50"
+                          : "border-amber-200 bg-amber-50"
+                      }`}
+                    >
+                      <span className={concluido ? "text-green-800" : "text-amber-800"}>
+                        {e.nome}
+                      </span>
+                      <span
+                        className={`text-xs font-medium ${
+                          concluido ? "text-green-600" : "text-amber-600"
+                        }`}
+                      >
+                        {concluido ? "✓ Concluído" : "Pendente"}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Rodapé */}
+        <div className="flex gap-3 border-t border-ink-100 px-6 py-4">
+          <button
+            onClick={onFechado}
+            className="flex-1 rounded-xl border border-ink-200 py-2.5 text-sm text-ink-600 transition hover:bg-ink-50"
+          >
+            Fechar
+          </button>
+          <button
+            onClick={onIrAoProntuario}
+            className="flex-1 btn-primary py-2.5 text-sm"
+          >
+            Ir ao prontuário →
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -339,6 +503,8 @@ function ModalFinalizarConsulta({
     }
   }
 
+  const isRetorno = atendimento.tipo === "RETORNO";
+
   return (
     <div
       role="dialog"
@@ -358,8 +524,28 @@ function ModalFinalizarConsulta({
           </div>
         )}
 
-        {/* Etapa 1: dá direito a retorno? */}
-        {etapa === "retorno" && (
+        {/* Consulta de retorno: apenas encerrar, sem nova elegibilidade de retorno */}
+        {isRetorno && (
+          <>
+            <p className="mt-4 text-sm text-ink-600">
+              Esta é uma consulta de <span className="font-semibold">retorno</span> — ao finalizar ela será encerrada sem gerar nova elegibilidade de retorno.
+            </p>
+            <button
+              disabled={enviando}
+              onClick={() => finalizar(false, false, [])}
+              className="mt-4 w-full rounded-xl border border-brand-300 bg-brand-50 py-3 text-sm font-semibold text-brand-900 transition hover:bg-brand-100 disabled:opacity-50"
+            >
+              {enviando ? "Finalizando…" : "Finalizar consulta"}
+            </button>
+            <button onClick={onFechado} disabled={enviando}
+              className="mt-3 w-full rounded-xl border border-ink-200 py-2 text-sm text-ink-600 transition hover:bg-ink-50 disabled:opacity-50">
+              Cancelar
+            </button>
+          </>
+        )}
+
+        {/* Etapa 1: dá direito a retorno? (apenas para consultas iniciais) */}
+        {!isRetorno && etapa === "retorno" && (
           <>
             <p className="mt-4 text-sm font-semibold text-ink-800">Esta consulta dá direito a retorno?</p>
             <div className="mt-3 flex flex-col gap-3">
@@ -378,7 +564,7 @@ function ModalFinalizarConsulta({
         )}
 
         {/* Etapa 2: tipo de retorno */}
-        {etapa === "tipo" && (
+        {!isRetorno && etapa === "tipo" && (
           <>
             <p className="mt-4 text-sm font-semibold text-ink-800">Tipo de retorno:</p>
             <div className="mt-3 flex flex-col gap-3">
@@ -401,7 +587,7 @@ function ModalFinalizarConsulta({
         )}
 
         {/* Etapa 3: selecionar exames */}
-        {etapa === "exames" && (
+        {!isRetorno && etapa === "exames" && (
           <>
             <p className="mt-4 text-sm font-semibold text-ink-800">Exames solicitados para o retorno:</p>
             <ul className="mt-3 space-y-1.5 max-h-52 overflow-y-auto pr-1">
@@ -451,7 +637,7 @@ function ModalFinalizarConsulta({
           </>
         )}
 
-        {etapa !== "exames" && (
+        {!isRetorno && etapa !== "exames" && (
           <button onClick={onFechado} disabled={enviando}
             className="mt-4 w-full rounded-xl border border-ink-200 py-2 text-sm text-ink-600 transition hover:bg-ink-50 disabled:opacity-50">
             Cancelar

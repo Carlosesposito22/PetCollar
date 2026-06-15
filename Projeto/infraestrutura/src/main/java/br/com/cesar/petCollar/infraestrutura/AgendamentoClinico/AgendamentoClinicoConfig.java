@@ -9,6 +9,10 @@ import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.IConsultaRepos
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaExame;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaProntuario;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IServicoNotificacao;
+import br.com.cesar.petCollar.aplicacao.AgendamentoClinico.AgendarConsultaInicialUseCase;
+import br.com.cesar.petCollar.aplicacao.AgendamentoClinico.AgendarRetornoUseCase;
+import br.com.cesar.petCollar.aplicacao.AgendamentoClinico.RemarcarConsultaUseCase;
+import br.com.cesar.petCollar.aplicacao.AgendamentoClinico.CancelarConsultaUseCase;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,5 +57,32 @@ public class AgendamentoClinicoConfig {
     public GestaoAgendamentoService gestaoAgendamentoService(
             IConsultaRepositorio consultaRepositorio, IServicoNotificacao notificacao) {
         return new GestaoAgendamentoService(consultaRepositorio, notificacao);
+    }
+
+    // ── Casos de uso (camada aplicacao) ──────────────────────────────────────
+
+    @Bean
+    public AgendarConsultaInicialUseCase agendarConsultaInicialUseCase(
+            AgendamentoConsultaInicialService agendamentoConsultaInicialService) {
+        return new AgendarConsultaInicialUseCase(agendamentoConsultaInicialService);
+    }
+
+    @Bean
+    public AgendarRetornoUseCase agendarRetornoUseCase(
+            AgendamentoRetornoService agendamentoRetornoService,
+            IConsultaRepositorio consultaRepositorio) {
+        return new AgendarRetornoUseCase(agendamentoRetornoService, consultaRepositorio);
+    }
+
+    @Bean
+    public RemarcarConsultaUseCase remarcarConsultaUseCase(
+            GestaoAgendamentoService gestaoAgendamentoService) {
+        return new RemarcarConsultaUseCase(gestaoAgendamentoService);
+    }
+
+    @Bean
+    public CancelarConsultaUseCase cancelarConsultaUseCase(
+            GestaoAgendamentoService gestaoAgendamentoService) {
+        return new CancelarConsultaUseCase(gestaoAgendamentoService);
     }
 }

@@ -3,25 +3,26 @@ package br.com.cesar.petCollar.apresentacao.AgendamentoClinico;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.AgendamentoConsultaInicialService;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.AgendamentoRetornoService;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.RequisicaoAgendamento;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.Consulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.ConsultaId;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.FiltroConsulta;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.GestaoAgendamentoService;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.HorarioConsulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.IConsultaRepositorio;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.MotivoConsulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.StatusConsulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.TipoConsulta;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade.EspecialidadeId;
+import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaExame;
+import br.com.cesar.petCollar.aplicacao.AgendamentoClinico.AgendarConsultaInicialUseCase;
+import br.com.cesar.petCollar.aplicacao.AgendamentoClinico.AgendarRetornoUseCase;
+import br.com.cesar.petCollar.aplicacao.AgendamentoClinico.RemarcarConsultaUseCase;
+import br.com.cesar.petCollar.aplicacao.AgendamentoClinico.CancelarConsultaUseCase;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.ConsultaDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoAgendarConsultaInicialDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoAgendarRetornoDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoFinalizarConsultaDTO;
 import br.com.cesar.petCollar.apresentacao.AgendamentoClinico.dto.RequisicaoRemarcarDTO;
-import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaExame;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.Perfil;
 import br.com.cesar.petCollar.apresentacao.IdentidadeAcesso.UsuarioRepositorio;
 import br.com.cesar.petCollar.aplicacao.BeneficiosPlano.ConsumirBeneficioUseCase;
@@ -38,7 +39,7 @@ import java.util.List;
 /**
  * Endpoints de agendamento (consulta inicial e retorno), remarcação, cancelamento e
  * visualização da agenda do tutor (RN 17). Apenas traduz DTO ↔ domínio e delega aos
- * serviços; as exceções sobem para o {@link AgendamentoExceptionHandler}.
+ * UseCases; as exceções sobem para o {@link AgendamentoExceptionHandler}.
  */
 @RestController
 @RequestMapping("/api/agendamentos")
@@ -47,24 +48,27 @@ public class AgendamentoController {
     private static final String CONSULTA_INDISPONIVEL =
             "O agendamento não está disponível de acordo com o seu plano.";
 
-    private final AgendamentoConsultaInicialService inicialService;
-    private final AgendamentoRetornoService retornoService;
-    private final GestaoAgendamentoService gestaoService;
+    private final AgendarConsultaInicialUseCase agendarInicialUseCase;
+    private final AgendarRetornoUseCase agendarRetornoUseCase;
+    private final RemarcarConsultaUseCase remarcarUseCase;
+    private final CancelarConsultaUseCase cancelarUseCase;
     private final IConsultaRepositorio consultaRepositorio;
     private final ConsumirBeneficioUseCase consumirBeneficio;
     private final IConsultaExame exameRepositorio;
     private final UsuarioRepositorio usuarioRepositorio;
 
-    public AgendamentoController(AgendamentoConsultaInicialService inicialService,
-                                 AgendamentoRetornoService retornoService,
-                                 GestaoAgendamentoService gestaoService,
+    public AgendamentoController(AgendarConsultaInicialUseCase agendarInicialUseCase,
+                                 AgendarRetornoUseCase agendarRetornoUseCase,
+                                 RemarcarConsultaUseCase remarcarUseCase,
+                                 CancelarConsultaUseCase cancelarUseCase,
                                  IConsultaRepositorio consultaRepositorio,
                                  ConsumirBeneficioUseCase consumirBeneficio,
                                  IConsultaExame exameRepositorio,
                                  UsuarioRepositorio usuarioRepositorio) {
-        this.inicialService = inicialService;
-        this.retornoService = retornoService;
-        this.gestaoService = gestaoService;
+        this.agendarInicialUseCase = agendarInicialUseCase;
+        this.agendarRetornoUseCase = agendarRetornoUseCase;
+        this.remarcarUseCase = remarcarUseCase;
+        this.cancelarUseCase = cancelarUseCase;
         this.consultaRepositorio = consultaRepositorio;
         this.consumirBeneficio = consumirBeneficio;
         this.exameRepositorio = exameRepositorio;
@@ -92,8 +96,9 @@ public class AgendamentoController {
         // carência e limite) antes de agendar; devolve o uso se o agendamento falhar.
         consumirBeneficio.consumir(tutorId, Categoria.CONSULTA, CONSULTA_INDISPONIVEL);
         try {
-            Consulta consulta = inicialService.agendar(requisicao);
-            return ResponseEntity.status(HttpStatus.CREATED).body(ConsultaDTO.de(consulta, resolverNomeMedico(consulta.getMedicoId())));
+            Consulta consulta = agendarInicialUseCase.executar(requisicao);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ConsultaDTO.de(consulta, resolverNomeMedico(consulta.getMedicoId())));
         } catch (RuntimeException e) {
             consumirBeneficio.devolver(tutorId, Categoria.CONSULTA);
             throw e;
@@ -111,14 +116,9 @@ public class AgendamentoController {
             MotivoConsulta.de(req.motivo()),
             new HorarioConsulta(req.inicio(), req.fim()),
             ConsultaId.de(req.consultaOrigemId()));
-        Consulta retorno = retornoService.agendar(requisicao);
-        // Marca a consulta de origem como com retorno agendado, bloqueando novo agendamento.
-        consultaRepositorio.buscarPorId(ConsultaId.de(req.consultaOrigemId()))
-                .ifPresent(origem -> {
-                    origem.marcarRetornoAgendado();
-                    consultaRepositorio.salvar(origem);
-                });
-        return ResponseEntity.status(HttpStatus.CREATED).body(ConsultaDTO.de(retorno, resolverNomeMedico(retorno.getMedicoId())));
+        Consulta retorno = agendarRetornoUseCase.executar(requisicao);
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(ConsultaDTO.de(retorno, resolverNomeMedico(retorno.getMedicoId())));
     }
 
     /**
@@ -140,6 +140,20 @@ public class AgendamentoController {
         }
         consulta.marcarComoRealizada();
 
+        // Consultas de RETORNO encerram o ciclo — nunca geram nova elegibilidade de retorno.
+        if (consulta.getTipo() == TipoConsulta.RETORNO) {
+            consultaRepositorio.salvar(consulta);
+            // Conclui também a consulta original (AGUARDANDO_RETORNO → REALIZADA).
+            if (consulta.getConsultaOrigemId() != null) {
+                consultaRepositorio.buscarPorId(consulta.getConsultaOrigemId())
+                    .ifPresent(origem -> {
+                        origem.concluirCicloDeRetorno();
+                        consultaRepositorio.salvar(origem);
+                    });
+            }
+            return ResponseEntity.ok(ConsultaDTO.de(consulta, resolverNomeMedico(consulta.getMedicoId())));
+        }
+
         if (req.temRetorno()) {
             if (req.comExames()) {
                 consulta.solicitarExames();
@@ -159,7 +173,7 @@ public class AgendamentoController {
 
     @PutMapping("/{id}/remarcar")
     public ConsultaDTO remarcar(@PathVariable String id, @RequestBody RequisicaoRemarcarDTO req) {
-        Consulta consulta = gestaoService.remarcar(
+        Consulta consulta = remarcarUseCase.executar(
             ConsultaId.de(id), new HorarioConsulta(req.inicio(), req.fim()));
         return ConsultaDTO.de(consulta, resolverNomeMedico(consulta.getMedicoId()));
     }
@@ -171,7 +185,7 @@ public class AgendamentoController {
         TutorId tutorId = consultaRepositorio.buscarPorId(consultaId)
             .map(Consulta::getTutorId)
             .orElse(null);
-        gestaoService.cancelar(consultaId);
+        cancelarUseCase.executar(consultaId);
         if (tutorId != null) {
             consumirBeneficio.devolver(tutorId, Categoria.CONSULTA);
         }

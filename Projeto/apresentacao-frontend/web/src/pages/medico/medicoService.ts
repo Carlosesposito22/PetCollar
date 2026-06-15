@@ -87,6 +87,7 @@ export type AtendimentoMedicoDTO = {
   status: string;
   inicio: string;
   fim: string;
+  consultaOrigemId: string | null;
 };
 
 export type AtendimentoDoDiaDTO = {
@@ -94,9 +95,17 @@ export type AtendimentoDoDiaDTO = {
   horario: string;
   nomePet: string;
   nomeTutor: string;
-  status: "AGUARDANDO" | "EM_ATENDIMENTO" | "CONCLUIDO";
+  status: "AGUARDANDO" | "EM_ATENDIMENTO" | "CONCLUIDO" | "AGUARDANDO_RETORNO";
   statusRaw: string;
   pacienteId: string;
+  tipo: "INICIAL" | "RETORNO";
+  consultaOrigemId: string | null;
+};
+
+export type ExameSolicitadoDTO = {
+  exameId: string;
+  nome: string;
+  status: string;
 };
 
 // ── Tipos do Relatório Clínico Evolutivo ─────────────────────────────────────
@@ -169,8 +178,15 @@ export function criarMedicoService(apiFetch: ApiFetch) {
         status: mapearStatus(a.status),
         statusRaw: a.status,
         pacienteId: a.pacienteId,
+        tipo: a.tipo,
+        consultaOrigemId: a.consultaOrigemId ?? null,
       }));
     },
+
+    buscarExamesDaOrigem: (consultaOrigemId: string): Promise<ExameSolicitadoDTO[]> =>
+      json<ExameSolicitadoDTO[]>(
+        apiFetch(`/api/consultas/${consultaOrigemId}/exames-solicitados`)
+      ),
 
     iniciarRelatorio: (req: RequisicaoIniciarRelatorioDTO): Promise<RelatorioDTO> =>
       json<RelatorioDTO>(
@@ -300,9 +316,10 @@ export function criarMedicoService(apiFetch: ApiFetch) {
 
 function mapearStatus(status: string): AtendimentoDoDiaDTO["status"] {
   switch (status) {
-    case "REALIZADA":
     case "AGUARDANDO_RETORNO":
     case "EXAMES_SOLICITADOS":
+      return "AGUARDANDO_RETORNO";
+    case "REALIZADA":
     case "RETORNO_AGENDADO":
       return "CONCLUIDO";
     default:

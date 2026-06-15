@@ -399,7 +399,8 @@ public class MedicoAgendaController {
             c.getTipo().name(),
             c.getStatus().name(),
             c.getHorario().getInicio(),
-            c.getHorario().getFim());
+            c.getHorario().getFim(),
+            c.getConsultaOrigemId() != null ? c.getConsultaOrigemId().getValor() : null);
     }
 
     public record AtendimentoMedicoDTO(
@@ -410,7 +411,8 @@ public class MedicoAgendaController {
         String tipo,
         String status,
         LocalDateTime inicio,
-        LocalDateTime fim
+        LocalDateTime fim,
+        String consultaOrigemId
     ) {}
 
     public record FilaEncaminhadaDTO(
