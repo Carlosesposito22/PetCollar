@@ -68,6 +68,19 @@ public class DoseVacinal {
     }
 
     /**
+     * Reagenda a data prevista de uma dose ainda não aplicada (RN-079).
+     * Permite ao tutor remarcar uma dose pendente ou em atraso para uma nova data,
+     * mantendo o histórico de doses já aplicadas intacto.
+     */
+    public void reagendar(LocalDate novaData) {
+        if (this.dataAplicacao != null)
+            throw new IllegalStateException("Não é possível reagendar uma dose já aplicada em " + this.dataAplicacao + ".");
+        if (novaData == null)
+            throw new IllegalArgumentException("Nova data da dose não pode ser nula.");
+        this.dataAgendada = novaData;
+    }
+
+    /**
      * Computa o status da dose a partir das datas (RN-073).
      * APLICADA → verde; PENDENTE → amarelo; EM_ATRASO → vermelho.
      */

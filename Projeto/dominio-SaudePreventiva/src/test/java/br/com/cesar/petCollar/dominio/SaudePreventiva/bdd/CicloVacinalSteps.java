@@ -151,6 +151,25 @@ public class CicloVacinalSteps {
             "Mensagem esperada: '" + fragmento + "'. Mensagem real: '" + ctx.excecao.getMessage() + "'");
     }
 
+    @Quando("o tutor reagenda a dose para {string}")
+    public void tutorReagendaDose(String data) {
+        ctx.doseAtual.reagendar(LocalDate.parse(data));
+    }
+
+    @Então("a data agendada da dose deve ser {string}")
+    public void dataAgendadaDaDose(String data) {
+        assertEquals(LocalDate.parse(data), ctx.doseAtual.getDataAgendada());
+    }
+
+    @Quando("se tenta reagendar a dose para {string}")
+    public void tentaReagendarDose(String data) {
+        try {
+            ctx.doseAtual.reagendar(LocalDate.parse(data));
+        } catch (Exception e) {
+            ctx.excecao = e;
+        }
+    }
+
     @Dado("um ciclo {string} com {int} doses e {int} doses já agendadas")
     public void cicloComDosesAgendadas(String nome, int total, int agendadas) {
         doNothing().when(ctx.repositorioMock).salvar(any());

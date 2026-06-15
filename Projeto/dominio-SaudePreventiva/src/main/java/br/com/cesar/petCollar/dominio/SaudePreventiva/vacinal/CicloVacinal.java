@@ -113,6 +113,21 @@ public class CicloVacinal {
     }
 
     /**
+     * Reagenda uma dose pendente ou em atraso deste ciclo para uma nova data (RN-079).
+     * Delega ao método {@link DoseVacinal#reagendar(LocalDate)} que protege o estado:
+     * doses já aplicadas não podem ser remarcadas.
+     */
+    public void reagendarDose(VacinaId doseId, LocalDate novaData) {
+        if (doseId == null)
+            throw new IllegalArgumentException("Id da dose não pode ser nulo.");
+        doses.stream()
+             .filter(d -> d.getId().equals(doseId))
+             .findFirst()
+             .orElseThrow(() -> new IllegalArgumentException("Dose não encontrada neste ciclo."))
+             .reagendar(novaData);
+    }
+
+    /**
      * Calcula a data prevista para a próxima dose usando a estratégia fornecida (RN-075, RN-082).
      *
      * <p>Padrão Strategy: o algoritmo de cálculo é injetado pelo chamador;

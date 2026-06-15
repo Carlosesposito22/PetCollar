@@ -95,6 +95,23 @@ public class CicloVacinalService {
     }
 
     /**
+     * Reagenda uma dose pendente ou em atraso de um ciclo (RN-079).
+     * Usado pelo tutor para remarcar uma vacina atrasada para uma nova data.
+     */
+    public void reagendarDose(VacinaId cicloId, VacinaId doseId, LocalDate novaData) {
+        if (cicloId == null)
+            throw new IllegalArgumentException("Id do ciclo não pode ser nulo.");
+        if (doseId == null)
+            throw new IllegalArgumentException("Id da dose não pode ser nulo.");
+
+        CicloVacinal ciclo = repositorio.buscarPorId(cicloId)
+            .orElseThrow(() -> new IllegalArgumentException("Ciclo vacinal não encontrado: " + cicloId));
+
+        ciclo.reagendarDose(doseId, novaData);
+        repositorio.salvar(ciclo);
+    }
+
+    /**
      * Retorna a carteira completa de vacinação de um paciente (RN-072).
      */
     public List<CicloVacinal> listarPorPaciente(PacienteId pacienteId) {

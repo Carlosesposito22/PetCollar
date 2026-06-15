@@ -49,6 +49,18 @@ Funcionalidade: Ciclo Vacinal — Carteira Digital de Vacinação (F-06)
     Quando se tenta aplicar a dose novamente em "2026-01-02"
     Então deve ser lançada exceção com mensagem contendo "já foi aplicada"
 
+  Cenário: Reagendar uma dose em atraso para nova data
+    Dado uma dose do ciclo "Giardíase" agendada para "2025-01-01"
+    E a dose não foi aplicada
+    Quando o tutor reagenda a dose para "2027-09-10"
+    Então a data agendada da dose deve ser "2027-09-10"
+    E o status da dose deve ser "PENDENTE"
+
+  Cenário: Não permitir reagendar dose já aplicada
+    Dado uma dose já aplicada do ciclo "V10" em "2026-01-01"
+    Quando se tenta reagendar a dose para "2027-01-02"
+    Então deve ser lançada exceção com mensagem contendo "já aplicada"
+
   Cenário: Não permitir agendar além do limite de doses do ciclo
     Dado um ciclo "V10" com 2 doses e 2 doses já agendadas
     Quando se tenta agendar uma terceira dose

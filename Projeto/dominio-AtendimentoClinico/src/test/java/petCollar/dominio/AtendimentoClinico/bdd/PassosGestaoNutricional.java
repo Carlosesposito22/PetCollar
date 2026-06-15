@@ -22,7 +22,7 @@ public class PassosGestaoNutricional {
     // Passos @Dado — Setup
     // ════════════════════════════════════════════════════════════════════════════════════════════
 
-    @Given("existe um plano nutricional com peso ideal {double} kg")
+    @Given("existe um plano nutricional com peso ideal {num} kg")
     public void dadaPlanoComPesoIdeal(double pesoIdealKg) {
         contexto.planoId = PlanoNutricionalId.gerar();
         contexto.pesoIdeal = new PesoIdeal(pesoIdealKg, pesoIdealKg);
@@ -40,7 +40,7 @@ public class PassosGestaoNutricional {
         // Nada a fazer — comorbidades são vazias por padrão
     }
 
-    @Given("existe um plano com peso ideal {double} kg e nivel {string}")
+    @Given("existe um plano com peso ideal {num} kg e nivel {string}")
     public void dadaPlanoComPesoIdealEAtividade(double pesoIdealKg, String nivelStr) {
         contexto.planoId = PlanoNutricionalId.gerar();
         contexto.pesoIdeal = new PesoIdeal(pesoIdealKg, pesoIdealKg);
@@ -48,7 +48,7 @@ public class PassosGestaoNutricional {
         contexto.excecaoCapturada = null;
     }
 
-    @And("o paciente tem a comorbidade {string} com modificador {double}")
+    @And("o paciente tem a comorbidade {string} com modificador {num}")
     public void eComorbidadeAplicada(String tipoComorbidadeStr, double modificador) {
         TipoComorbidade tipoComorbidade = TipoComorbidade.valueOf(tipoComorbidadeStr);
         Comorbidade comorbidade = new Comorbidade(tipoComorbidade, modificador);
@@ -61,7 +61,7 @@ public class PassosGestaoNutricional {
         );
     }
 
-    @Given("existe um plano com peso atual {double} kg e peso ideal {double} kg")
+    @Given("existe um plano com peso atual {num} kg e peso ideal {num} kg")
     public void dadaPlanoComPesos(double pesoAtual, double pesoIdeal) {
         contexto.planoId = PlanoNutricionalId.gerar();
         contexto.pesoIdeal = new PesoIdeal(pesoAtual, pesoIdeal);
@@ -69,12 +69,12 @@ public class PassosGestaoNutricional {
         contexto.excecaoCapturada = null;
     }
 
-    @Given("o NEM calculado e de {double} kcal")
+    @Given("o NEM calculado e de {num} kcal")
     public void dadoNEMFixo(double kcalDiarias) {
         contexto.nemResultante = kcalDiarias;
     }
 
-    @Given("a racao tem {double} kcal por grama")
+    @Given("a racao tem {num} kcal por grama")
     public void dadaDensidadeEnergetica(double kcalPorGrama) {
         // Armazenar para uso no passo @Quando
         if (!contexto.toString().contains("kcalPorGrama")) {
@@ -156,7 +156,7 @@ public class PassosGestaoNutricional {
             "Tipo de alerta incompatível");
     }
 
-    @Then("o dia {int} deve ter {double} porcento da dieta nova")
+    @Then("o dia {int} deve ter {num} porcento da dieta nova")
     public void entaoVerificaPercentualDia(int numeroDia, double percentualEsperado) {
         assertNull(contexto.excecaoCapturada,
             "Não deveria ter lançado exceção");
