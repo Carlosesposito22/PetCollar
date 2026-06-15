@@ -3,7 +3,6 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import {
   criarMedicoService,
-  MEDICAMENTOS_STUB,
   type ProntuarioDTO,
   type RegistroHistoricoDTO,
   type TipoRelatorio,
@@ -57,15 +56,6 @@ const CONFIGURACOES_TIPO: Record<TipoRelatorio, ConfiguracaoTipoRelatorio> = {
       if (!tempoRecuperacao.trim()) return "O tempo de recuperação estimado é obrigatório para relatório cirúrgico.";
       if (!diasCuidado.trim() || Number(diasCuidado) <= 0)
         return "Informe os dias sob cuidado pós-operatório (número maior que zero) para o alerta ao tutor.";
-      return null;
-    },
-  },
-  PREVENTIVO: {
-    rotulo: "Consulta Preventiva",
-    descricao: "Vermifugação ou check-up de rotina",
-    icone: "💉",
-    validar({ resumoTutor }) {
-      if (!resumoTutor.trim()) return "O resumo para o tutor é obrigatório.";
       return null;
     },
   },
@@ -221,7 +211,6 @@ export function MedicoRelatorio() {
       }
     }
 
-    const preventivo = tipoRelatorio === "PREVENTIVO";
     const salvo: RelatorioSalvo = {
       id: (crypto as any).randomUUID?.() ?? `rel-${Date.now()}`,
       pacienteId: pacienteId ?? "",
@@ -237,8 +226,7 @@ export function MedicoRelatorio() {
       peso, temperatura, frequenciaCardiaca,
       diagnostico, resumoTutor, orientacoes,
       cuidadosPosOp, tempoRecuperacao, diasCuidado,
-      medicamentos: preventivo ? [] : MEDICAMENTOS_STUB,
-      anexos: preventivo ? [] : arquivosSelecionados.map((f) => f.name),
+      anexos: arquivosSelecionados.map((f) => f.name),
       assinaturaDataUrl,
       assinadoEm: new Date().toISOString(),
     };
@@ -367,7 +355,7 @@ export function MedicoRelatorio() {
           <p className="mb-4 text-xs text-ink-500">
             Define os campos obrigatórios e a estratégia de validação — padrão Strategy (RN-124)
           </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {(Object.entries(CONFIGURACOES_TIPO) as [TipoRelatorio, ConfiguracaoTipoRelatorio][]).map(
               ([valor, config]) => (
                 <button
@@ -625,8 +613,7 @@ export function MedicoRelatorio() {
           </div>
         )}
 
-        {/* ── Anexos clínicos (não exibidos em consulta preventiva) ─────────── */}
-        {tipoRelatorio !== "PREVENTIVO" && (
+        {/* ── Anexos clínicos ───────────────────────────────────────────────── */}
         <div className="card p-6">
           <h2 className="mb-1 text-base font-semibold text-ink-900">Anexos Clínicos</h2>
           <p className="mb-3 text-xs text-ink-500">
@@ -671,28 +658,6 @@ export function MedicoRelatorio() {
             </div>
           )}
         </div>
-        )}
-
-        {/* ── Medicamentos prescritos (não exibidos em consulta preventiva) ── */}
-        {tipoRelatorio !== "PREVENTIVO" && (
-        <div className="card p-6">
-          <h2 className="mb-1 text-base font-semibold text-ink-900">Medicamentos Prescritos</h2>
-          <p className="mb-3 text-xs text-ink-500">
-            Incluídos automaticamente com base na prescrição registrada
-          </p>
-          <ul className="space-y-2">
-            {MEDICAMENTOS_STUB.map((m, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-3 rounded-xl bg-ink-50/60 px-3 py-2.5 text-sm text-ink-700"
-              >
-                <span className="mt-0.5 shrink-0 text-brand-500">💊</span>
-                {m}
-              </li>
-            ))}
-          </ul>
-        </div>
-        )}
 
         {/* ── Assinatura digital do médico (desenho com o mouse) ────────────── */}
         <div className="card p-6">
@@ -959,24 +924,6 @@ function RelatorioLeituraView({
               <li key={i} className="flex items-center gap-2 text-sm text-brand-700">
                 <span>📎</span>
                 {nome}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Medicamentos */}
-      {relatorioSalvo.medicamentos.length > 0 && (
-        <div className="card p-6">
-          <h2 className="mb-3 text-base font-semibold text-ink-900">Medicamentos Prescritos</h2>
-          <ul className="space-y-2">
-            {relatorioSalvo.medicamentos.map((m, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-3 rounded-xl bg-ink-50/60 px-3 py-2.5 text-sm text-ink-700"
-              >
-                <span className="mt-0.5 shrink-0 text-brand-500">💊</span>
-                {m}
               </li>
             ))}
           </ul>

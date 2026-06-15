@@ -14,7 +14,7 @@ export type RelatorioSalvo = {
   raca: string;
   medicoNome: string;
   data: string;                 // dd/mm/aaaa
-  tipoRelatorio: string;        // ROTINEIRO | CIRURGICO | PREVENTIVO
+  tipoRelatorio: string;        // ROTINEIRO | CIRURGICO
   tipoRotulo: string;
   peso: string;
   temperatura: string;
@@ -25,7 +25,6 @@ export type RelatorioSalvo = {
   cuidadosPosOp: string;
   tempoRecuperacao: string;
   diasCuidado?: string;         // dias sob cuidado pós-operatório (relatório cirúrgico)
-  medicamentos: string[];
   anexos: string[];
   assinaturaDataUrl: string;    // PNG base64 da assinatura desenhada
   assinadoEm: string;           // ISO
@@ -88,10 +87,6 @@ export function gerarPdfRelatorio(r: RelatorioSalvo): void {
     r.temperatura ? `Temperatura: <strong>${esc(r.temperatura)} °C</strong>` : "",
     r.frequenciaCardiaca ? `Freq. cardíaca: <strong>${esc(r.frequenciaCardiaca)} bpm</strong>` : "",
   ].filter(Boolean).join(" &nbsp;•&nbsp; ");
-
-  const medicamentos = r.medicamentos.length
-    ? `<ul>${r.medicamentos.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>`
-    : "<p class='vazio'>Nenhum medicamento prescrito.</p>";
 
   const anexos = r.anexos.length
     ? `<ul>${r.anexos.map((a) => `<li>📎 ${esc(a)}</li>`).join("")}</ul>`
@@ -156,9 +151,6 @@ export function gerarPdfRelatorio(r: RelatorioSalvo): void {
   ${r.resumoTutor ? `<div class="bloco"><div class="rotulo">Resumo para o Tutor</div><div class="valor destaque">${esc(r.resumoTutor).replace(/\n/g, "<br>")}</div></div>` : ""}
   ${bloco("Orientações de Manejo", r.orientacoes)}
   ${cirurgico}
-
-  <h2>Medicamentos Prescritos</h2>
-  ${medicamentos}
 
   ${anexos ? `<h2>Anexos Clínicos</h2>${anexos}` : ""}
 
