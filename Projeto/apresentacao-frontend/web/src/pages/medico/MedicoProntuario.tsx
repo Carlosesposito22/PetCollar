@@ -282,6 +282,7 @@ function ModalFinalizarAtendimento({
   onFinalizado: () => void;
 }) {
   const ehRetornoAgendado = tipoConsulta === "RETORNO" && !!consultaId;
+  const ehInicialAgendado = tipoConsulta === "INICIAL" && !!consultaId;
   const [etapa, setEtapa] = useState<EtapaPront>("retorno");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -317,9 +318,13 @@ function ModalFinalizarAtendimento({
     setErro(null);
     try {
       if (ehRetornoAgendado) {
-        // Finaliza a consulta de retorno agendada — sem nova elegibilidade de retorno.
+        // Consulta de retorno agendada: encerra o ciclo, sem nova elegibilidade.
         await service.finalizarConsulta(consultaId!, false, false, []);
+      } else if (ehInicialAgendado) {
+        // Consulta inicial agendada: usa finalizarConsulta para marcar como REALIZADA.
+        await service.finalizarConsulta(consultaId!, temRetorno, comExames, exames);
       } else if (temRetorno) {
+        // Paciente da fila (sem consulta agendada): cria elegibilidade de retorno.
         await service.liberarRetorno(pacienteId, comExames, exames);
       }
       await service.finalizarAtendimento(pacienteId);

@@ -50,7 +50,9 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/medico")
@@ -101,8 +103,15 @@ public class MedicoAgendaController {
         LocalDateTime inicio = (data != null ? data : LocalDate.now()).atStartOfDay();
         LocalDateTime fim = (data != null) ? data.atTime(LocalTime.MAX) : inicio.plusYears(1);
 
-        return consultas.listarPorMedicoEPeriodo(medicoId, inicio, fim).stream()
+        // Merge: consultas do período + pendentes de retorno de qualquer data (sem duplicatas).
+        Map<String, Consulta> porId = new LinkedHashMap<>();
+        consultas.listarPorMedicoEPeriodo(medicoId, inicio, fim).stream()
             .filter(c -> c.getStatus() != StatusConsulta.CANCELADA)
+            .forEach(c -> porId.put(c.getId().getValor(), c));
+        consultas.listarPendentesRetornoPorMedico(medicoId)
+            .forEach(c -> porId.putIfAbsent(c.getId().getValor(), c));
+
+        return porId.values().stream()
             .sorted(Comparator.comparing(c -> c.getHorario().getInicio()))
             .map(this::montar)
             .toList();

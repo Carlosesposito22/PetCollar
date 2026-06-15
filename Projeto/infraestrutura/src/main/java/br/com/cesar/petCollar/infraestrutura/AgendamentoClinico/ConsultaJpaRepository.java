@@ -28,6 +28,9 @@ public interface ConsultaJpaRepository extends JpaRepository<ConsultaJpa, String
                                               @Param("inicio") LocalDateTime inicio,
                                               @Param("fim") LocalDateTime fim);
 
+    /** Consultas do médico com qualquer dos status informados (independente de período). */
+    List<ConsultaJpa> findByMedicoIdAndStatusIn(String medicoId, Collection<String> statuses);
+
     /** Existe consulta ativa do paciente sobreposta ao intervalo informado (RN 5). */
     @Query("""
            select case when count(c) > 0 then true else false end from ConsultaJpa c

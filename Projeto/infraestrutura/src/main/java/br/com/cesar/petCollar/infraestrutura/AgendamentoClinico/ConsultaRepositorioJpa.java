@@ -33,6 +33,11 @@ public class ConsultaRepositorioJpa implements IConsultaRepositorio {
         StatusConsulta.AGUARDANDO_RETORNO.name(),
         StatusConsulta.EXAMES_SOLICITADOS.name());
 
+    private static final List<String> STATUS_PENDENTES_RETORNO = List.of(
+        StatusConsulta.AGUARDANDO_RETORNO.name(),
+        StatusConsulta.EXAMES_SOLICITADOS.name(),
+        StatusConsulta.RETORNO_AGENDADO.name());
+
     private final ConsultaJpaRepository jpa;
 
     public ConsultaRepositorioJpa(ConsultaJpaRepository jpa) {
@@ -72,6 +77,13 @@ public class ConsultaRepositorioJpa implements IConsultaRepositorio {
     @Override
     public List<Consulta> listarElegiveisRetorno(PacienteId pacienteId) {
         return jpa.findByPacienteIdAndStatusIn(pacienteId.getValor(), STATUS_ELEGIVEIS_RETORNO).stream()
+            .map(ConsultaJpa::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<Consulta> listarPendentesRetornoPorMedico(MedicoId medicoId) {
+        return jpa.findByMedicoIdAndStatusIn(medicoId.getValor(), STATUS_PENDENTES_RETORNO).stream()
             .map(ConsultaJpa::toDomain)
             .toList();
     }

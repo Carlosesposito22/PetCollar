@@ -24,4 +24,11 @@ public interface IConsultaRepositorio {
 
     /** Indica se o paciente já possui consulta ativa sobreposta ao horário (RN 5). */
     boolean existeConflitoNoPaciente(PacienteId pacienteId, HorarioConsulta horario);
+
+    /**
+     * Consultas do médico aguardando ou com retorno agendado, sem restrição de período
+     * (AGUARDANDO_RETORNO, EXAMES_SOLICITADOS, RETORNO_AGENDADO). Usado para popular
+     * a aba "Finalizadas" do painel do médico, que deve exibir pendências de qualquer data.
+     */
+    List<Consulta> listarPendentesRetornoPorMedico(MedicoId medicoId);
 }
