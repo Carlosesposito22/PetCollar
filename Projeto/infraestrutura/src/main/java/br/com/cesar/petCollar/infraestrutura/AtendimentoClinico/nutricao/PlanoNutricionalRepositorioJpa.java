@@ -76,4 +76,11 @@ public class PlanoNutricionalRepositorioJpa implements IPlanoNutricionalReposito
                         StatusPlanoNutricional.SUBSTITUIDO.name()))
                 .stream().map(PlanoNutricionalJpa::toDomain).toList();
     }
+
+    @Override
+    public long contarPlanosComRacao(
+            br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RacaoId racaoId) {
+        if (racaoId == null) return 0;
+        return jpa.countByRacaoId(racaoId.getValor());
+    }
 }

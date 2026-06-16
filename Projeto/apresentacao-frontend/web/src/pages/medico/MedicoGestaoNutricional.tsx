@@ -345,6 +345,8 @@ export function MedicoGestaoNutricional() {
             valor={parametros.pesoIdealKg}
             onChange={v => setParametros({ ...parametros, pesoIdealKg: v })}
             passo={0.1}
+            placeholder={placeholderPesoIdeal(parametros.pesoAtualKg, idadeAnos)}
+            ajuda={ajudaPesoIdeal(parametros.pesoAtualKg, idadeAnos)}
           />
           <CampoSelect<NivelAtividade>
             rotulo="Nível de Atividade"
@@ -885,9 +887,10 @@ function LinhaDelta({ evolucao }: { evolucao: HistoricoEvolutivoDTO["evolucoes"]
 }
 
 function CampoNumero({
-  rotulo, valor, onChange, passo = 1,
+  rotulo, valor, onChange, passo = 1, placeholder, ajuda,
 }: {
-  rotulo: string; valor: number; onChange: (v: number) => void; passo?: number;
+  rotulo: string; valor: number; onChange: (v: number) => void;
+  passo?: number; placeholder?: string; ajuda?: string;
 }) {
   // Mantém o input como string durante a edição para permitir apagar tudo,
   // digitar "5.5" sem o React forçar de volta pra "5", etc. Só converte
@@ -911,7 +914,7 @@ function CampoNumero({
         type="text"
         inputMode="decimal"
         value={texto}
-        placeholder="0,0"
+        placeholder={placeholder ?? "0,0"}
         onChange={e => {
           const t = e.target.value.replace(/[^0-9.,]/g, "");
           setTexto(t);
@@ -920,6 +923,7 @@ function CampoNumero({
         }}
         className="mt-1 w-full rounded-lg border border-ink-300 px-3 py-2 text-sm"
       />
+      {ajuda && <span className="mt-1 block text-xs text-ink-500">{ajuda}</span>}
       <span className="sr-only">passo {passo}</span>
     </label>
   );
@@ -1116,4 +1120,39 @@ function Linha({ rotulo, valor, destaque = false }: { rotulo: string; valor: str
       </dd>
     </div>
   );
+}
+
+// ── Heurística clínica de peso ideal sugerido ────────────────────────────────
+//
+// Sem um BCS (Body Condition Score) registrado no prontuário, estimamos o
+// peso ideal a partir da idade do paciente:
+//
+//   • Filhote (<1 ano): peso ideal = peso atual (animal em crescimento, sem
+//     meta diferente do que ele já está).
+//   • Adulto (1–7 anos): peso ideal = peso atual × 1,00 (assume BCS 5/9
+//     ideal — sem motivo clínico pra alterar).
+//   • Sênior (>7 anos): peso ideal = peso atual × 0,95 (sêniors tendem a
+//     ganhar peso pela redução de atividade; sugerimos uma meta conservadora
+//     de 5% de redução como ponto de partida da discussão clínica).
+//
+// É sempre apenas SUGESTÃO no placeholder — o médico digita o valor real
+// baseado no exame físico e no peso ideal de referência da raça.
+
+function calcularPesoIdealSugerido(pesoAtualKg: number, idadeAnos: number): number {
+  if (pesoAtualKg <= 0) return 0;
+  if (idadeAnos < 1) return pesoAtualKg;                   // Filhote
+  if (idadeAnos <= 7) return pesoAtualKg;                   // Adulto saudável
+  return Math.round(pesoAtualKg * 0.95 * 10) / 10;          // Sênior — 5% conservador
+}
+
+function placeholderPesoIdeal(pesoAtualKg: number, idadeAnos: number): string {
+  const sugerido = calcularPesoIdealSugerido(pesoAtualKg, idadeAnos);
+  return sugerido > 0 ? `Sugestão: ${sugerido}` : "0,0";
+}
+
+function ajudaPesoIdeal(pesoAtualKg: number, idadeAnos: number): string | undefined {
+  if (pesoAtualKg <= 0) return undefined;
+  if (idadeAnos < 1) return "Filhote — sugestão = peso atual (paciente em crescimento).";
+  if (idadeAnos <= 7) return "Adulto saudável — sugestão assume BCS 5/9 (peso atual).";
+  return "Sênior — sugestão conservadora de −5% (sêniors tendem a ganhar peso por redução de atividade).";
 }

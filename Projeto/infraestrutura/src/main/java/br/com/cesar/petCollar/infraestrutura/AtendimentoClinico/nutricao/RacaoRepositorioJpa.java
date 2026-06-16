@@ -30,6 +30,13 @@ public class RacaoRepositorioJpa implements IRacaoRepositorio {
     }
 
     @Override
+    public List<Racao> listarAtivas() {
+        return jpa.findAll().stream()
+                .filter(j -> !j.isDesativada())
+                .map(RacaoJpa::toDomain).toList();
+    }
+
+    @Override
     public List<Racao> listarTodas() {
         return jpa.findAll().stream().map(RacaoJpa::toDomain).toList();
     }

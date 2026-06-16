@@ -16,16 +16,24 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.parametros.Com
  * indicada, e quais {@link Comorbidade}s ela cobre. A compatibilidade é
  * verificada pelos métodos {@code compativelCom*}, que servem de input para
  * as Strategies de recomendação.
+ *
+ * <p>O agregado suporta edição e <strong>desativação suave</strong> (soft delete):
+ * uma ração desativada sai das recomendações mas continua acessível por id
+ * para preservar a integridade histórica dos planos nutricionais que a
+ * prescreveram.
  */
-public final class Racao {
+public class Racao {
 
     private final RacaoId id;
-    private final String fabricante;
-    private final String linha;
-    private final BigDecimal densidadeCaloricaKcalPorKg;
-    private final Set<FaixaEtaria> faixasIndicadas;
-    private final Set<Porte> portesIndicados;
-    private final Set<Comorbidade> comorbidadesIndicadas;
+    private String fabricante;
+    private String linha;
+    private BigDecimal densidadeCaloricaKcalPorKg;
+    private Set<FaixaEtaria> faixasIndicadas;
+    private Set<Porte> portesIndicados;
+    private Set<Comorbidade> comorbidadesIndicadas;
+    private boolean desativada;
+
+    // ── Construtor de CRIAÇÃO (nasce ativa) ──────────────────────────────────
 
     public Racao(RacaoId id,
                  String fabricante,
@@ -35,16 +43,7 @@ public final class Racao {
                  Set<Porte> portesIndicados,
                  Set<Comorbidade> comorbidadesIndicadas) {
         if (id == null) throw new IllegalArgumentException("Id da ração é obrigatório.");
-        if (fabricante == null || fabricante.isBlank())
-            throw new IllegalArgumentException("Fabricante da ração é obrigatório.");
-        if (linha == null || linha.isBlank())
-            throw new IllegalArgumentException("Linha/nome da ração é obrigatório.");
-        if (densidadeCaloricaKcalPorKg == null || densidadeCaloricaKcalPorKg.signum() <= 0)
-            throw new IllegalArgumentException("Densidade calórica deve ser positiva.");
-        if (faixasIndicadas == null || faixasIndicadas.isEmpty())
-            throw new IllegalArgumentException("Pelo menos uma faixa etária deve ser indicada.");
-        if (portesIndicados == null || portesIndicados.isEmpty())
-            throw new IllegalArgumentException("Pelo menos um porte deve ser indicado.");
+        validarCampos(fabricante, linha, densidadeCaloricaKcalPorKg, faixasIndicadas, portesIndicados);
 
         this.id = id;
         this.fabricante = fabricante;
@@ -52,10 +51,58 @@ public final class Racao {
         this.densidadeCaloricaKcalPorKg = densidadeCaloricaKcalPorKg;
         this.faixasIndicadas = Collections.unmodifiableSet(EnumSet.copyOf(faixasIndicadas));
         this.portesIndicados = Collections.unmodifiableSet(EnumSet.copyOf(portesIndicados));
-        this.comorbidadesIndicadas = comorbidadesIndicadas == null || comorbidadesIndicadas.isEmpty()
-                ? Set.of(Comorbidade.NENHUMA)
-                : Collections.unmodifiableSet(new LinkedHashSet<>(comorbidadesIndicadas));
+        this.comorbidadesIndicadas = normalizarComorbidades(comorbidadesIndicadas);
+        this.desativada = false;
     }
+
+    // ── Construtor de RECONSTRUÇÃO (infra ↔ banco) ──────────────────────────
+
+    public Racao(RacaoId id,
+                 String fabricante,
+                 String linha,
+                 BigDecimal densidadeCaloricaKcalPorKg,
+                 Set<FaixaEtaria> faixasIndicadas,
+                 Set<Porte> portesIndicados,
+                 Set<Comorbidade> comorbidadesIndicadas,
+                 boolean desativada) {
+        this(id, fabricante, linha, densidadeCaloricaKcalPorKg,
+                faixasIndicadas, portesIndicados, comorbidadesIndicadas);
+        this.desativada = desativada;
+    }
+
+    // ── Operações de negócio ────────────────────────────────────────────────
+
+    /** Substitui todos os campos editáveis (validados como na criação). */
+    public void editar(String fabricante, String linha,
+                       BigDecimal densidadeCaloricaKcalPorKg,
+                       Set<FaixaEtaria> faixasIndicadas,
+                       Set<Porte> portesIndicados,
+                       Set<Comorbidade> comorbidadesIndicadas) {
+        validarCampos(fabricante, linha, densidadeCaloricaKcalPorKg, faixasIndicadas, portesIndicados);
+        this.fabricante = fabricante;
+        this.linha = linha;
+        this.densidadeCaloricaKcalPorKg = densidadeCaloricaKcalPorKg;
+        this.faixasIndicadas = Collections.unmodifiableSet(EnumSet.copyOf(faixasIndicadas));
+        this.portesIndicados = Collections.unmodifiableSet(EnumSet.copyOf(portesIndicados));
+        this.comorbidadesIndicadas = normalizarComorbidades(comorbidadesIndicadas);
+    }
+
+    /** Soft-delete — a ração some das recomendações mas permanece no banco para auditoria histórica. */
+    public void desativar() {
+        if (this.desativada)
+            throw new IllegalStateException("Ração já está desativada.");
+        this.desativada = true;
+    }
+
+    public void reativar() {
+        if (!this.desativada)
+            throw new IllegalStateException("Ração já está ativa.");
+        this.desativada = false;
+    }
+
+    public boolean isAtiva() { return !desativada; }
+
+    // ── Compatibilidade (usado pelas Strategies) ────────────────────────────
 
     public boolean compativelComFaixa(FaixaEtaria faixa)   { return faixasIndicadas.contains(faixa); }
     public boolean compativelComPorte(Porte porte)         { return portesIndicados.contains(porte); }
@@ -65,7 +112,31 @@ public final class Racao {
 
     public String descricaoCurta() { return fabricante + " " + linha; }
 
-    // ── Getters ───────────────────────────────────────────────────────────────
+    // ── Validações compartilhadas ───────────────────────────────────────────
+
+    private static void validarCampos(String fabricante, String linha,
+                                       BigDecimal densidade,
+                                       Set<FaixaEtaria> faixas, Set<Porte> portes) {
+        if (fabricante == null || fabricante.isBlank())
+            throw new IllegalArgumentException("Fabricante da ração é obrigatório.");
+        if (linha == null || linha.isBlank())
+            throw new IllegalArgumentException("Linha/nome da ração é obrigatório.");
+        if (densidade == null || densidade.signum() <= 0)
+            throw new IllegalArgumentException("Densidade calórica deve ser positiva.");
+        if (faixas == null || faixas.isEmpty())
+            throw new IllegalArgumentException("Pelo menos uma faixa etária deve ser indicada.");
+        if (portes == null || portes.isEmpty())
+            throw new IllegalArgumentException("Pelo menos um porte deve ser indicado.");
+    }
+
+    private static Set<Comorbidade> normalizarComorbidades(Set<Comorbidade> entrada) {
+        return entrada == null || entrada.isEmpty()
+                ? Set.of(Comorbidade.NENHUMA)
+                : Collections.unmodifiableSet(new LinkedHashSet<>(entrada));
+    }
+
+    // ── Getters ─────────────────────────────────────────────────────────────
+
     public RacaoId getId()                                  { return id; }
     public String getFabricante()                           { return fabricante; }
     public String getLinha()                                { return linha; }
@@ -73,4 +144,5 @@ public final class Racao {
     public Set<FaixaEtaria> getFaixasIndicadas()            { return faixasIndicadas; }
     public Set<Porte> getPortesIndicados()                  { return portesIndicados; }
     public Set<Comorbidade> getComorbidadesIndicadas()      { return comorbidadesIndicadas; }
+    public boolean isDesativada()                           { return desativada; }
 }

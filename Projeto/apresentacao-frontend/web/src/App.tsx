@@ -7,6 +7,7 @@ import { AdminLogin } from "./pages/AdminLogin";
 import { ContratarPlano } from "./pages/ContratarPlano";
 import { PagamentoPendente } from "./pages/PagamentoPendente";
 import { AdminPanel } from "./pages/AdminPanel";
+import { AdminCatalogoRacoes } from "./pages/admin/AdminCatalogoRacoes";
 import { Dashboard } from "./pages/Dashboard";
 import { TutorLayout } from "./pages/tutor/TutorLayout";
 import { RecepcionistaLayout } from "./pages/recepcionista/RecepcionistaLayout";
@@ -125,6 +126,8 @@ export function App() {
         {/* F-03 — Protocolo de inacessibilidade: administração (configuração) */}
         <Route path="protocolos/configuracao" element={<ConfiguracaoProtocoloPage />} />
         <Route path="protocolos/configuracao/historico" element={<HistoricoConfiguracaoPage />} />
+        {/* F-11 — Admin: CRUD do catálogo de rações */}
+        <Route path="catalogo-racoes" element={<AdminCatalogoRacoes />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
