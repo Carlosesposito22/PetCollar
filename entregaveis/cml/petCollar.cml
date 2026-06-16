@@ -113,66 +113,26 @@ BoundedContext ContextoAssinaturaFaturamento implements RelacaoTutorSubdomain {
 
         Entity Plano {
             aggregateRoot
-            - @PlanoId  planoId
-            String      nomeComercial
-            - @Dinheiro valorMensalidade
-            Boolean     ativoParaContratacao
+            - @PlanoId          planoId
+            String              nome
+            - @ValorMensalidade mensalidade
         }
 
-        ValueObject PlanoId  { String id }
-        ValueObject Dinheiro {
-            Double valor
-            String moeda
+        ValueObject PlanoId         { String id }
+        ValueObject ValorMensalidade {
+            BigDecimal valor
+            String     moeda
+        }
+
+        Service PublicadorDeAlteracoesPlano {
+            void publicarAlteracao(@Plano plano);
         }
 
         Repository PlanoRepository {
-            List<@Plano> findAtivosParaContratacao();
-            @Plano save(@Plano plano);
-        }
-    }
-
-    Aggregate Assinatura {
-
-        Entity Assinatura {
-            aggregateRoot
-            - @AssinaturaId     assinaturaId
-            - @TutorId          tutorId
-            - @PlanoId          planoContratado
-            DateTime            contratadaEm
-            DateTime            ativadaEm
-            - @StatusAssinatura status
-            Integer             mensalidadesConsecutivasEmAtraso
-            DateTime            proximoVencimento
-        }
-
-        enum StatusAssinatura    { PENDENTE, ATIVA, INADIMPLENTE, SUSPENSA, CANCELADA }
-        ValueObject AssinaturaId { String id }
-
-        Service ContratacaoPlanoService {
-            @Assinatura contratar(@TutorId tutorId, @PlanoId planoId);
-        }
-
-        Service GestaoInadimplenciaService {
-            @StatusAssinatura avaliarStatus(@AssinaturaId assinaturaId);
-            void reiniciarContagemAposQuitacao(@AssinaturaId assinaturaId);
-        }
-
-        DomainEvent AssinaturaAtivadaEvent {
-            - @AssinaturaId assinaturaId
-            - @TutorId tutorId
-            DateTime ativadaEm
-        }
-
-        DomainEvent ContaSuspensaEvent {
-            - @AssinaturaId assinaturaId
-            - @TutorId tutorId
-            Integer mensalidadesEmAtraso
-        }
-
-        Repository AssinaturaRepository {
-            @Assinatura findByTutor(@TutorId tutorId);
-            List<@Assinatura> findByStatus(@StatusAssinatura status);
-            @Assinatura save(@Assinatura assinatura);
+            @Plano buscarPorId(@PlanoId id);
+            List<@Plano> listar();
+            void salvar(@Plano plano);
+            void remover(@PlanoId id);
         }
     }
 
@@ -180,71 +140,37 @@ BoundedContext ContextoAssinaturaFaturamento implements RelacaoTutorSubdomain {
 
         Entity Cobranca {
             aggregateRoot
-            - @CobrancaId       cobrancaId
-            - @AssinaturaId     assinaturaId
-            - @TutorId          tutorId
-            - @Dinheiro         valorOriginal
-            - @Dinheiro         valorJurosAcumulado
-            - @Dinheiro         valorAtualizado
-            DateTime            dataVencimento
-            DateTime            dataPagamento
-            - @StatusCobranca   status
-            Integer             diasEmAtraso
+            - @CobrancaId   cobrancaId
+            - @TutorId      tutorId
+            - @PlanoId      planoId
+            - @Competencia  competencia
+            BigDecimal      valorOriginal
+            BigDecimal      descontoIndicacao
+            LocalDate       vencimento
+            LocalDate       dataPagamento
+            BigDecimal      jurosFixados
         }
 
-        enum StatusCobranca    { ABERTA, PAGA, EM_ATRASO, CANCELADA }
+        enum StatusCobranca    { PENDENTE, EM_ATRASO, PAGA }
         ValueObject CobrancaId { String id }
-
-        Service CalculoJurosService {
-            @Dinheiro calcularValorAtualizado(@Cobranca cobranca, DateTime dataReferencia);
-            @Dinheiro consolidarTotalDevido(List<@Cobranca> cobrancasEmAtraso, DateTime dataReferencia);
+        ValueObject Competencia {
+            Integer mes
+            Integer ano
         }
 
-        Service GeracaoMensalidadeService {
-            @Cobranca gerarPrimeiraCobranca(@AssinaturaId assinaturaId);
-            List<@Cobranca> gerarCobrancasMensaisDoMes(DateTime dataReferencia);
+        Service ClassificacaoInadimplenciaService {
+            @SituacaoConta calcular(@TutorId tutorId, DateTime dataReferencia);
+        }
+
+        Service ConsolidacaoQuitacaoService {
+            BigDecimal consolidarTotalDevido(@TutorId tutorId, DateTime dataReferencia);
+            void quitarTodasEmAberto(@TutorId tutorId);
         }
 
         Repository CobrancaRepository {
-            List<@Cobranca> findByAssinatura(@AssinaturaId assinaturaId);
-            List<@Cobranca> findEmAtrasoByTutor(@TutorId tutorId);
-            @Cobranca save(@Cobranca cobranca);
-        }
-    }
-
-    Aggregate Pagamento {
-
-        Entity Pagamento {
-            aggregateRoot
-            - @PagamentoId      pagamentoId
-            - List<@CobrancaId> cobrancasReferenciadas
-            - @QRCodePix        qrCode
-            - @Dinheiro         valorTotal
-            - @StatusPagamento  status
-            DateTime            geradoEm
-            DateTime            expiraEm
-        }
-
-        ValueObject QRCodePix {
-            String codigoCopiaECola
-            String txid
-        }
-        ValueObject PagamentoId  { String id }
-        enum StatusPagamento     { AGUARDANDO, CONFIRMADO, EXPIRADO, CANCELADO }
-
-        Service GeracaoQRCodeService {
-            @Pagamento gerarParaCobranca(@CobrancaId cobrancaId);
-            @Pagamento gerarConsolidadoParaSuspensao(@TutorId tutorId);
-        }
-
-        Service ConfirmacaoPagamentoService {
-            void confirmarViaWebhook(String identificadorGateway);
-        }
-
-        Repository PagamentoRepository {
-            List<@Pagamento> findAguardandoByTutor(@TutorId tutorId);
-            @Pagamento findByIdentificadorGateway(String identificadorGateway);
-            @Pagamento save(@Pagamento pagamento);
+            List<@Cobranca> buscarPorTutor(@TutorId tutorId);
+            List<@Cobranca> buscarEmAtrasoByTutor(@TutorId tutorId);
+            void salvar(@Cobranca cobranca);
         }
     }
 }
@@ -258,19 +184,25 @@ BoundedContext ContextoBeneficiosPlano implements RelacaoTutorSubdomain {
         Entity BeneficioCatalogo {
             aggregateRoot
             - @BeneficioCatalogoId beneficioId
+            - @PlanoId             planoId
             String                 nome
-            String                 descricao
-            Integer                diasCarenciaPadrao
             - @PeriodoRenovacao    periodoRenovacao
             Integer                limiteUsosPorPeriodo
+            Integer                carenciaDias
+            Boolean                ativo
         }
 
         enum PeriodoRenovacao            { MENSAL, TRIMESTRAL, ANUAL }
         ValueObject BeneficioCatalogoId  { String id }
 
+        Service PublicadorDeAlteracoesBeneficio {
+            void publicarAlteracao(@BeneficioCatalogo catalogo);
+        }
+
         Repository BeneficioCatalogoRepository {
-            List<@BeneficioCatalogo> findAllAtivos();
-            @BeneficioCatalogo save(@BeneficioCatalogo beneficio);
+            List<@BeneficioCatalogo> findByPlanoId(@PlanoId planoId);
+            @BeneficioCatalogo buscarPorId(@BeneficioCatalogoId id);
+            void salvar(@BeneficioCatalogo beneficio);
         }
     }
 
@@ -280,26 +212,30 @@ BoundedContext ContextoBeneficiosPlano implements RelacaoTutorSubdomain {
             aggregateRoot
             - @BeneficioTutorId    id
             - @TutorId             tutorId
+            - @PlanoId             planoId
             - @BeneficioCatalogoId beneficioCatalogoId
-            DateTime               inicioCarencia
             DateTime               dataLiberacao
+            - @StatusBeneficio     status
+            - @PeriodoRenovacao    periodoRenovacao
+            Integer                limiteUsosPorPeriodo
             Integer                usosRestantesPeriodoAtual
-            DateTime               fimPeriodoVigente
-            - @StatusBeneficio     statusCalculado
+            DateTime               inicioPeriodoAtual
         }
 
         enum StatusBeneficio         { EM_CARENCIA, DISPONIVEL, ESGOTADO }
         ValueObject BeneficioTutorId { String id }
 
         Service CalculoStatusBeneficioService {
-            @StatusBeneficio calcularStatus(@BeneficioTutor beneficio, DateTime agora);
-            void reiniciarContadorAoIniciarNovoPeriodo(@BeneficioTutorId id, DateTime agora);
+            @StatusBeneficio recalcularStatus(@BeneficioTutor beneficio, DateTime agora);
+            void reiniciarPeriodoSeNecessario(@BeneficioTutor beneficio, DateTime agora);
+            void sincronizarLimitePorConfiguracao(@BeneficioTutorId id, Integer novoLimite, DateTime agora);
         }
 
         Repository BeneficioTutorRepository {
             List<@BeneficioTutor> findByTutor(@TutorId tutorId);
+            List<@BeneficioTutor> findByPlanoId(@PlanoId planoId);
             @BeneficioTutor findByTutorECatalogo(@TutorId tutorId, @BeneficioCatalogoId catalogoId);
-            @BeneficioTutor save(@BeneficioTutor beneficio);
+            void salvar(@BeneficioTutor beneficio);
         }
     }
 
@@ -309,27 +245,23 @@ BoundedContext ContextoBeneficiosPlano implements RelacaoTutorSubdomain {
             aggregateRoot
             - @TicketBeneficioId ticketId
             - @CodigoGUID        codigoValidacao
-            - @TutorId           tutorId
             - @BeneficioTutorId  beneficioTutorId
-            String               nomeBeneficio
-            String               nomeAnimalVinculado
             DateTime             geradoEm
             DateTime             expiraEm
             - @StatusTicket      status
         }
 
-        enum StatusTicket            { GERADO, APRESENTADO, UTILIZADO, EXPIRADO, CANCELADO }
+        enum StatusTicket             { GERADO, APRESENTADO, UTILIZADO, EXPIRADO, CANCELADO }
         ValueObject TicketBeneficioId { String id }
         ValueObject CodigoGUID        { String valor }
 
         Service GeracaoTicketService {
-            @TicketBeneficio gerarTicket(@TutorId tutorId, @BeneficioTutorId beneficioTutorId);
-            Boolean validarDisponibilidadeConcorrente(@BeneficioTutorId beneficioTutorId);
+            @TicketBeneficio gerarTicket(@BeneficioTutorId beneficioTutorId, DateTime agora);
         }
 
         Service ExpiracaoTicketService {
             void cancelarTicketsExpirados(DateTime agora);
-            void devolverUsoAoSaldo(@TicketBeneficioId ticketId);
+            void devolverUsoAoSaldo(@TicketBeneficioId ticketId, DateTime agora);
         }
 
         DomainEvent TicketBeneficioGeradoEvent {
@@ -341,7 +273,7 @@ BoundedContext ContextoBeneficiosPlano implements RelacaoTutorSubdomain {
         Repository TicketBeneficioRepository {
             @TicketBeneficio findByCodigoGUID(@CodigoGUID codigo);
             List<@TicketBeneficio> findExpiradosNaoCancelados(DateTime agora);
-            @TicketBeneficio save(@TicketBeneficio ticket);
+            void salvar(@TicketBeneficio ticket);
         }
     }
 }
@@ -368,9 +300,9 @@ BoundedContext ContextoGamificacao implements RelacaoTutorSubdomain {
         ValueObject BadgeId { String id }
 
         Repository BadgeRepository {
-            List<@Badge> findAssociadasAoEvento(String chaveEvento);
-            List<@Badge> findByCategoria(@CategoriaBadge categoria);
-            @Badge save(@Badge badge);
+            List<@Badge> findByChaveEvento(String chaveEvento);
+            List<@Badge> findAll();
+            void salvar(@Badge badge);
         }
     }
 
@@ -382,14 +314,16 @@ BoundedContext ContextoGamificacao implements RelacaoTutorSubdomain {
             - @TutorId     tutorId
             - @BadgeId     badgeId
             DateTime       conquistadoEm
-            String         eventoDisparador
         }
 
         ValueObject ConquistaId { String id }
 
         Service ConcessaoBadgeService {
-            @ConquistaTutor concederBadge(@TutorId tutorId, @BadgeId badgeId, String eventoDisparador);
-            List<@Badge> avaliarBadgesAfetadasPelo(String chaveEvento, @TutorId tutorId);
+            List<@ConquistaTutor> avaliarBadgesParaEvento(@TutorId tutorId, String chaveEvento);
+        }
+
+        Service ConcessaoBadgeObservador {
+            void aoReceberEventoDoTutor(@TutorId tutorId, String chaveEvento);
         }
 
         DomainEvent BadgeConquistadaEvent {
@@ -400,9 +334,9 @@ BoundedContext ContextoGamificacao implements RelacaoTutorSubdomain {
         }
 
         Repository ConquistaTutorRepository {
-            List<@ConquistaTutor> findByTutor(@TutorId tutorId);
+            List<@ConquistaTutor> findByTutorId(@TutorId tutorId);
             Boolean existsByTutorEBadge(@TutorId tutorId, @BadgeId badgeId);
-            @ConquistaTutor save(@ConquistaTutor conquista);
+            void salvar(@ConquistaTutor conquista);
         }
     }
 
@@ -415,20 +349,23 @@ BoundedContext ContextoGamificacao implements RelacaoTutorSubdomain {
             - @BadgeId          badgeId
             Integer             valorAtual
             Integer             metaTotal
-            Double              percentualConclusao
         }
 
         ValueObject ProgressoBadgeId { String id }
 
         Service CalculoProgressoService {
-            @ProgressoBadge atualizarProgresso(@TutorId tutorId, @BadgeId badgeId, Integer novoValor);
+            @ProgressoBadge atualizarProgresso(@TutorId tutorId, @BadgeId badgeId, Integer incremento);
             List<@ProgressoBadge> listarProximasConquistas(@TutorId tutorId, Integer limite);
         }
 
+        Service PublicadorDeEventosDoTutor {
+            void publicar(@TutorId tutorId, String chaveEvento);
+        }
+
         Repository ProgressoBadgeRepository {
-            List<@ProgressoBadge> findByTutor(@TutorId tutorId);
+            List<@ProgressoBadge> findByTutorId(@TutorId tutorId);
             @ProgressoBadge findByTutorEBadge(@TutorId tutorId, @BadgeId badgeId);
-            @ProgressoBadge save(@ProgressoBadge progresso);
+            void salvar(@ProgressoBadge progresso);
         }
     }
 }
