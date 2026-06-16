@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { SignaturePad, type SignaturePadHandle } from "./SignaturePad";
@@ -433,7 +433,7 @@ export function MedicoGestaoNutricional() {
 
       {/* Histórico evolutivo */}
       {historico && historico.historico.length > 0 && (
-        <SecaoHistoricoEvolutivo historico={historico} />
+        <SecaoHistoricoEvolutivo historico={historico} catalogo={catalogo} />
       )}
 
       {/* Cronograma */}
@@ -728,51 +728,43 @@ function SecaoRacao({
   );
 }
 
-function SecaoHistoricoEvolutivo({ historico }: { historico: HistoricoEvolutivoDTO }) {
-  const ultima = historico.evolucoes[historico.evolucoes.length - 1];
-  const pesos = historico.historico.map(p => Number(p.parametros.pesoAtualKg));
+function SecaoHistoricoEvolutivo({
+  historico, catalogo,
+}: { historico: HistoricoEvolutivoDTO; catalogo: RacaoDTO[] }) {
+  if (historico.historico.length === 0) return null;
+
+  // Ordena do mais recente para o mais antigo para a tabela.
+  const planosDoMaisRecente = [...historico.historico].sort(
+    (a, b) => new Date(b.atualizadoEm).getTime() - new Date(a.atualizadoEm).getTime());
+
+  // O backend devolve as evoluções em ordem cronológica (antigo → novo).
+  // Pra cruzar com a tabela (recente → antigo), indexamos por data do plano novo.
+  const evolucaoPorDataNovo = new Map<string, typeof historico.evolucoes[number]>();
+  historico.evolucoes.forEach(e => evolucaoPorDataNovo.set(e.planoAtualEm, e));
+
+  // Dados pro gráfico (em ordem cronológica, mais antigo → mais novo).
+  const cronologico = [...historico.historico].sort(
+    (a, b) => new Date(a.atualizadoEm).getTime() - new Date(b.atualizadoEm).getTime());
+  const pesos = cronologico.map(p => Number(p.parametros.pesoAtualKg));
   const maxPeso = Math.max(...pesos);
   const minPeso = Math.min(...pesos);
-  const range = Math.max(1, maxPeso - minPeso);
+  const range = Math.max(0.1, maxPeso - minPeso);
 
   return (
-    <div className="card p-6 space-y-4">
-      <div className="flex items-baseline justify-between">
+    <div className="card p-6 space-y-5">
+      <div>
         <h2 className="text-base font-semibold text-ink-900">Evolução Nutricional</h2>
-        <span className="text-xs text-ink-500">{historico.historico.length} plano(s) finalizado(s)</span>
+        <p className="mt-0.5 text-xs text-ink-500">
+          Histórico cronológico das prescrições nutricionais deste paciente — base para decidir
+          ajustes na próxima consulta.
+        </p>
       </div>
 
-      {ultima && (
-        <div className={
-          "rounded-xl border-2 p-4 " +
-          (ultima.tendenciaPeso === "GANHO" ? "border-amber-300 bg-amber-50" :
-           ultima.tendenciaPeso === "PERDA" ? "border-emerald-300 bg-emerald-50" :
-                                              "border-ink-200 bg-ink-50")
-        }>
-          <p className="text-sm font-medium text-ink-900">
-            Desde o último plano:
-            {" "}
-            <span className={
-              "font-bold " +
-              (ultima.tendenciaPeso === "GANHO" ? "text-amber-700" :
-               ultima.tendenciaPeso === "PERDA" ? "text-emerald-700" : "text-ink-700")
-            }>
-              {ultima.tendenciaPeso === "ESTAVEL" ? "Estável" :
-                `${Number(ultima.deltaPesoKg) > 0 ? "+" : ""}${fmt(ultima.deltaPesoKg, 2)} kg`}
-            </span>
-          </p>
-          <p className="mt-1 text-xs text-ink-600">
-            Variação NEM: {Number(ultima.deltaNemPercentual) > 0 ? "+" : ""}{fmt(ultima.deltaNemPercentual, 1)}%
-            · Peso anterior: {fmt(ultima.pesoAtualAnteriorKg, 1)} kg → Peso atual: {fmt(ultima.pesoAtualNovoKg, 1)} kg
-          </p>
-        </div>
-      )}
-
-      {/* Mini-gráfico SVG inline (sem libs externas) */}
-      {historico.historico.length >= 2 && (
-        <div>
-          <p className="mb-2 text-xs text-ink-500">Peso ao longo dos planos</p>
-          <svg viewBox="0 0 400 100" className="w-full h-24">
+      {/* Mini-gráfico de peso (só faz sentido com 2+ pontos) */}
+      {pesos.length >= 2 && (
+        <div className="rounded-lg border border-ink-200 bg-ink-50/40 p-4">
+          <p className="mb-2 text-xs font-medium text-ink-600">Peso ao longo das prescrições</p>
+          <svg viewBox="0 0 400 100" className="h-24 w-full">
             {pesos.map((peso, i) => {
               if (i === 0) return null;
               const x1 = ((i - 1) / (pesos.length - 1)) * 380 + 10;
@@ -786,15 +778,108 @@ function SecaoHistoricoEvolutivo({ historico }: { historico: HistoricoEvolutivoD
             {pesos.map((peso, i) => {
               const x = (i / (pesos.length - 1)) * 380 + 10;
               const y = 90 - ((peso - minPeso) / range) * 70;
-              return <circle key={i} cx={x} cy={y} r="3" fill="#02AAB5" />;
+              return <circle key={i} cx={x} cy={y} r="3.5" fill="#02AAB5" />;
             })}
           </svg>
-          <div className="flex justify-between text-xs text-ink-400">
-            <span>{fmt(minPeso, 1)} kg</span>
-            <span>{fmt(maxPeso, 1)} kg</span>
+          <div className="flex justify-between text-xs text-ink-500">
+            <span>{fmt(minPeso, 1)} kg · {new Date(cronologico[0].atualizadoEm).toLocaleDateString("pt-BR")}</span>
+            <span>{fmt(maxPeso, 1)} kg · {new Date(cronologico[cronologico.length - 1].atualizadoEm).toLocaleDateString("pt-BR")}</span>
           </div>
         </div>
       )}
+
+      {/* Tabela cronológica com TUDO que foi prescrito */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b-2 border-ink-200 text-left text-xs text-ink-500">
+              <th className="py-2 pr-3">Data</th>
+              <th className="py-2 pr-3">Status</th>
+              <th className="py-2 pr-3">Peso atual</th>
+              <th className="py-2 pr-3">Peso ideal</th>
+              <th className="py-2 pr-3">NEM</th>
+              <th className="py-2 pr-3">Ração/dia</th>
+              <th className="py-2">Ração escolhida</th>
+            </tr>
+          </thead>
+          <tbody>
+            {planosDoMaisRecente.map((p, idx) => {
+              const racao = p.racaoId ? catalogo.find(r => r.id === p.racaoId) : null;
+              const evolucaoEntrada = evolucaoPorDataNovo.get(p.atualizadoEm);
+              const ehMaisRecente = idx === 0;
+              return (
+                <Fragment key={p.id}>
+                  <tr className={"border-b border-ink-100 " + (ehMaisRecente ? "bg-brand-50/30" : "")}>
+                    <td className="py-2 pr-3">
+                      <div className="font-medium text-ink-900">
+                        {new Date(p.atualizadoEm).toLocaleDateString("pt-BR")}
+                      </div>
+                      <div className="text-xs text-ink-500">
+                        {new Date(p.atualizadoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    </td>
+                    <td className="py-2 pr-3">
+                      <span className={
+                        "rounded-full px-2 py-0.5 text-xs font-medium " +
+                        (p.status === "FINALIZADO"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-ink-100 text-ink-600")
+                      }>
+                        {p.status === "FINALIZADO" ? "Vigente" : "Substituído"}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-3 font-medium">{fmt(p.parametros.pesoAtualKg, 1)} kg</td>
+                    <td className="py-2 pr-3 text-ink-600">{fmt(p.parametros.pesoIdealKg, 1)} kg</td>
+                    <td className="py-2 pr-3">
+                      {p.resultadoFinalizado
+                        ? `${fmt(p.resultadoFinalizado.nemTotal, 0)} kcal`
+                        : "—"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {p.resultadoFinalizado
+                        ? `${fmt(p.resultadoFinalizado.quantidadeRecomendadaGramasPorDia, 0)} g`
+                        : "—"}
+                    </td>
+                    <td className="py-2 text-xs text-ink-700">
+                      {racao?.descricaoCurta ?? "—"}
+                    </td>
+                  </tr>
+                  {/* Linha de delta — aparece ENTRE planos consecutivos */}
+                  {evolucaoEntrada && (
+                    <tr className="border-b border-ink-100 bg-ink-50/40">
+                      <td colSpan={7} className="py-2 px-3">
+                        <LinhaDelta evolucao={evolucaoEntrada} />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function LinhaDelta({ evolucao }: { evolucao: HistoricoEvolutivoDTO["evolucoes"][number] }) {
+  const cor = evolucao.tendenciaPeso === "GANHO" ? "text-amber-700" :
+              evolucao.tendenciaPeso === "PERDA" ? "text-emerald-700" : "text-ink-600";
+  const seta = evolucao.tendenciaPeso === "GANHO" ? "↑" :
+               evolucao.tendenciaPeso === "PERDA" ? "↓" : "→";
+  const deltaPeso = Number(evolucao.deltaPesoKg);
+  const deltaNem = Number(evolucao.deltaNemPercentual);
+  return (
+    <div className="flex items-center gap-3 text-xs">
+      <span className="text-ink-400">↳ Variação para a prescrição anterior:</span>
+      <span className={"font-semibold " + cor}>
+        {seta} {evolucao.tendenciaPeso === "ESTAVEL" ? "Peso estável" :
+          `${deltaPeso > 0 ? "+" : ""}${fmt(evolucao.deltaPesoKg, 2)} kg (${deltaPeso > 0 ? "+" : ""}${fmt(evolucao.deltaPesoPercentual, 1)}%)`}
+      </span>
+      <span className="text-ink-500">·</span>
+      <span className="text-ink-600">
+        NEM {deltaNem > 0 ? "+" : ""}{fmt(evolucao.deltaNemPercentual, 1)}%
+      </span>
     </div>
   );
 }
