@@ -17,11 +17,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.PlanoNut
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.PlanoNutricionalId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * F-11 — endpoints read-only do tutor para visualizar planos nutricionais
- * finalizados (assinados) pelos médicos dos seus pets. Protegido pelo
- * {@code SecurityConfig} (perfil TUTOR). O id do tutor vem do JWT.
- */
 @RestController
 @RequestMapping("/api/tutor/nutricao")
 public class NutricaoDoTutorController {
@@ -35,24 +30,17 @@ public class NutricaoDoTutorController {
         this.listarCatalogoRacoes = listarCatalogoRacoes;
     }
 
-    /** Catálogo de rações — read-only para o tutor identificar a ração prescrita. */
     @GetMapping("/racoes")
     public List<RacaoDTO> catalogoRacoes() {
         return listarCatalogoRacoes.executar().stream().map(RacaoDTO::de).toList();
     }
 
-    /**
-     * Lista o plano nutricional <strong>vigente</strong> de cada paciente deste
-     * tutor — no máximo 1 por paciente. Prescrições anteriores foram
-     * substituídas e ficam visíveis apenas para o médico (auditoria).
-     */
     @GetMapping
     public List<PlanoNutricionalDTO> meusPlanos(Principal principal) {
         return consultar.listarAtivosDoTutor(TutorId.de(principal.getName())).stream()
                 .map(PlanoNutricionalDTO::de).toList();
     }
 
-    /** Detalhe — o use case já trafega só planos do tutor (controlado pelo filter abaixo). */
     @GetMapping("/{planoId}")
     public ResponseEntity<PlanoNutricionalDTO> detalhe(@PathVariable String planoId, Principal principal) {
         TutorId tutorAutenticado = TutorId.de(principal.getName());

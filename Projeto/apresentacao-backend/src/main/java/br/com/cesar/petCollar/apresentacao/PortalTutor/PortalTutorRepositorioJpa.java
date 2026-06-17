@@ -12,11 +12,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Adapter JPA de {@link PortalTutorRepositorio} para Pacientes.
- * Ao remover um paciente, realiza cascade nos ciclos vacinais via
- * {@link CicloVacinalJpaRepository}.
- */
 @Repository
 public class PortalTutorRepositorioJpa implements PortalTutorRepositorio {
 
@@ -34,9 +29,7 @@ public class PortalTutorRepositorioJpa implements PortalTutorRepositorio {
 
     @Override
     public List<Paciente> listarPacientesDoTutor(String tutorId) {
-        // O portal identifica o tutor pelo e-mail de login. A recepção pode ter criado
-        // o mesmo tutor sem e-mail, usando um UUID como chave. Buscamos por todos os
-        // identificadores válidos para unificar a visão de pacientes.
+
         List<String> chaves = new ArrayList<>();
         chaves.add(tutorId);
         tutoresRecepcao.findByEmailIgnoreCase(tutorId).stream()
@@ -66,9 +59,7 @@ public class PortalTutorRepositorioJpa implements PortalTutorRepositorio {
     @Override
     @Transactional
     public void removerPaciente(String id) {
-        // DELETE em massa via JPQL (doses antes dos ciclos): evita o UPDATE SET
-        // cicloId=NULL do orphanRemoval, que falhava na coluna NOT NULL e impedia
-        // a exclusão de pets com carteira de vacinação.
+
         ciclosVacinais.deletarDosesPorPaciente(id);
         ciclosVacinais.deletarCiclosPorPaciente(id);
         if (pacientes.existsById(id)) {

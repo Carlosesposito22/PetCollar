@@ -2,10 +2,6 @@ package br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta;
 
 import java.time.LocalDateTime;
 
-/**
- * Subentidade do agregado {@link Consulta}. Registra cada remarcação para fins de
- * auditoria (RN 18): o horário anterior, o novo horário e o instante da troca.
- */
 public final class HistoricoRemarcacao {
 
     private final HorarioConsulta horarioAnterior;

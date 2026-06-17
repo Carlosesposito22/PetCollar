@@ -10,12 +10,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Agregado raiz que representa uma consulta — inicial ou de retorno — e sua máquina
- * de estados ({@link StatusConsulta}). Toda mutação acontece por métodos de negócio
- * com transições guardadas; cada operação registra um {@link EventoAgendamento}
- * (RN 19) e a remarcação preserva histórico auditável (RN 18).
- */
 public class Consulta {
 
     private final ConsultaId id;
@@ -27,22 +21,20 @@ public class Consulta {
     private final MotivoConsulta motivo;
     private HorarioConsulta horario;
     private StatusConsulta status;
-    private final ConsultaId consultaOrigemId;   // somente em retornos (RN 11)
-    private int quantidadeRemarcacoes;            // RN 18
+    private final ConsultaId consultaOrigemId;
+    private int quantidadeRemarcacoes;
     private final LocalDateTime criadaEm;
     private LocalDateTime confirmadaEm;
     private LocalDateTime canceladaEm;
     private final List<HistoricoRemarcacao> historicoRemarcacoes;
     private final List<EventoAgendamento> eventos;
 
-    // Construtor de CRIAÇÃO — consulta inicial (sem vínculo de origem)
     public Consulta(ConsultaId id, PacienteId pacienteId, TutorId tutorId, MedicoId medicoId,
                     EspecialidadeId especialidadeId, MotivoConsulta motivo, HorarioConsulta horario) {
         this(id, pacienteId, tutorId, medicoId, especialidadeId, motivo, horario,
                 TipoConsulta.INICIAL, null);
     }
 
-    // Construtor de CRIAÇÃO — consulta de retorno (exige consulta de origem — RN 11)
     public Consulta(ConsultaId id, PacienteId pacienteId, TutorId tutorId, MedicoId medicoId,
                     EspecialidadeId especialidadeId, MotivoConsulta motivo, HorarioConsulta horario,
                     ConsultaId consultaOrigemId) {
@@ -84,7 +76,6 @@ public class Consulta {
         registrarEvento(TipoEventoAgendamento.CRIADA, "Consulta " + tipo + " criada.");
     }
 
-    // Construtor de RECONSTRUÇÃO — todos os campos (usado pela infraestrutura)
     public Consulta(ConsultaId id, PacienteId pacienteId, TutorId tutorId, MedicoId medicoId,
                     EspecialidadeId especialidadeId, TipoConsulta tipo, MotivoConsulta motivo,
                     HorarioConsulta horario, StatusConsulta status, ConsultaId consultaOrigemId,
@@ -116,8 +107,6 @@ public class Consulta {
         return consultaOrigemId;
     }
 
-    // ── Transições de estado ──────────────────────────────────────────────────
-
     public void confirmar() {
         if (this.status != StatusConsulta.AGENDADA)
             throw new IllegalStateException("Só é possível confirmar consultas com status AGENDADA.");
@@ -136,7 +125,7 @@ public class Consulta {
             new HistoricoRemarcacao(this.horario, novoHorario, LocalDateTime.now()));
         this.horario = novoHorario;
         this.quantidadeRemarcacoes++;
-        this.status = StatusConsulta.AGENDADA;   // requer nova confirmação
+        this.status = StatusConsulta.AGENDADA;
         this.confirmadaEm = null;
         registrarEvento(TipoEventoAgendamento.REMARCADA,
             "Consulta remarcada (remarcação nº " + quantidadeRemarcacoes + ").");
@@ -160,7 +149,6 @@ public class Consulta {
         registrarEvento(TipoEventoAgendamento.REALIZADA, "Consulta realizada.");
     }
 
-    /** Marca a consulta realizada como elegível a retorno sem exames pendentes (RN 7). */
     public void aguardarRetorno() {
         if (this.status != StatusConsulta.REALIZADA)
             throw new IllegalStateException(
@@ -169,7 +157,6 @@ public class Consulta {
         registrarEvento(TipoEventoAgendamento.AGUARDANDO_RETORNO, "Consulta aguardando retorno.");
     }
 
-    /** Marca a consulta realizada como elegível a retorno com exames a confirmar (RN 7/8). */
     public void solicitarExames() {
         if (this.status != StatusConsulta.REALIZADA)
             throw new IllegalStateException(
@@ -178,7 +165,6 @@ public class Consulta {
         registrarEvento(TipoEventoAgendamento.EXAMES_SOLICITADOS, "Exames solicitados para retorno.");
     }
 
-    /** Marca a consulta como com retorno já agendado, bloqueando novo agendamento (RN 7). */
     public void marcarRetornoAgendado() {
         if (this.status != StatusConsulta.AGUARDANDO_RETORNO
                 && this.status != StatusConsulta.EXAMES_SOLICITADOS)
@@ -188,11 +174,6 @@ public class Consulta {
         registrarEvento(TipoEventoAgendamento.RETORNO_AGENDADO, "Retorno agendado pelo tutor.");
     }
 
-    /**
-     * Encerra o ciclo de retorno da consulta original quando a consulta de retorno
-     * é finalizada. Permite transição de AGUARDANDO_RETORNO, EXAMES_SOLICITADOS ou
-     * RETORNO_AGENDADO para REALIZADA, concluindo o acompanhamento (RN 7).
-     */
     public void concluirCicloDeRetorno() {
         if (this.status != StatusConsulta.AGUARDANDO_RETORNO
                 && this.status != StatusConsulta.EXAMES_SOLICITADOS
@@ -211,8 +192,6 @@ public class Consulta {
     private void registrarEvento(TipoEventoAgendamento tipo, String detalhe) {
         this.eventos.add(new EventoAgendamento(tipo, LocalDateTime.now(), detalhe));
     }
-
-    // ── Acessores ─────────────────────────────────────────────────────────────
 
     public ConsultaId getId()                    { return id; }
     public PacienteId getPacienteId()            { return pacienteId; }

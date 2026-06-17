@@ -23,8 +23,6 @@ public class PassosFarmacovigilancia {
         this.contexto = contexto;
     }
 
-    // ── Cenários de dosagem ─────────────────────────────────────────────────
-
     @Given("existe um medicamento com dose maxima de {double} mg por kg")
     public void dadaMedicamentoComDoseMaxima(double doseMaxima) {
         contexto.medicamentoId = MedicamentoId.gerar();
@@ -61,8 +59,6 @@ public class PassosFarmacovigilancia {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertEquals(StatusDosagem.valueOf(statusEsperado), contexto.statusDosagemResultado);
     }
-
-    // ── Cenários de interação ───────────────────────────────────────────────
 
     @Given("existe uma prescricao com dois medicamentos com interacao critica bloqueante")
     public void dadaPrescricaoComInteracaoBloqueante() {
@@ -113,8 +109,6 @@ public class PassosFarmacovigilancia {
         assertTrue(contexto.interacoesDetectadas.stream().anyMatch(RegraInteracao::isBloqueante));
     }
 
-    // ── Cenários de ajuste contextual por tags ──────────────────────────────
-
     @Given("existe um paciente com tag {string}")
     public void dadaPacienteComTag(String tagStr) {
         contexto.tagClinicaSelecionada = TipoTagClinica.valueOf(tagStr);
@@ -145,8 +139,6 @@ public class PassosFarmacovigilancia {
         assertEquals(esperado, contexto.doseMaximaEfetiva, 0.001);
     }
 
-    // ── Cenários de cronograma ──────────────────────────────────────────────
-
     @Given("existe uma prescricao com item A de duracao {int} dias e item B de duracao {int} dias")
     public void dadaPrescricaoComDoisItens(int duracaoA, int duracaoB) {
         contexto.prescricaoId = PrescricaoId.gerar();
@@ -165,7 +157,7 @@ public class PassosFarmacovigilancia {
 
     @And("ambos os itens foram iniciados hoje")
     public void eAmbosIniciadosHoje() {
-        // Os itens já foram criados com LocalDateTime.now() no passo anterior
+
     }
 
     @When("o servico calcular a data de fim do tratamento")
@@ -184,8 +176,6 @@ public class PassosFarmacovigilancia {
         LocalDate esperado = LocalDate.now().plusDays(dias);
         assertEquals(esperado, contexto.dataFimTratamento);
     }
-
-    // ── Cenários de emissão ─────────────────────────────────────────────────
 
     @Given("existe uma prescricao com todos os itens com status {string}")
     public void dadaPrescricaoComItensComStatus(String statusStr) {

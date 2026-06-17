@@ -21,8 +21,6 @@ public class PassosGamificacao {
         this.contexto = contexto;
     }
 
-    // ── Cenário 1: Evento único concede badge imediatamente ─────────────────
-
     @Given("existe uma badge de evento unico com chave {string}")
     public void dadaBadgeEventoUnico(String chave) {
         contexto.badgeId = BadgeId.gerar();
@@ -61,8 +59,6 @@ public class PassosGamificacao {
     public void eConquistaRegistrada() {
         verify(contexto.conquistaRepositorio, times(1)).save(any(ConquistaTutor.class));
     }
-
-    // ── Cenário 2: Badge quantitativa exige meta ────────────────────────────
 
     @Given("existe uma badge quantitativa com meta de {int} e chave {string}")
     public void dadaBadgeQuantitativa(int meta, String chave) {
@@ -108,8 +104,6 @@ public class PassosGamificacao {
         assertTrue(contexto.progresso.metaAtingida());
     }
 
-    // ── Cenário 3: Badge já conquistada não é concedida novamente ───────────
-
     @Given("o tutor ja conquistou essa badge anteriormente")
     public void dadaTutorJaConquistou() {
         when(contexto.conquistaRepositorio.existsByTutorEBadge(contexto.tutorId, contexto.badgeId))
@@ -123,8 +117,6 @@ public class PassosGamificacao {
         assertEquals(0, contexto.conquistasRetornadas.size());
         verify(contexto.conquistaRepositorio, never()).save(any(ConquistaTutor.class));
     }
-
-    // ── Cenário 4: Listar próximas conquistas ──────────────────────────────
 
     @Given("o tutor possui 3 progressos com percentuais 80 60 e 40")
     public void dadaTresProgressos() {
@@ -171,8 +163,6 @@ public class PassosGamificacao {
         }
     }
 
-    // ── Cenário 5: Badge quantitativa não concedida antes da meta ──────────
-
     @Given("o tutor ainda nao tem progresso para essa badge")
     public void dadaSemProgresso() {
         when(contexto.progressoRepositorio.findByTutorEBadge(contexto.tutorId, contexto.badgeId))
@@ -191,8 +181,6 @@ public class PassosGamificacao {
     public void eProgressoDoTutor(int valorEsperado) {
         verify(contexto.progressoRepositorio, times(1)).save(any(ProgressoBadge.class));
     }
-
-    // ── Cenário 6: Incremento inválido lança exceção ────────────────────────
 
     @Given("existe um progresso do tutor com valor atual {int} e meta {int}")
     public void dadaProgressoComValorEMeta(int valorAtual, int meta) {

@@ -8,11 +8,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA dos exames vinculados a uma consulta de origem (read-model da porta
- * {@link br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaExame}).
- * Persistido como tabela própria ({@code exames}); o status/enum é gravado como String.
- */
 @Entity
 @Table(name = "exames")
 public class ExameJpa {
@@ -21,13 +16,13 @@ public class ExameJpa {
     private String id;
 
     @Column(nullable = false)
-    private String consultaOrigemId;   // referência cross-agregado (String do ConsultaId)
+    private String consultaOrigemId;
 
     @Column(nullable = false)
     private String descricao;
 
     @Column(nullable = false)
-    private String status;             // StatusExame.name()
+    private String status;
 
     @Column(columnDefinition = "TEXT")
     private String laudo;
@@ -45,7 +40,6 @@ public class ExameJpa {
         return new ExameResumo(id, descricao, StatusExame.valueOf(status));
     }
 
-    /** Conclui o exame (idempotente é responsabilidade do adapter). */
     public void concluir(String laudo) {
         this.status = StatusExame.CONCLUIDO.name();
         if (laudo != null) {

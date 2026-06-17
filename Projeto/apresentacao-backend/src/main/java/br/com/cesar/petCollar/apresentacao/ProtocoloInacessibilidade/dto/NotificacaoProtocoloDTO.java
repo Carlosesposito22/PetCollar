@@ -4,7 +4,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.RegistroNo
 
 import java.time.LocalDateTime;
 
-/** Registro auditável de notificação enviada durante a execução do protocolo (RN 16). */
 public record NotificacaoProtocoloDTO(String id, String destinatarioId, String titulo,
                                       String corpo, String criticidade,
                                       LocalDateTime registradoEm) {

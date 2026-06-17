@@ -10,10 +10,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Porte;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RacaoRecomendada;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RecomendacaoRacaoService;
 
-/**
- * Caso de uso: recebe peso ideal + idade + comorbidade vindos da UI,
- * deriva porte/faixa etária e delega para o {@link RecomendacaoRacaoService}.
- */
 public class RecomendarRacoesUseCase {
 
     private static final int TOP_N_PADRAO = 3;

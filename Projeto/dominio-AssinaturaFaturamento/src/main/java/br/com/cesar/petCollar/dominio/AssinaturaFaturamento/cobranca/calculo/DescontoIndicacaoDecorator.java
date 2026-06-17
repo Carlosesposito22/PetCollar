@@ -3,13 +3,6 @@ package br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.calculo;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/**
- * <h2>ConcreteDecorator — Desconto por indicação (F-04)</h2>
- *
- * Subtrai o valor de desconto concedido ao tutor (ex.: 15% pelo indicador, 30%
- * pelo indicado) do resultado da decoração inferior. Nunca produz valor negativo
- * — clampa em zero caso o desconto exceda o valor base.
- */
 public final class DescontoIndicacaoDecorator extends CalculadoraValorDecorator {
 
     private final BigDecimal valorDesconto;

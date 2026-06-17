@@ -2,11 +2,6 @@ package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.parametros;
 
 import java.math.BigDecimal;
 
-/**
- * Categorias de nível de atividade do paciente — F-11 RN 1. Cada nível carrega
- * o fator multiplicador metabólico que será aplicado pelo
- * {@code NivelAtividadeDecorator} na cadeia de cálculo da NEM.
- */
 public enum NivelAtividade {
 
     SEDENTARIO          (new BigDecimal("1.2")),

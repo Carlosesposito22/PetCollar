@@ -3,18 +3,8 @@ package br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.calculo;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/**
- * <h2>ConcreteDecorator — Juros simples diários</h2>
- *
- * Aplica a regra de juros simples definida em RN 4 (F-07):
- *     juros = valorBase × taxaDiaria × diasAtraso
- *
- * A taxa canônica do petCollar é {@link #TAXA_PADRAO} (0,033% ao dia). O cálculo
- * incide sobre o resultado da decoração inferior (que pode já trazer descontos).
- */
 public final class JurosSimplesDecorator extends CalculadoraValorDecorator {
 
-    /** Taxa diária canônica do petCollar (0,033% a.d.) — referência: F-07 RN 4. */
     public static final BigDecimal TAXA_PADRAO = new BigDecimal("0.00033");
 
     private final int diasAtraso;
@@ -43,7 +33,6 @@ public final class JurosSimplesDecorator extends CalculadoraValorDecorator {
         return valorBase.add(juros).setScale(2, RoundingMode.HALF_UP);
     }
 
-    /** Componente do valor — útil para apresentar o breakdown ao tutor. */
     public BigDecimal apenasJuros() {
         return base.calcular()
                 .multiply(taxaDiaria)

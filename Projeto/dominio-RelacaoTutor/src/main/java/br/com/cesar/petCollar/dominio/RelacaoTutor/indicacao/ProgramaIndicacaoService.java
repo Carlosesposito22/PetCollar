@@ -7,25 +7,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Serviço de domínio que orquestra o Programa de Indicação com Recompensas (F-04).
- *
- * <p>Cobre as 12 regras de negócio:
- * <ul>
- *   <li>RN-1  — Acesso restrito a Tutores com conta ativa</li>
- *   <li>RN-2  — Unicidade e permanência do link de indicação</li>
- *   <li>RN-3  — Desconto de boas-vindas (30%) aplicado na primeira mensalidade</li>
- *   <li>RN-4  — Conversão válida apenas após confirmação de pagamento via webhook</li>
- *   <li>RN-5  — Desconto de 15% na próxima fatura em aberto do indicador</li>
- *   <li>RN-6  — Conquista Lendária concedida via motor de gamificação</li>
- *   <li>RN-7  — Prevenção de fraude por autoindicação</li>
- *   <li>RN-8  — Prevenção de fraude por método de pagamento coincidente</li>
- *   <li>RN-9  — Não cumulatividade com outros cupons (regra mais vantajosa)</li>
- *   <li>RN-10 — Unicidade do indicado por CPF (apenas uma conversão válida)</li>
- *   <li>RN-11 — Atribuição por Último Clique em caso de múltiplos links</li>
- *   <li>RN-12 — Persistência auditável de todas as etapas</li>
- * </ul>
- */
 public class ProgramaIndicacaoService {
 
     public static final BigDecimal PERCENTUAL_DESCONTO_INDICADO = new BigDecimal("0.30");
@@ -57,28 +38,17 @@ public class ProgramaIndicacaoService {
         this.descontoFatura = descontoFatura;
     }
 
-    // ── RN-1 / RN-2 ─────────────────────────────────────────────────────────
-
-    /**
-     * Retorna o link de indicação existente do Tutor ou gera um novo link permanente e único.
-     *
-     * @param tutorId    identificador do Tutor autenticado
-     * @param contaAtiva status atual da conta — deve ser verdadeiro para acesso (RN-1)
-     * @return link de indicação (existente ou recém-criado)
-     */
     public LinkIndicacao obterOuGerarLink(TutorId tutorId, boolean contaAtiva) {
         if (tutorId == null)
             throw new IllegalArgumentException("TutorId não pode ser nulo.");
-        // RN-1
+
         if (!contaAtiva)
             throw new IllegalStateException(
                 "Apenas Tutores com conta ativa podem acessar o painel de indicação.");
 
-        // RN-2: retorna o link já existente sem criar um novo
         Optional<LinkIndicacao> existente = linkRepositorio.buscarPorTutorId(tutorId);
         if (existente.isPresent()) return existente.get();
 
-        // RN-2: gera código único com garantia de unicidade global
         CodigoIndicacao codigo;
         do {
             codigo = CodigoIndicacao.gerar();
@@ -87,7 +57,6 @@ public class ProgramaIndicacaoService {
         LinkIndicacao link = new LinkIndicacao(LinkIndicacaoId.gerar(), tutorId, codigo);
         linkRepositorio.salvar(link);
 
-        // RN-12
         auditoriaRepositorio.salvar(new EventoAuditoria(
             EventoAuditoriaId.gerar(),
             TipoEventoAuditoria.LINK_GERADO,
@@ -98,16 +67,6 @@ public class ProgramaIndicacaoService {
         return link;
     }
 
-    // ── RN-11 / RN-12 ───────────────────────────────────────────────────────
-
-    /**
-     * Registra o clique de um indicado num link de indicação.
-     * Sobrescreve cliques anteriores do mesmo CPF (Último Clique — RN-11).
-     *
-     * @param codigoLink       código alfanumérico do link acessado
-     * @param cpfIndicado      CPF da pessoa que clicou no link
-     * @param timestampClique  momento exato do acesso
-     */
     public void registrarClique(String codigoLink, CPF cpfIndicado,
                                 LocalDateTime timestampClique) {
         if (codigoLink == null || codigoLink.isBlank())
@@ -121,7 +80,6 @@ public class ProgramaIndicacaoService {
             .orElseThrow(() -> new IllegalArgumentException(
                 "Link de indicação não encontrado para o código: " + codigoLink));
 
-        // RN-11: substitui o clique anterior do mesmo CPF pelo mais recente
         RegistroClique novoClique = new RegistroClique(
             RegistroCliqueId.gerar(),
             cpfIndicado,
@@ -131,7 +89,6 @@ public class ProgramaIndicacaoService {
         );
         registroCliqueRepositorio.salvar(novoClique);
 
-        // RN-12
         auditoriaRepositorio.salvar(new EventoAuditoria(
             EventoAuditoriaId.gerar(),
             TipoEventoAuditoria.CLIQUE_REGISTRADO,
@@ -142,22 +99,10 @@ public class ProgramaIndicacaoService {
         ));
     }
 
-    // ── RN-7 / RN-10 / RN-11 / RN-12 ───────────────────────────────────────
-
-    /**
-     * Cria a {@link Indicacao} para o indicado no momento da inscrição na plataforma.
-     * Aplica a regra de Último Clique (RN-11) para determinar o Tutor indicador,
-     * valida autoindicação (RN-7) e unicidade do CPF (RN-10).
-     *
-     * @param cpfIndicado   CPF do novo usuário que acabou de se inscrever
-     * @param cpfIndicador  CPF do Tutor indicador (obtido via link → tutorId)
-     * @return indicação criada com status PENDENTE
-     */
     public Indicacao criarIndicacaoParaInscrito(CPF cpfIndicado, CPF cpfIndicador) {
         if (cpfIndicado == null)  throw new IllegalArgumentException("CPF do indicado não pode ser nulo.");
         if (cpfIndicador == null) throw new IllegalArgumentException("CPF do indicador não pode ser nulo.");
 
-        // RN-7: bloqueia autoindicação
         if (cpfIndicado.equals(cpfIndicador)) {
             auditoriaRepositorio.salvar(new EventoAuditoria(
                 EventoAuditoriaId.gerar(),
@@ -169,13 +114,11 @@ public class ProgramaIndicacaoService {
                 "Autoindicação não é permitida no programa de indicação (RN-7).");
         }
 
-        // RN-10: cada CPF só pode ser indicação válida uma única vez
         if (indicacaoRepositorio.existeConversaoPorCpf(cpfIndicado)) {
             throw new IllegalStateException(
                 "Este CPF já foi contabilizado como indicação válida anteriormente (RN-10).");
         }
 
-        // RN-11: Último Clique determina o Tutor indicador
         RegistroClique ultimoClique = registroCliqueRepositorio.buscarUltimoPorCpf(cpfIndicado)
             .orElseThrow(() -> new IllegalStateException(
                 "Nenhum link de indicação foi acessado por este usuário antes da inscrição."));
@@ -189,7 +132,6 @@ public class ProgramaIndicacaoService {
         );
         indicacaoRepositorio.salvar(indicacao);
 
-        // RN-12
         auditoriaRepositorio.salvar(new EventoAuditoria(
             EventoAuditoriaId.gerar(),
             TipoEventoAuditoria.INDICADO_INSCRITO,
@@ -201,59 +143,28 @@ public class ProgramaIndicacaoService {
         return indicacao;
     }
 
-    // ── RN-4 / RN-5 / RN-6 / RN-8 / RN-9 / RN-12 ──────────────────────────
-
-    /**
-     * Confirma a conversão via webhook do gateway de pagamentos (fluxo automático).
-     * Delega ao {@link ProcessamentoWebhookAutomatico}, que executa a verificação
-     * de fraude por método de pagamento (RN-8) antes de aplicar os benefícios.
-     *
-     * @param indicacaoId           id da indicação que está sendo convertida
-     * @param tokenMetodoPagamento  token/fingerprint do método de pagamento usado pelo indicado
-     */
     public void confirmarConversao(IndicacaoId indicacaoId, String tokenMetodoPagamento) {
         new ProcessamentoWebhookAutomatico(
             indicacaoRepositorio, auditoriaRepositorio, descontoFatura, motorGamificacao
         ).processar(indicacaoId, tokenMetodoPagamento);
     }
 
-    /**
-     * Confirma a conversão manualmente por um administrador, dispensando a
-     * verificação automática de fraude por método de pagamento.
-     * Delega ao {@link ProcessamentoWebhookManual}.
-     *
-     * @param indicacaoId id da indicação confirmada manualmente
-     */
     public void confirmarConversaoManual(IndicacaoId indicacaoId) {
         new ProcessamentoWebhookManual(
             indicacaoRepositorio, auditoriaRepositorio, descontoFatura, motorGamificacao
         ).processar(indicacaoId, null);
     }
 
-    // ── Lookup de link (usado pela camada de apresentação na contratação) ────
-
-    /**
-     * Retorna o link de indicação pelo código, se existir.
-     * Permite que o fluxo de contratação recupere o TutorId do indicador.
-     */
     public Optional<LinkIndicacao> buscarLinkPorCodigo(String codigo) {
         if (codigo == null || codigo.isBlank()) return Optional.empty();
         return linkRepositorio.buscarPorCodigo(CodigoIndicacao.de(codigo));
     }
 
-    /**
-     * Retorna indicação PENDENTE onde o CPF dado é o indicado.
-     * Usado em {@code simularPagamento} para detectar se o novo Tutor foi indicado.
-     */
     public Optional<Indicacao> buscarIndicacaoPendenteParaCpfIndicado(CPF cpfIndicado) {
         if (cpfIndicado == null) return Optional.empty();
         return indicacaoRepositorio.buscarPendenteParaCpfIndicado(cpfIndicado);
     }
 
-    /**
-     * Resgata manualmente o crédito de 15% do indicador quando não havia fatura pendente
-     * no momento da conversão automática (RN-5). O Tutor só pode resgatar uma vez.
-     */
     public Optional<String> resgatarDescontoIndicador(IndicacaoId indicacaoId, TutorId tutorId) {
         if (indicacaoId == null) throw new IllegalArgumentException("Id da indicação não pode ser nulo.");
         if (tutorId == null)     throw new IllegalArgumentException("TutorId não pode ser nulo.");
@@ -283,11 +194,6 @@ public class ProgramaIndicacaoService {
         return cobId;
     }
 
-    // ── Painel do Tutor ──────────────────────────────────────────────────────
-
-    /**
-     * Retorna o histórico de indicações do Tutor com status de conversão (painel F-04).
-     */
     public List<Indicacao> consultarHistorico(TutorId tutorId) {
         if (tutorId == null)
             throw new IllegalArgumentException("TutorId não pode ser nulo.");

@@ -11,11 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Adapter JPA da porta {@link IConsultaExame} — exames persistidos na tabela
- * {@code exames}. Suporta exibição (RN 8), confirmação/laudo (RN 9) e a contagem de
- * concluídos que libera o retorno (RN 10), garantindo idempotência (RN 12).
- */
 @Repository
 public class ExameConsultaJpa implements IConsultaExame {
 
@@ -63,7 +58,7 @@ public class ExameConsultaJpa implements IConsultaExame {
         ExameJpa exame = jpa.findById(exameId)
             .orElseThrow(() -> new IllegalArgumentException("Exame não encontrado: " + exameId));
         if (StatusExame.CONCLUIDO.name().equals(exame.getStatus()))
-            return;                       // RN 12 — idempotente, evita evento duplicado
+            return;
         exame.concluir(laudo);
         jpa.save(exame);
     }

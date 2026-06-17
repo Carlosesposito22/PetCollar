@@ -3,10 +3,6 @@ package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Resultado de uma recomendação: a ração + a pontuação total + o breakdown
- * por Strategy, útil para a UI explicar "por que esta ração foi sugerida".
- */
 public record RacaoRecomendada(Racao racao, int pontuacao, Map<String, Integer> detalhes) {
 
     public RacaoRecomendada {

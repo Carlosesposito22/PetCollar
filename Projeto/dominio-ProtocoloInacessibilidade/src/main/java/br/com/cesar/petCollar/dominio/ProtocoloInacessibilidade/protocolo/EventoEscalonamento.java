@@ -4,17 +4,12 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato.NivelEsc
 
 import java.time.LocalDateTime;
 
-/**
- * Subentidade do agregado {@link ProtocoloInacessibilidade}. Cada avanço de nível
- * de escalonamento gera um evento auditável (RN 7): o {@link NivelEscalonamento}
- * atingido, o motivo, o responsável acionado e o instante.
- */
 public final class EventoEscalonamento {
 
     private final EventoEscalonamentoId id;
     private final NivelEscalonamento nivel;
     private final String motivo;
-    private final String responsavelAcionadoId;   // referência cross-agregado (pode ser nulo)
+    private final String responsavelAcionadoId;
     private final LocalDateTime ocorridoEm;
 
     public EventoEscalonamento(EventoEscalonamentoId id, NivelEscalonamento nivel, String motivo,

@@ -5,11 +5,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.avaliacao.Aval
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.ParametrosPaciente;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.ResultadoNEM;
 
-/**
- * Caso de uso "ao vivo" — o médico digita os parâmetros e a UI pede o cálculo
- * sem persistir nada (NEM + avaliação corporal). Encapsula a montagem da
- * cadeia de Decorators e a regra do alerta (RN 6).
- */
 public class CalcularNEMPreviewUseCase {
 
     private final AvaliacaoCorporalService avaliacaoCorporalService;

@@ -15,22 +15,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.Status
 import java.util.List;
 import java.util.Set;
 
-/**
- * Etapa 3 do protocolo — <b>escalonamento</b> progressivo pelos níveis
- * administrativos e clínicos (RN 6) quando ninguém respondeu. Subclasse concreta
- * do {@link EtapaProtocoloService Template Method}.
- *
- * <p>Diferente das etapas de contato, o escalonamento não aciona destinatários por
- * canal: {@link #selecionarDestinatarios} devolve lista vazia (o laço de contato do
- * esqueleto não executa) e o trabalho concentra-se em {@link #avaliarConclusaoDaEtapa},
- * que a cada execução avança um nível registrando o evento auditável (RN 7) e
- * notificando o tutor com a criticidade do nível (RN 13). Esgotados os níveis
- * configurados, o protocolo é encerrado por esgotamento.
- *
- * <p>A precedência da RN 5 (só escalonar após acionar todos os responsáveis
- * secundários) é garantida em dobro: por {@link #prepararEntrada} e pela própria
- * transição {@code escalonar(...)} do agregado.
- */
 public class EtapaEscalonamentoService extends EtapaProtocoloService {
 
     private final IConfiguracaoProtocoloRepositorio configuracaoRepositorio;
@@ -54,8 +38,7 @@ public class EtapaEscalonamentoService extends EtapaProtocoloService {
 
     @Override
     protected NivelCriticidade criticidadeDestaEtapa() {
-        // A criticidade efetiva é a do nível atingido (vide avaliarConclusaoDaEtapa);
-        // este valor representativo não é usado no laço (não há contato por canal).
+
         return NivelCriticidade.ALTA;
     }
 
@@ -66,7 +49,7 @@ public class EtapaEscalonamentoService extends EtapaProtocoloService {
 
     @Override
     protected void prepararEntrada(ProtocoloInacessibilidade protocolo) {
-        // RN 5 — não se escalona antes de acionar todos os responsáveis secundários.
+
         if (protocolo.getStatus() == StatusProtocolo.EM_TENTATIVA_SECUNDARIOS
                 && !protocolo.todosResponsaveisSecundariosAcionados())
             throw new IllegalStateException(
@@ -75,15 +58,14 @@ public class EtapaEscalonamentoService extends EtapaProtocoloService {
 
     @Override
     protected List<DestinatarioEtapa> selecionarDestinatarios(ProtocoloInacessibilidade protocolo) {
-        // O escalonamento não contata destinatários por canal — todo o trabalho
-        // ocorre na conclusão (avanço de nível + notificação ao tutor).
+
         return List.of();
     }
 
     @Override
     protected List<CanalContato> resolverCanaisDeContato(DestinatarioEtapa destinatario,
                                                          ProtocoloInacessibilidade protocolo) {
-        return List.of();   // nunca invocado: não há destinatários
+        return List.of();
     }
 
     @Override
@@ -108,9 +90,8 @@ public class EtapaEscalonamentoService extends EtapaProtocoloService {
         }
 
         NivelEscalonamento proximo = niveis.get(proximoIndice);
-        protocolo.escalonar(proximo, "Sem resposta do tutor e dos responsáveis secundários.", null);   // RN 6/7
+        protocolo.escalonar(proximo, "Sem resposta do tutor e dos responsáveis secundários.", null);
 
-        // RN 13/9 — notifica o tutor a cada mudança de nível, com a criticidade do nível.
         notificarTutorPrincipal(protocolo,
             ConteudoNotificacao.escalonamento(proximo.criticidade()), proximo.criticidade());
     }

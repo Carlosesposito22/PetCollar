@@ -13,11 +13,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA do agregado {@link TicketBeneficio}. BeneficioTutorId fica
- * apenas como o valor String do Id (agregado externo, §6.2 do CLAUDE.md);
- * StatusTicket e CodigoGUID são persistidos como String.
- */
 @Entity
 @Table(name = "tickets_beneficio")
 public class TicketBeneficioJpa {

@@ -18,12 +18,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Adapter cross-context: aplica desconto de indicação (RN-5) na próxima fatura em aberto
- * do Tutor indicador, acessando o repositório de cobranças de AssinaturaFaturamento.
- * A verificação de método de pagamento retorna sempre {@code false} enquanto o
- * bounded context de Pagamentos não expuser a consulta real (RN-8 — placeholder).
- */
 @Component
 public class DescontoFaturaAdapter implements IDescontoFaturaPort {
 
@@ -43,8 +37,7 @@ public class DescontoFaturaAdapter implements IDescontoFaturaPort {
             .min(Comparator.comparing(Cobranca::getVencimento));
 
         if (proxima.isEmpty()) {
-            // Não há fatura pendente: cria a próxima mensalidade com base na última fatura do tutor
-            // para que o crédito de indicação possa ser aplicado imediatamente.
+
             proxima = criarProximaFatura(tutorId);
             if (proxima.isEmpty()) {
                 log.warn("[DESCONTO-FATURA] Nenhuma fatura encontrada para o Tutor {} — não foi possível aplicar desconto (RN-5).",
@@ -74,10 +67,6 @@ public class DescontoFaturaAdapter implements IDescontoFaturaPort {
         return Optional.of(id.getValor());
     }
 
-    /**
-     * Cria a próxima mensalidade do Tutor com base na última fatura registrada.
-     * Usado quando não há fatura pendente e o crédito de indicação precisa ser aplicado.
-     */
     private Optional<Cobranca> criarProximaFatura(TutorId tutorId) {
         List<Cobranca> historico = cobrancaRepositorio.listarPorTutor(tutorId);
         if (historico.isEmpty()) return Optional.empty();
@@ -102,8 +91,7 @@ public class DescontoFaturaAdapter implements IDescontoFaturaPort {
 
     @Override
     public boolean metodoPagamentoCoincideComIndicador(TutorId tutorId, String tokenMetodoPagamento) {
-        // Placeholder: a verificação real exigiria integração com o gateway de pagamentos.
-        // Retorna false (sem bloqueio) até a integração ser implementada.
+
         log.debug("[DESCONTO-FATURA] Verificação de método de pagamento não implementada (RN-8). Retornando false.");
         return false;
     }

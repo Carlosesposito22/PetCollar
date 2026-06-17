@@ -10,11 +10,6 @@ import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.IBeneficioCatalo
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.IBeneficioTutorRepositorio;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Lista os benefícios liberados para o tutor logado, com o status recalculado
- * na hora (igual ao padrão de "valores recalculados na hora" usado em F-07) —
- * sem persistir, apenas refletindo o estado vigente para exibição.
- */
 public class ConsultarBeneficiosTutorUseCase {
 
     private final IBeneficioTutorRepositorio beneficioTutorRepositorio;
@@ -48,6 +43,5 @@ public class ConsultarBeneficiosTutorUseCase {
                 .toList();
     }
 
-    /** Saída do caso de uso: o agregado do tutor pareado ao seu item de catálogo (para nome/carência). */
     public record Item(BeneficioTutor beneficioTutor, BeneficioCatalogo catalogo) {}
 }

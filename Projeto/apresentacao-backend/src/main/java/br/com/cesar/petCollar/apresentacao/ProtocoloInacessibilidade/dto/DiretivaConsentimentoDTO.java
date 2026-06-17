@@ -2,10 +2,6 @@ package br.com.cesar.petCollar.apresentacao.ProtocoloInacessibilidade.dto;
 
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.TipoConduta;
 
-/**
- * Representa uma diretiva de consentimento do tutor para uma conduta clínica (RN 10).
- * O campo {@code autorizado} indica se o tutor assinou a autorização prévia.
- */
 public record DiretivaConsentimentoDTO(String conduta, String rotulo, boolean autorizado) {
 
     public static DiretivaConsentimentoDTO autorizada(TipoConduta conduta) {

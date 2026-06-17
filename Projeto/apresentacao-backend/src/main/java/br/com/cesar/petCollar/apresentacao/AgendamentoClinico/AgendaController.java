@@ -14,9 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Endpoint que expõe os horários livres de um médico no período (RN 4).
- */
 @RestController
 @RequestMapping("/api/medicos")
 public class AgendaController {

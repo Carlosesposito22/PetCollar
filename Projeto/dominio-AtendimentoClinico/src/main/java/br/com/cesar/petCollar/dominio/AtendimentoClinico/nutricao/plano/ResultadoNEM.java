@@ -7,15 +7,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.nem.Comorbidad
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.nem.NEMBase;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.nem.NivelAtividadeDecorator;
 
-/**
- * Resultado consolidado do cálculo da NEM com breakdown de cada passo da
- * cadeia de Decorators. Imutável — útil para exibir na UI ou persistir junto
- * com o plano finalizado.
- *
- * <p>A fábrica {@link #calcular(ParametrosPaciente)} encapsula a montagem da
- * cadeia <strong>NEMBase → NivelAtividadeDecorator → ComorbidadeDecorator</strong>
- * e produz todos os componentes exibidos pelo Figma.
- */
 public record ResultadoNEM(
         BigDecimal pesoMetabolico,
         BigDecimal nemBase,

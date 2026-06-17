@@ -27,8 +27,8 @@ public class MedicamentoJpa {
     @Column(nullable = false) private String nome;
     @Column(nullable = false, precision = 10, scale = 3) private BigDecimal doseMaximaMgPorKg;
     @Column(nullable = false, precision = 10, scale = 3) private BigDecimal concentracaoMgPorMl;
-    @Column(nullable = false) private String viasPermitidas;          // CSV de ViaAdministracao
-    @Column(nullable = false) private String componentes;             // CSV de strings
+    @Column(nullable = false) private String viasPermitidas;
+    @Column(nullable = false) private String componentes;
     @Column(nullable = false) private String manejoAlimentar;
     @Column(columnDefinition = "TEXT") private String notaCuidado;
 

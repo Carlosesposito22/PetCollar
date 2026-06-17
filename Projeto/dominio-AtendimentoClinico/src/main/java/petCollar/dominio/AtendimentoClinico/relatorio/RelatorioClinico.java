@@ -53,7 +53,6 @@ public class RelatorioClinico {
         this.criadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO
     public RelatorioClinico(RelatorioClinicoId id, AtendimentoId atendimentoId,
                             PacienteId pacienteId, MedicoId medicoId, TipoRelatorio tipoRelatorio,
                             SinaisVitais sinaisVitais, EvolucaoComparativa evolucaoComparativa,
@@ -81,8 +80,6 @@ public class RelatorioClinico {
         this.criadoEm = criadoEm;
         this.assinadoEm = assinadoEm;
     }
-
-    // ── Métodos de negócio ────────────────────────────────────────────────────
 
     public void registrarSinaisVitais(SinaisVitais sinaisVitais) {
         verificarImutabilidade();
@@ -155,15 +152,11 @@ public class RelatorioClinico {
         this.assinadoEm = LocalDateTime.now();
     }
 
-    // ── Verificação interna de imutabilidade ─────────────────────────────────
-
     private void verificarImutabilidade() {
         if (this.imutavel)
             throw new IllegalStateException(
                 "O relatório já foi assinado digitalmente e não pode ser modificado.");
     }
-
-    // ── Getters ───────────────────────────────────────────────────────────────
 
     public RelatorioClinicoId getId()                    { return id; }
     public AtendimentoId getAtendimentoId()              { return atendimentoId; }

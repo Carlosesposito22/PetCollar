@@ -19,11 +19,6 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Passos da etapa de contato com o tutor — agora exercitando a subclasse
- * {@code EtapaContatoTutorService} do Template Method, que executa toda a etapa
- * (todos os canais, até o limite por canal) em uma única chamada.
- */
 public class PassosTentativasContato {
 
     private final ContextoCenario contexto;
@@ -34,7 +29,7 @@ public class PassosTentativasContato {
 
     @E("o tutor não responde em nenhum canal")
     public void tutorNaoResponde() {
-        // Comportamento padrão do mock (SEM_RESPOSTA) já cobre este passo.
+
     }
 
     @E("o tutor responde no canal {string}")

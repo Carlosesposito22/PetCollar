@@ -29,12 +29,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Endpoints do protocolo de inacessibilidade: visão para o tutor (RN 15), ativação
- * manual, encerramento por intervenção manual e listagem de protocolos ativos
- * (administração). Apenas traduz DTO ↔ domínio e delega; exceções sobem para o
- * {@link ProtocoloExceptionHandler}.
- */
 @RestController
 @RequestMapping("/api/protocolos")
 public class ProtocoloController {
@@ -66,11 +60,6 @@ public class ProtocoloController {
         this.tutorRecepcaoRepo = tutorRecepcaoRepo;
     }
 
-    /**
-     * RN 15 — visão do protocolo ativo do tutor autenticado (sem precisar informar atendimentoId).
-     * O JWT carrega o e-mail do tutor; resolvemos o UUID do cadastro de recepção para
-     * fazer a busca por tutorPrincipalId.
-     */
     @GetMapping("/meu-protocolo-ativo")
     public ResponseEntity<VisaoProtocoloDTO> meuProtocoloAtivo(Authentication auth) {
         List<TutorRecepcaoJpa> tutores = tutorRecepcaoRepo.findByEmailIgnoreCase(auth.getName());
@@ -82,13 +71,11 @@ public class ProtocoloController {
             .orElse(ResponseEntity.notFound().build());
     }
 
-    /** RN 15 — visão consolidada do protocolo ativo de um atendimento, para o tutor. */
     @GetMapping("/{atendimentoId}")
     public VisaoProtocoloDTO visualizar(@PathVariable String atendimentoId) {
         return VisaoProtocoloDTO.de(consultarStatusUseCase.executar(AtendimentoId.de(atendimentoId)));
     }
 
-    /** Lista os atendimentos clínicos em andamento para seleção no modal de ativação manual. */
     @GetMapping("/atendimentos-em-andamento")
     public List<ResumoAtendimentoDTO> listarAtendimentosEmAndamento() {
         return consultaAtendimento.listarEmAndamento().stream()
@@ -129,10 +116,6 @@ public class ProtocoloController {
         return ProtocoloDTO.de(protocolo);
     }
 
-    /**
-     * RN 15 — tutor confirma presença na clínica, encerrando o protocolo com sucesso.
-     * O JWT carrega o e-mail; resolvemos o UUID do cadastro de recepção para verificar a titularidade.
-     */
     @PostMapping("/{id}/confirmar-presenca")
     public ProtocoloDTO confirmarPresenca(@PathVariable String id, Authentication auth) {
         ProtocoloId protocoloId = ProtocoloId.de(id);

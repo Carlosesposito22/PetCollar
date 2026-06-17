@@ -5,7 +5,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.VisaoPro
 import java.time.LocalDateTime;
 import java.util.List;
 
-/** Visão consolidada do protocolo para o tutor (RN 15). */
 public record VisaoProtocoloDTO(String protocoloId, String atendimentoId, String status,
                                 String nivelEscalonamentoAtual, LocalDateTime ativadoEm,
                                 LocalDateTime encerradoEm, List<TentativaContatoDTO> tentativas,

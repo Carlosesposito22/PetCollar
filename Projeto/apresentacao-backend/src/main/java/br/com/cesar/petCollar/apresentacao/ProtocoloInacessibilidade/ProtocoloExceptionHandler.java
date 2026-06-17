@@ -5,11 +5,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Tratamento de erros do slice ProtocoloInacessibilidade (§7.3): argumento inválido
- * vira 400, conflito de regra de negócio vira 409. Escopo restrito a este pacote
- * para não alterar o comportamento dos demais controllers.
- */
 @RestControllerAdvice(basePackages = "br.com.cesar.petCollar.apresentacao.ProtocoloInacessibilidade")
 public class ProtocoloExceptionHandler {
 

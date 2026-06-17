@@ -12,7 +12,6 @@ public class ProgressoBadge {
     private final LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
 
-    // Construtor de CRIAÇÃO
     public ProgressoBadge(ProgressoBadgeId id, String tutorId, BadgeId badgeId, int metaTotal) {
         if (id == null)
             throw new IllegalArgumentException("ProgressoBadgeId não pode ser nulo.");
@@ -30,7 +29,6 @@ public class ProgressoBadge {
         this.criadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO
     public ProgressoBadge(ProgressoBadgeId id, String tutorId, BadgeId badgeId,
                           int valorAtual, int metaTotal,
                           LocalDateTime criadoEm, LocalDateTime atualizadoEm) {

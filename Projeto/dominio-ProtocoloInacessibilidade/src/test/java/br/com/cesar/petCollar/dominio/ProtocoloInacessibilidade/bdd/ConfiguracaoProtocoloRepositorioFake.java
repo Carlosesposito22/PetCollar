@@ -9,10 +9,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repositório em memória de {@link ConfiguracaoProtocolo} para os cenários BDD. A
- * vigente é a de maior versão.
- */
 class ConfiguracaoProtocoloRepositorioFake implements IConfiguracaoProtocoloRepositorio {
 
     private final List<ConfiguracaoProtocolo> historico = new ArrayList<>();

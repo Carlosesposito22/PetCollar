@@ -42,9 +42,7 @@ public class MedicamentoRepositorioJpa implements IMedicamentoRepositorio {
     public List<InteracaoMedicamentosa> buscarInteracoesEntre(List<MedicamentoId> medicamentos) {
         if (medicamentos == null || medicamentos.size() < 2) return List.of();
         List<String> ids = medicamentos.stream().map(MedicamentoId::getValor).toList();
-        // A matriz armazena pares ordenados (menor, maior). Buscamos com ambos
-        // os lados na mesma lista — qualquer linha cuja A e B estejam na lista
-        // representa um par presente na prescrição.
+
         return interacoesJpa.findByMedicamentoAIdInAndMedicamentoBIdIn(ids, ids).stream()
                 .map(InteracaoMedicamentosaJpa::toDomain).toList();
     }

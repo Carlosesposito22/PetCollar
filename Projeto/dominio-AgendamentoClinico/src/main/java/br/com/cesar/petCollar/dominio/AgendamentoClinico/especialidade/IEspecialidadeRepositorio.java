@@ -11,6 +11,5 @@ public interface IEspecialidadeRepositorio {
 
     Optional<Especialidade> buscarPorId(EspecialidadeId id);
 
-    /** Médicos habilitados na especialidade, para o filtro de agendamento (RN 2). */
     List<MedicoId> listarMedicosDaEspecialidade(EspecialidadeId id);
 }

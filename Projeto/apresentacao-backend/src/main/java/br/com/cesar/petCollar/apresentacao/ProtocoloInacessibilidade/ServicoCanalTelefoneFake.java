@@ -8,10 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-/**
- * Fake do canal TELEFONE: registra a chamada e devolve "sem resposta" (sem integrar
- * com gateway real). Determinístico, para desbloquear a entrega e os testes.
- */
 @Component
 public class ServicoCanalTelefoneFake implements EstrategiaCanalContato {
 

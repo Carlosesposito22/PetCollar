@@ -14,7 +14,6 @@ public class Badge {
     private final int metaQuantitativa;
     private final LocalDateTime criadoEm;
 
-    // Construtor de CRIAÇÃO
     public Badge(BadgeId id, String nome, String descricao,
                  CategoriaBadge categoria, RaridadeBadge raridade,
                  String chaveEvento, boolean eventoUnico, int metaQuantitativa) {
@@ -45,7 +44,6 @@ public class Badge {
         this.criadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO
     public Badge(BadgeId id, String nome, String descricao,
                  CategoriaBadge categoria, RaridadeBadge raridade,
                  String chaveEvento, boolean eventoUnico, int metaQuantitativa,

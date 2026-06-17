@@ -32,8 +32,6 @@ public class PassosProgramaIndicacao {
         this.ctx = ctx;
     }
 
-    // ── Cenários de obterOuGerarLink ─────────────────────────────────────────
-
     @Dado("um Tutor com conta ativa")
     public void dadoTutorComContaAtiva() {
         ctx.tutorId = TutorId.gerar();
@@ -88,8 +86,6 @@ public class PassosProgramaIndicacao {
         verify(ctx.linkRepositorio, never()).salvar(any());
     }
 
-    // ── Cenário de autoindicação (RN-7) ──────────────────────────────────────
-
     @Dado("um Tutor com CPF {string}")
     public void dadoTutorComCpf(String cpf) {
         ctx.tutorId = TutorId.gerar();
@@ -99,7 +95,7 @@ public class PassosProgramaIndicacao {
 
     @E("um indicado com o mesmo CPF {string}")
     public void eIndicadoComMesmoCpf(String cpf) {
-        // o CPF do indicado é o mesmo do Tutor — usado no passo seguinte
+
     }
 
     @Quando("o indicado tentar se inscrever como indicacao do proprio Tutor")
@@ -111,8 +107,6 @@ public class PassosProgramaIndicacao {
             ctx.excecaoCapturada = e;
         }
     }
-
-    // ── Cenário de CPF já convertido (RN-10) ─────────────────────────────────
 
     @E("um indicado com CPF {string} que ja possui conversao registrada")
     public void eIndicadoCpfJaConvertido(String cpf) {
@@ -131,8 +125,6 @@ public class PassosProgramaIndicacao {
         }
     }
 
-    // ── Cenário de Último Clique (RN-11) ─────────────────────────────────────
-
     @Dado("um Tutor A com codigo de link {string}")
     public void dadoTutorAComCodigo(String codigo) {
         ctx.tutorIdA = TutorId.gerar();
@@ -146,13 +138,13 @@ public class PassosProgramaIndicacao {
 
     @E("o indicado com CPF {string} clicou primeiro no link do Tutor A")
     public void eIndicadoClicouPrimeiroNoLinkA(String cpf) {
-        // primeiro clique registrado; o repositório de cliques retornará o mais recente
+
     }
 
     @E("o indicado com CPF {string} clicou depois no link do Tutor B")
     public void eIndicadoClicoouDepoisNoLinkB(String cpf) {
         CPF cpfIndicado = CPF.de(cpf);
-        // simula Último Clique: o repositório devolve o clique mais recente (Tutor B)
+
         LinkIndicacaoId linkBId = LinkIndicacaoId.gerar();
         RegistroClique ultimoClique = new RegistroClique(
             RegistroCliqueId.gerar(),
@@ -169,7 +161,7 @@ public class PassosProgramaIndicacao {
     @Quando("o indicado se inscrever na plataforma")
     public void quandoIndicadoSeInscrever() {
         CPF cpfIndicado  = CPF.de("11122233344");
-        CPF cpfIndicador = CPF.de("99988877766"); // CPF diferente do indicado
+        CPF cpfIndicador = CPF.de("99988877766");
         try {
             ctx.indicacaoCriada = ctx.servico.criarIndicacaoParaInscrito(cpfIndicado, cpfIndicador);
         } catch (Exception e) {
@@ -183,8 +175,6 @@ public class PassosProgramaIndicacao {
         assertNotNull(ctx.indicacaoCriada);
         assertEquals(ctx.tutorIdB, ctx.indicacaoCriada.getTutorIndicadorId());
     }
-
-    // ── Cenário de conversão (RN-4 / RN-5 / RN-6) ───────────────────────────
 
     @Dado("um Tutor indicador com conta ativa")
     public void dadoTutorIndicadorComContaAtiva() {
@@ -246,20 +236,15 @@ public class PassosProgramaIndicacao {
         verify(ctx.motorGamificacao).concederConquistaLendaria(ctx.tutorId);
     }
 
-    // ── Cenário de fraude por método de pagamento (RN-8) ─────────────────────
-
     @E("o indicado usou o mesmo metodo de pagamento do Tutor indicador")
     public void eMetodoPagamentoCoincide() {
         when(ctx.descontoFatura.metodoPagamentoCoincideComIndicador(any(), any()))
             .thenReturn(true);
     }
 
-    // ── Cenário de confirmação manual (Template Method — ProcessamentoWebhookManual) ──
-
     @Quando("um administrador confirmar manualmente a conversao")
     public void quandoAdminConfirmarManualmente() {
-        // mesmo setup de indicação pendente, mas método de pagamento coincide (RN-8 seria ativada
-        // no fluxo automático) — o manual deve ignorar isso e converter normalmente
+
         when(ctx.descontoFatura.aplicarDescontoProximaFatura(any(), any()))
             .thenReturn(Optional.of("cobranca-manual-456"));
         try {
@@ -268,8 +253,6 @@ public class PassosProgramaIndicacao {
             ctx.excecaoCapturada = e;
         }
     }
-
-    // ── Cenário de desconto de boas-vindas (RN-3) ────────────────────────────
 
     @Quando("o sistema consultar a indicacao pendente para o CPF {string}")
     public void quandoConsultarIndicacaoPendentePorCpf(String cpf) {
@@ -296,8 +279,6 @@ public class PassosProgramaIndicacao {
                 .compareTo(new BigDecimal("0.30")),
             "O percentual de desconto de boas-vindas deve ser 30%.");
     }
-
-    // ── Passo genérico de verificação de erro ────────────────────────────────
 
     @Entao("deve ocorrer o erro {string}")
     public void entaoDeveOcorrerErro(String mensagemEsperada) {

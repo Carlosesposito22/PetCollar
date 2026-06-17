@@ -2,10 +2,6 @@ package br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta;
 
 import java.time.LocalDateTime;
 
-/**
- * Critérios opcionais (qualquer campo pode ser nulo) para a visualização da agenda
- * do tutor (RN 17). Filtra por status, tipo e janela de período.
- */
 public record FiltroConsulta(StatusConsulta status, TipoConsulta tipo,
                              LocalDateTime inicio, LocalDateTime fim) {
 

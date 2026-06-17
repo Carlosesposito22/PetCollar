@@ -32,8 +32,7 @@ public class SecurityConfig {
         http
             .cors(c -> c.configurationSource(req -> {
                 var cfg = new CorsConfiguration();
-                // Patterns (não setAllowedOrigins) porque a configuração pode conter curingas
-                // e usamos allowCredentials=true (Spring só permite curinga via patterns).
+
                 cfg.setAllowedOriginPatterns(props.cors().origensPermitidas());
                 cfg.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
                 cfg.setAllowedHeaders(java.util.List.of("*"));
@@ -61,8 +60,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/recepcao/**").hasAnyRole("RECEPCIONISTA", "ADMIN_CLINICA")
                 .anyRequest().authenticated()
             )
-            // Retorna 401 (não 403) para requisições sem autenticação válida,
-            // permitindo que o frontend redirecione ao login ao detectar token expirado.
+
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint((req, res, e) -> {
                     res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

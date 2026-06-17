@@ -13,7 +13,7 @@ public class Paciente {
     private String raca;
     private LocalDate nascimento;
     private Double pesoKg;
-    private String sexo;          // MACHO | FEMEA (pode ser nulo)
+    private String sexo;
     private boolean infectocontagiosoRecente;
     private LocalDateTime dataUltimoDiagnostico;
 
@@ -29,7 +29,6 @@ public class Paciente {
         this.sexo = sexo;
     }
 
-    // Construtor de RECONSTRUÇÃO — usado pela infraestrutura ao recarregar do banco.
     public Paciente(String id, String tutorId, String nome, String especie,
                     String raca, LocalDate nascimento, Double pesoKg, String sexo,
                     boolean infectocontagiosoRecente, LocalDateTime dataUltimoDiagnostico) {
@@ -64,7 +63,6 @@ public class Paciente {
         this.sexo = sexo;
     }
 
-    /** Marca/limpa diagnóstico infectocontagioso recente (RN epidemiológica da recepção). */
     public void marcarInfectocontagioso(boolean valor, LocalDateTime data) {
         this.infectocontagiosoRecente = valor;
         this.dataUltimoDiagnostico = data;

@@ -14,7 +14,6 @@ public class Prescricao {
     private final LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
 
-    // Construtor de CRIAÇÃO
     public Prescricao(PrescricaoId id) {
         if (id == null)
             throw new IllegalArgumentException("id não pode ser nulo.");
@@ -24,7 +23,6 @@ public class Prescricao {
         this.criadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO
     public Prescricao(PrescricaoId id,
                       List<ItemPrescricao> itens,
                       StatusPrescricao status,

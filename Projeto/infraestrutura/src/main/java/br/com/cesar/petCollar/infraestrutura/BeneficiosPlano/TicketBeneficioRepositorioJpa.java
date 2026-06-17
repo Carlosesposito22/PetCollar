@@ -10,10 +10,6 @@ import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.StatusTicket;
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.TicketBeneficio;
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.TicketBeneficioId;
 
-/**
- * Adapter JPA da interface de domínio {@link ITicketBeneficioRepositorio}.
- * Traduz domínio ↔ entidade via {@code fromDomain}/{@code toDomain} (§6.4).
- */
 @Repository
 public class TicketBeneficioRepositorioJpa implements ITicketBeneficioRepositorio {
 

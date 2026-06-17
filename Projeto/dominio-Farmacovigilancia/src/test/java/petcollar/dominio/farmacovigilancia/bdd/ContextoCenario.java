@@ -8,7 +8,6 @@ import java.util.List;
 
 public class ContextoCenario {
 
-    // ── Mocks de repositório ────────────────────────────────────────────────
     public final IMedicamentoRepositorio medicamentoRepositorio =
             Mockito.mock(IMedicamentoRepositorio.class);
 
@@ -18,7 +17,6 @@ public class ContextoCenario {
     public final IPrescricaoRepositorio prescricaoRepositorio =
             Mockito.mock(IPrescricaoRepositorio.class);
 
-    // ── Serviços de domínio ─────────────────────────────────────────────────
     public final CalculadoraDosagemSeguraService calculadoraDosagem =
             new CalculadoraDosagemSeguraService();
 
@@ -34,7 +32,6 @@ public class ContextoCenario {
     public final EmissaoPrescricaoService emissaoService =
             new EmissaoPrescricaoService(prescricaoRepositorio);
 
-    // ── Estado do cenário ───────────────────────────────────────────────────
     public Medicamento medicamento;
     public MedicamentoId medicamentoId;
     public Prescricao prescricao;

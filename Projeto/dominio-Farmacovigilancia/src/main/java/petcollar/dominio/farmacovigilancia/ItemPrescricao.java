@@ -12,7 +12,6 @@ public class ItemPrescricao {
     private StatusDosagem statusDosagem;
     private final LocalDateTime criadoEm;
 
-    // Construtor de CRIAÇÃO
     public ItemPrescricao(ItemPrescricaoId id,
                           MedicamentoId medicamentoId,
                           double dosePrescritaMg,
@@ -37,7 +36,6 @@ public class ItemPrescricao {
         this.criadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO
     public ItemPrescricao(ItemPrescricaoId id,
                           MedicamentoId medicamentoId,
                           double dosePrescritaMg,

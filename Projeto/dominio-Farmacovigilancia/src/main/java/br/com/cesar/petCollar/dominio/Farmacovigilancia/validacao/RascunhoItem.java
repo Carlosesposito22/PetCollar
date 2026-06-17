@@ -6,10 +6,6 @@ import br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo.Frequencia;
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo.MedicamentoId;
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo.ViaAdministracao;
 
-/**
- * Dados crus do item proposto pelo médico (antes de virar {@code ItemPrescricao}
- * finalizado). É o input do {@link ValidadorPrescricao}.
- */
 public record RascunhoItem(
         MedicamentoId medicamentoId,
         BigDecimal doseMgPorKg,

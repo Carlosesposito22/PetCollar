@@ -38,10 +38,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.util.List;
 
-/**
- * Wiring canônico (§6.5) dos serviços de domínio do ProtocoloInacessibilidade
- * como beans, a partir dos adapters JPA deste módulo.
- */
 @Configuration
 @EntityScan(basePackages = "br.com.cesar.petCollar.infraestrutura.ProtocoloInacessibilidade")
 @EnableJpaRepositories(basePackages = "br.com.cesar.petCollar.infraestrutura.ProtocoloInacessibilidade")
@@ -57,8 +53,6 @@ public class ProtocoloInacessibilidadeConfig {
         return new AtivacaoProtocoloService(protocoloRepositorio, configuracaoRepositorio,
             atendimentos, notificacao);
     }
-
-    // ── Etapas do protocolo via Template Method (uma subclasse por fase) ──────
 
     @Bean
     public EtapaContatoTutorService etapaContatoTutorService(
@@ -108,8 +102,6 @@ public class ProtocoloInacessibilidadeConfig {
         return new ConsultaStatusProtocoloService(protocoloRepositorio);
     }
 
-    // ── Casos de uso (camada aplicacao) ─────────────────────────────────────────
-
     @Bean
     public AtivarProtocoloUseCase ativarProtocoloUseCase(AtivacaoProtocoloService ativacaoService) {
         return new AtivarProtocoloUseCase(ativacaoService);
@@ -140,8 +132,6 @@ public class ProtocoloInacessibilidadeConfig {
         return new ConsultarDiretivasConsentimentoUseCase(consultaService);
     }
 
-    /** Seed operacional: cria a configuração padrão (RN 1/2/6) se não existir, ou corrige
-     *  quantidadeMaximaTentativasPorCanal para 1 se estiver acima desse valor. */
     @Bean
     public CommandLineRunner seedConfiguracaoProtocolo(
             IConfiguracaoProtocoloRepositorio configuracaoRepositorio) {
@@ -173,7 +163,6 @@ public class ProtocoloInacessibilidadeConfig {
         };
     }
 
-    /** Seed de responsáveis secundários de exemplo para os pacientes demo. */
     @Bean
     public CommandLineRunner seedResponsaveisSecundarios(
             ResponsavelSecundarioJpaRepository responsavelJpaRepository) {
@@ -199,15 +188,11 @@ public class ProtocoloInacessibilidadeConfig {
         };
     }
 
-    /**
-     * Seed de diretivas de consentimento (RN 10): cria entradas de exemplo para os
-     * pacientes demo.
-     */
     @Bean
     public CommandLineRunner seedDiretivasConsentimento(
             DiretivaConsentimentoJpaRepository diretivaJpaRepository) {
         return args -> {
-            // Paciente demo "p-001" — autoriza procedimentos comuns mas bloqueia eutanásia.
+
             if (diretivaJpaRepository.findByPacienteId("p-001").isEmpty()) {
                 diretivaJpaRepository.save(DiretivaConsentimentoJpa.criar("p-001",
                     List.of(TipoConduta.PROCEDIMENTO_INVASIVO,
@@ -216,7 +201,7 @@ public class ProtocoloInacessibilidadeConfig {
                             TipoConduta.PROCEDIMENTO_ELETIVO)));
                 log.info("[SEED] Diretivas de consentimento criadas para paciente p-001.");
             }
-            // Paciente demo "p-002" — autoriza apenas medicação controlada.
+
             if (diretivaJpaRepository.findByPacienteId("p-002").isEmpty()) {
                 diretivaJpaRepository.save(DiretivaConsentimentoJpa.criar("p-002",
                     List.of(TipoConduta.MEDICACAO_CONTROLADA)));

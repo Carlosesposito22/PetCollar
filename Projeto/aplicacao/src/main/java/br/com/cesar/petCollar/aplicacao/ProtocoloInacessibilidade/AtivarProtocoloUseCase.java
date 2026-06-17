@@ -4,12 +4,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.AtendimentoId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.AtivacaoProtocoloService;
 
-/**
- * Caso de uso de ativação manual do protocolo de inacessibilidade (RN 1/12).
- * Delega ao {@link AtivacaoProtocoloService} preservando a idempotência: se já
- * existe um protocolo ativo para o atendimento, o mesmo é retornado sem criar
- * um duplicado.
- */
 public class AtivarProtocoloUseCase {
 
     private final AtivacaoProtocoloService ativacaoService;

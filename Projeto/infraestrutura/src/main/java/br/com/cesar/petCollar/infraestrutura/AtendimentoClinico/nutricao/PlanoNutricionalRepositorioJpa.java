@@ -12,11 +12,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.StatusPl
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Adapter JPA da interface de domínio {@link IPlanoNutricionalRepositorio}.
- * Traduz {@link PlanoNutricional} ↔ {@link PlanoNutricionalJpa} via
- * {@code fromDomain}/{@code toDomain}.
- */
 @Repository
 public class PlanoNutricionalRepositorioJpa implements IPlanoNutricionalRepositorio {
 
@@ -52,8 +47,7 @@ public class PlanoNutricionalRepositorioJpa implements IPlanoNutricionalReposito
 
     @Override
     public List<PlanoNutricional> listarFinalizadosDoPaciente(PacienteId pacienteId) {
-        // Histórico completo do médico — inclui SUBSTITUIDO para visualizar
-        // a progressão das prescrições ao longo dos atendimentos.
+
         return jpa.findByPacienteIdAndStatusInOrderByAtualizadoEmDesc(
                 pacienteId.getValor(),
                 List.of(StatusPlanoNutricional.FINALIZADO.name(),

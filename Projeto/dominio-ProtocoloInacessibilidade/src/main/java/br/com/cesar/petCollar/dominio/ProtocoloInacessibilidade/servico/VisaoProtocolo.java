@@ -11,11 +11,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.Tentat
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Visão consolidada do protocolo apresentada ao tutor (RN 15): status atual, nível
- * de escalonamento e o histórico auditável de tentativas e escalonamentos. Montada
- * a partir do agregado pelo {@link ConsultaStatusProtocoloService}.
- */
 public final class VisaoProtocolo {
 
     private final ProtocoloId protocoloId;

@@ -8,17 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Agregado raiz da Carteira Digital de Vacinação (F-06).
- *
- * <p>Agrupa todas as {@link DoseVacinal} de um mesmo ciclo (ex.: "V10", "Antirrábica")
- * para um paciente, controlando o progresso e as transições de estado (RN-073, RN-080).
- *
- * <p>Padrão Strategy: {@link #calcularProximaDataComEstrategia(ICalculoProximaDoseStrategy)}
- * delega o cálculo da próxima dose à estratégia fornecida, permitindo que protocolos
- * distintos (Filhote, Reforço Anual, Viagem, Personalizado) coexistam sem alteração
- * deste agregado (RN-075, RN-082).
- */
 public class CicloVacinal {
 
     private final VacinaId id;
@@ -30,7 +19,6 @@ public class CicloVacinal {
     private Integer diasLembrete;
     private final List<DoseVacinal> doses;
 
-    /** Construtor de criação — ciclo recém-criado pelo veterinário. */
     public CicloVacinal(VacinaId id, PacienteId pacienteId, String nomeCiclo,
                         int totalDoses, TipoProtocolo tipoProtocolo, Integer intervaloDias) {
         if (id == null)
@@ -55,7 +43,6 @@ public class CicloVacinal {
         this.doses         = new ArrayList<>();
     }
 
-    // Construtor de RECONSTRUÇÃO — usado pela infraestrutura ao recarregar do banco.
     public CicloVacinal(VacinaId id, PacienteId pacienteId, String nomeCiclo,
                         int totalDoses, TipoProtocolo tipoProtocolo, Integer intervaloDias,
                         List<DoseVacinal> doses, Integer diasLembrete) {
@@ -79,7 +66,6 @@ public class CicloVacinal {
         this.doses         = doses != null ? new ArrayList<>(doses) : new ArrayList<>();
     }
 
-    /** Agenda a primeira dose do ciclo. */
     public void adicionarPrimeiraDose(LocalDate data) {
         if (!doses.isEmpty())
             throw new IllegalStateException("Este ciclo já possui a primeira dose registrada.");
@@ -88,7 +74,6 @@ public class CicloVacinal {
         doses.add(new DoseVacinal(VacinaId.gerar(), 1, data));
     }
 
-    /** Agenda a próxima dose sequencial do ciclo, respeitando o limite de totalDoses (RN-080). */
     public void adicionarProximaDose(LocalDate data) {
         if (doses.size() >= totalDoses)
             throw new IllegalStateException("Este ciclo já tem todas as doses planejadas.");
@@ -98,10 +83,6 @@ public class CicloVacinal {
         doses.add(new DoseVacinal(VacinaId.gerar(), proximoNumero, data));
     }
 
-    /**
-     * Confirma a aplicação de uma dose específica pelo veterinário.
-     * Delega ao método {@link DoseVacinal#aplicar} que protege o estado (RN-078).
-     */
     public void aplicarDose(VacinaId doseId, LocalDate dataAplicacao, String medico, String lote) {
         if (doseId == null)
             throw new IllegalArgumentException("Id da dose não pode ser nulo.");
@@ -112,11 +93,6 @@ public class CicloVacinal {
              .aplicar(dataAplicacao, medico, lote);
     }
 
-    /**
-     * Reagenda uma dose pendente ou em atraso deste ciclo para uma nova data (RN-079).
-     * Delega ao método {@link DoseVacinal#reagendar(LocalDate)} que protege o estado:
-     * doses já aplicadas não podem ser remarcadas.
-     */
     public void reagendarDose(VacinaId doseId, LocalDate novaData) {
         if (doseId == null)
             throw new IllegalArgumentException("Id da dose não pode ser nulo.");
@@ -127,17 +103,6 @@ public class CicloVacinal {
              .reagendar(novaData);
     }
 
-    /**
-     * Calcula a data prevista para a próxima dose usando a estratégia fornecida (RN-075, RN-082).
-     *
-     * <p>Padrão Strategy: o algoritmo de cálculo é injetado pelo chamador;
-     * este método permanece estável independentemente do protocolo.
-     *
-     * @param estrategia implementação de {@link ICalculoProximaDoseStrategy} selecionada pelo
-     *                   {@link br.com.cesar.petCollar.dominio.SaudePreventiva.estrategia.FabricaDeProtocolo}
-     * @return data prevista para a próxima dose
-     * @throws IllegalStateException se não houver doses registradas como base de cálculo
-     */
     public LocalDate calcularProximaDataComEstrategia(ICalculoProximaDoseStrategy estrategia) {
         if (estrategia == null)
             throw new IllegalArgumentException("Estratégia de cálculo não pode ser nula.");
@@ -149,20 +114,12 @@ public class CicloVacinal {
                         "Nenhuma dose registrada no ciclo para calcular a próxima data."));
     }
 
-    /**
-     * Define ou remove o lembrete automático de dose próxima (RN-lembrete).
-     * @param diasLembrete dias antes da próxima dose para ativar o lembrete; {@code null} desativa.
-     */
     public void configurarLembrete(Integer diasLembrete) {
         if (diasLembrete != null && diasLembrete <= 0)
             throw new IllegalArgumentException("Dias de lembrete deve ser maior que zero.");
         this.diasLembrete = diasLembrete;
     }
 
-    /**
-     * Retorna {@code true} se hoje está dentro do período de lembrete da próxima dose pendente.
-     * O período é: [dataProximaDose - diasLembrete, dataProximaDose].
-     */
     public boolean lembreteAtivo() {
         if (diasLembrete == null || diasLembrete <= 0) return false;
         LocalDate hoje = LocalDate.now();

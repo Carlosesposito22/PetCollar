@@ -4,16 +4,10 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato.CanalCon
 
 import java.time.LocalDateTime;
 
-/**
- * Subentidade do agregado {@link ProtocoloInacessibilidade}. Registra de forma
- * auditável (RN 3) cada tentativa de contato: quem foi acionado
- * ({@code destinatarioId}/{@code tipoDestinatario}), por qual {@link CanalContato},
- * com que {@link StatusTentativa}, quando e qual a mensagem de retorno.
- */
 public final class TentativaContato {
 
     private final TentativaId id;
-    private final String destinatarioId;          // referência cross-agregado (tutor ou responsável)
+    private final String destinatarioId;
     private final TipoDestinatario tipoDestinatario;
     private final CanalContato canal;
     private final StatusTentativa status;

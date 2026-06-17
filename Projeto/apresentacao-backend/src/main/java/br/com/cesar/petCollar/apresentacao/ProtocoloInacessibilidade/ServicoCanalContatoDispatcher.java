@@ -11,11 +11,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Implementação da porta {@link IServicoCanalContato} que roteia cada tentativa para
- * a {@link EstrategiaCanalContato} do canal correspondente (Strategy + Adapter).
- * Se nenhum canal estiver registrado, devolve falha técnica.
- */
 @Component
 public class ServicoCanalContatoDispatcher implements IServicoCanalContato {
 

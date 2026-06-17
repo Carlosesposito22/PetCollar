@@ -11,10 +11,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA do agregado {@link ProgressoBadge}. TutorId/BadgeId ficam como
- * o valor String do Id (agregados externos, §6.2 do CLAUDE.md).
- */
 @Entity
 @Table(name = "progressos_badge")
 public class ProgressoBadgeJpa {

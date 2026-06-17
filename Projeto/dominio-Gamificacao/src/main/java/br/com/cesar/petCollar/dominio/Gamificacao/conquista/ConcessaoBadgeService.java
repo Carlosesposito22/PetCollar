@@ -27,19 +27,19 @@ public class ConcessaoBadgeService {
         List<ConquistaTutor> novasConquistas = new ArrayList<>();
 
         for (Badge badge : badgesDoEvento) {
-            // RN-110: verificar se já conquistou
+
             if (conquistaRepositorio.existsByTutorEBadge(tutorId, badge.getId())) {
                 continue;
             }
 
             if (badge.isEventoUnico()) {
-                // RN-108: badge de evento único — conceder imediatamente
+
                 ConquistaTutor conquista = new ConquistaTutor(
                         ConquistaId.gerar(), tutorId, badge.getId());
                 conquistaRepositorio.save(conquista);
                 novasConquistas.add(conquista);
             } else {
-                // RN-109: badge quantitativa — incrementar progresso
+
                 ProgressoBadge progresso = progressoRepositorio.findByTutorEBadge(tutorId, badge.getId());
                 if (progresso == null) {
                     progresso = new ProgressoBadge(

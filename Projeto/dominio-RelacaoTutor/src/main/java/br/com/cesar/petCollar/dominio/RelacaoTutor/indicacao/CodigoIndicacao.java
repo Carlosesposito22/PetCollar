@@ -3,10 +3,6 @@ package br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao;
 import java.security.SecureRandom;
 import java.util.Objects;
 
-/**
- * Value Object que representa o código alfanumérico permanente do link de indicação (RN-2).
- * Sempre 8 caracteres maiúsculos [A-Z0-9].
- */
 public final class CodigoIndicacao {
 
     private static final int TAMANHO = 8;

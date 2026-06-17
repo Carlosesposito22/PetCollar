@@ -11,11 +11,6 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
-/**
- * Linha-filha do agregado {@link br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.Consulta}
- * (RN 18). Por ser um value object sem identidade de domínio, usa um id técnico
- * gerado pelo banco.
- */
 @Entity
 @Table(name = "historico_remarcacoes")
 public class HistoricoRemarcacaoJpa {

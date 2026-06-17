@@ -9,17 +9,6 @@ import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.BeneficioCatalog
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.IBeneficioCatalogoRepositorio;
 import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 
-/**
- * Proxy de cache (padrão Proxy) sobre o repositório de catálogo de benefícios.
- *
- * <p>Intenção: o catálogo é dado de referência — lido a cada cálculo de status
- * de benefício do tutor, mas alterado raramente (só pelo admin). Este proxy
- * intercepta as consultas de {@link IBeneficioCatalogoRepositorio}, resolvendo-as
- * a partir de um cache em memória sempre que possível, e delega ao adapter JPA
- * real apenas para popular o cache ou persistir alterações — invalidando as
- * entradas afetadas em {@link #save(BeneficioCatalogo)} para que mudanças do
- * admin reflitam imediatamente nas próximas leituras.</p>
- */
 public class BeneficioCatalogoRepositorioProxy implements IBeneficioCatalogoRepositorio {
 
     private final IBeneficioCatalogoRepositorio repositorioReal;
@@ -55,7 +44,6 @@ public class BeneficioCatalogoRepositorioProxy implements IBeneficioCatalogoRepo
         return porAtivo.computeIfAbsent(ativo, chave -> repositorioReal.findByAtivo(ativo));
     }
 
-    /** Remove do cache as entradas que podem ter ficado obsoletas com a alteração. */
     private void invalidar(BeneficioCatalogo alterado) {
         porId.remove(alterado.getId().getValor());
         porPlanoId.remove(alterado.getPlanoId().getValor());

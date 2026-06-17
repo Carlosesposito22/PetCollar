@@ -3,9 +3,6 @@ package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Identidade canônica de uma {@link Racao} do catálogo.
- */
 public final class RacaoId {
     private final String valor;
 

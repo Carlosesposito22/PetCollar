@@ -3,10 +3,6 @@ package br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca;
 import java.time.YearMonth;
 import java.util.Objects;
 
-/**
- * Período de referência da Cobrança (mês/ano). VO imutável que encapsula
- * {@link YearMonth} para protegê-lo de manipulação direta no domínio.
- */
 public final class Competencia {
 
     private final YearMonth valor;

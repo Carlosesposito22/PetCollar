@@ -6,12 +6,6 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/**
- * Agregado raiz do catálogo de fármacos. Concentra as informações que a
- * F-12 cruza durante a validação: dose máxima de segurança, concentração
- * para conversão em ml, vias permitidas, componentes (para alergia), notas
- * de manejo (RN 8) e propriedades alimentares (RN 7).
- */
 public final class Medicamento {
 
     private final MedicamentoId id;
@@ -19,9 +13,9 @@ public final class Medicamento {
     private final BigDecimal doseMaximaMgPorKg;
     private final BigDecimal concentracaoMgPorMl;
     private final Set<ViaAdministracao> viasPermitidas;
-    /** Componentes ativos do fármaco — bate com lista de alergias do paciente. */
+
     private final Set<String> componentes;
-    /** "JEJUM", "COM_ALIMENTO", "INDIFERENTE" — usado pra escalonar horários. */
+
     private final ManejoAlimentar manejoAlimentar;
     private final String notaCuidado;
 

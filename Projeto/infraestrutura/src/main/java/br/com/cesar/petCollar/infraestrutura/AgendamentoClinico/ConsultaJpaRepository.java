@@ -12,12 +12,10 @@ public interface ConsultaJpaRepository extends JpaRepository<ConsultaJpa, String
 
     List<ConsultaJpa> findByPacienteId(String pacienteId);
 
-    /** Consultas com qualquer dos status informados — usado pelo ACL de atendimentos (F-03). */
     List<ConsultaJpa> findByStatusIn(Collection<String> statuses);
 
     List<ConsultaJpa> findByPacienteIdAndStatusIn(String pacienteId, Collection<String> status);
 
-    /** Consultas do médico cujo intervalo intersecta o período (base da disponibilidade — RN 4). */
     @Query("""
            select c from ConsultaJpa c
            where c.medicoId = :medicoId
@@ -28,10 +26,8 @@ public interface ConsultaJpaRepository extends JpaRepository<ConsultaJpa, String
                                               @Param("inicio") LocalDateTime inicio,
                                               @Param("fim") LocalDateTime fim);
 
-    /** Consultas do médico com qualquer dos status informados (independente de período). */
     List<ConsultaJpa> findByMedicoIdAndStatusIn(String medicoId, Collection<String> statuses);
 
-    /** Existe consulta ativa do paciente sobreposta ao intervalo informado (RN 5). */
     @Query("""
            select case when count(c) > 0 then true else false end from ConsultaJpa c
            where c.pacienteId = :pacienteId

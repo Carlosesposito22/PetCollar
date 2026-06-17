@@ -26,13 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Entidade JPA do agregado {@link ProtocoloInacessibilidade}. Ids e enums são
- * persistidos como String; referências a outros agregados/contextos (atendimento,
- * paciente, tutor, configuração) ficam apenas como o valor String do Id (§6.2 do
- * guia). As subentidades do próprio agregado (tentativas de contato e eventos de
- * escalonamento) são mapeadas com cascade total.
- */
 @Entity
 @Table(name = "protocolos_inacessibilidade")
 public class ProtocoloInacessibilidadeJpa {
@@ -53,9 +46,9 @@ public class ProtocoloInacessibilidadeJpa {
     private String configuracaoId;
 
     @Column(nullable = false)
-    private String status;                  // StatusProtocolo.name()
+    private String status;
 
-    private String nivelEscalonamentoAtual; // NivelEscalonamento.name(), pode ser nulo
+    private String nivelEscalonamentoAtual;
 
     @Column(nullable = false)
     private boolean secundariosAcionados;
@@ -63,7 +56,7 @@ public class ProtocoloInacessibilidadeJpa {
     private LocalDateTime ativadoEm;
     private LocalDateTime encerradoEm;
 
-    private String motivoEncerramentoTipo;  // TipoEncerramento.name(), pode ser nulo
+    private String motivoEncerramentoTipo;
 
     @Column(columnDefinition = "TEXT")
     private String motivoEncerramentoDetalhes;

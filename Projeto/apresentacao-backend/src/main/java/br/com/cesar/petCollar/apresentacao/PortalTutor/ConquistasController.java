@@ -16,11 +16,6 @@ import br.com.cesar.petCollar.dominio.Gamificacao.conquista.ProgressoBadge;
 import br.com.cesar.petCollar.dominio.Gamificacao.conquista.RaridadeBadge;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Painel de Conquistas e Gamificação do Tutor (F-09). Adapter HTTP fino — toda
- * a regra vive no use case de {@code aplicacao.Gamificacao}. O shape do DTO
- * segue exatamente o já consumido pela tela {@code TutorConquistas.tsx}.
- */
 @RestController
 @RequestMapping("/api/tutor/conquistas")
 public class ConquistasController {
@@ -36,8 +31,6 @@ public class ConquistasController {
         TutorId tutorId = TutorId.de(principal.getName());
         return ConquistasResponseDTO.de(consultarConquistas.executar(tutorId));
     }
-
-    // ── DTOs ─────────────────────────────────────────────────────────────────
 
     public record BadgeDTO(
             String badgeId,

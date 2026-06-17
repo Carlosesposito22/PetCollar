@@ -8,20 +8,6 @@ import java.util.Set;
 
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.parametros.Comorbidade;
 
-/**
- * Agregado raiz do catálogo de rações. É consultado pela
- * {@code RecomendacaoRacaoService} para sugerir top-N ao médico.
- *
- * <p>Cada ração declara para que {@link FaixaEtaria}s e {@link Porte}s é
- * indicada, e quais {@link Comorbidade}s ela cobre. A compatibilidade é
- * verificada pelos métodos {@code compativelCom*}, que servem de input para
- * as Strategies de recomendação.
- *
- * <p>O agregado suporta edição e <strong>desativação suave</strong> (soft delete):
- * uma ração desativada sai das recomendações mas continua acessível por id
- * para preservar a integridade histórica dos planos nutricionais que a
- * prescreveram.
- */
 public class Racao {
 
     private final RacaoId id;
@@ -32,8 +18,6 @@ public class Racao {
     private Set<Porte> portesIndicados;
     private Set<Comorbidade> comorbidadesIndicadas;
     private boolean desativada;
-
-    // ── Construtor de CRIAÇÃO (nasce ativa) ──────────────────────────────────
 
     public Racao(RacaoId id,
                  String fabricante,
@@ -55,8 +39,6 @@ public class Racao {
         this.desativada = false;
     }
 
-    // ── Construtor de RECONSTRUÇÃO (infra ↔ banco) ──────────────────────────
-
     public Racao(RacaoId id,
                  String fabricante,
                  String linha,
@@ -70,9 +52,6 @@ public class Racao {
         this.desativada = desativada;
     }
 
-    // ── Operações de negócio ────────────────────────────────────────────────
-
-    /** Substitui todos os campos editáveis (validados como na criação). */
     public void editar(String fabricante, String linha,
                        BigDecimal densidadeCaloricaKcalPorKg,
                        Set<FaixaEtaria> faixasIndicadas,
@@ -87,7 +66,6 @@ public class Racao {
         this.comorbidadesIndicadas = normalizarComorbidades(comorbidadesIndicadas);
     }
 
-    /** Soft-delete — a ração some das recomendações mas permanece no banco para auditoria histórica. */
     public void desativar() {
         if (this.desativada)
             throw new IllegalStateException("Ração já está desativada.");
@@ -102,8 +80,6 @@ public class Racao {
 
     public boolean isAtiva() { return !desativada; }
 
-    // ── Compatibilidade (usado pelas Strategies) ────────────────────────────
-
     public boolean compativelComFaixa(FaixaEtaria faixa)   { return faixasIndicadas.contains(faixa); }
     public boolean compativelComPorte(Porte porte)         { return portesIndicados.contains(porte); }
     public boolean cobreComorbidade(Comorbidade comorbidade) {
@@ -111,8 +87,6 @@ public class Racao {
     }
 
     public String descricaoCurta() { return fabricante + " " + linha; }
-
-    // ── Validações compartilhadas ───────────────────────────────────────────
 
     private static void validarCampos(String fabricante, String linha,
                                        BigDecimal densidade,
@@ -134,8 +108,6 @@ public class Racao {
                 ? Set.of(Comorbidade.NENHUMA)
                 : Collections.unmodifiableSet(new LinkedHashSet<>(entrada));
     }
-
-    // ── Getters ─────────────────────────────────────────────────────────────
 
     public RacaoId getId()                                  { return id; }
     public String getFabricante()                           { return fabricante; }

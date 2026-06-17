@@ -16,10 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Entidade JPA para responsáveis secundários (porta ACL do ProtocoloInacessibilidade).
- * Os canais de contato são persistidos como strings (CanalContato.name()).
- */
 @Entity
 @Table(name = "responsaveis_secundarios")
 public class ResponsavelSecundarioJpa {

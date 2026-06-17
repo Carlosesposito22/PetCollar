@@ -5,11 +5,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.Motivo
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade;
 
-/**
- * Caso de uso de encerramento manual do protocolo de inacessibilidade.
- * Localiza o protocolo, aplica a transição {@code encerrarComSucesso} na
- * máquina de estados do agregado e persiste o resultado.
- */
 public class EncerrarProtocoloUseCase {
 
     private final IProtocoloInacessibilidadeRepositorio protocoloRepositorio;

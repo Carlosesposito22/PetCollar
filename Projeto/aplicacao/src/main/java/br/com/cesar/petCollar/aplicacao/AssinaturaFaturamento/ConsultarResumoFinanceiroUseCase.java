@@ -14,11 +14,6 @@ import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.servico.Classificaca
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.servico.SituacaoConta;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Caso de uso que consolida tudo que a Área Financeira do tutor precisa exibir
- * em uma única chamada: plano, situação da conta (RN 6/7), próximo vencimento e
- * histórico de cobranças com valores recalculados na hora (RN 4).
- */
 public class ConsultarResumoFinanceiroUseCase {
 
     private final ICobrancaRepositorio cobrancaRepositorio;
@@ -50,13 +45,6 @@ public class ConsultarResumoFinanceiroUseCase {
         return new Resultado(plano, situacao, proximoVencimento, cobrancas);
     }
 
-    /**
-     * "Próximo vencimento":
-     *  - se há cobrança PENDENTE, seu vencimento (a próxima do calendário);
-     *  - senão, projeta a partir da última paga (+ 1 mês — RN não escrita: padrão
-     *    do petCollar para tutor com tudo em dia ainda não faturado);
-     *  - senão, devolve null.
-     */
     private LocalDate calcularProximoVencimento(List<Cobranca> cobrancas) {
         return cobrancas.stream()
                 .filter(c -> c.status() == StatusCobranca.PENDENTE)
@@ -75,7 +63,6 @@ public class ConsultarResumoFinanceiroUseCase {
         return planoRepositorio.buscarPorId(cobrancas.get(0).getPlanoId());
     }
 
-    /** Saída do caso de uso. Permanece em termos de tipos de domínio. */
     public record Resultado(Plano plano,
                             SituacaoConta situacaoConta,
                             LocalDate proximoVencimento,

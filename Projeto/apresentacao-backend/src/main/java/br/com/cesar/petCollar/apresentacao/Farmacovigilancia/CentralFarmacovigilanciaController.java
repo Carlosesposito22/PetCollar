@@ -55,10 +55,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * F-12 — endpoints do médico para a Central de Farmacovigilância. Protegido
- * pelo SecurityConfig (perfil MEDICO_VETERINARIO).
- */
 @RestController
 @RequestMapping("/api/medico/farmacovigilancia")
 public class CentralFarmacovigilanciaController {
@@ -97,26 +93,22 @@ public class CentralFarmacovigilanciaController {
         this.consultarPlano = consultarPlano;
     }
 
-    /** Catálogo completo de medicamentos. */
     @GetMapping("/medicamentos")
     public List<MedicamentoDTO> catalogo() {
         return listarCatalogo.executar().stream().map(MedicamentoDTO::de).toList();
     }
 
-    /** Matriz de interação completa (somente os pares relevantes do catálogo). */
     @GetMapping("/medicamentos/interacoes")
     public List<InteracaoDTO> interacoes() {
         List<MedicamentoId> ids = listarCatalogo.executar().stream().map(Medicamento::getId).toList();
         return medicamentosRepo.buscarInteracoesEntre(ids).stream().map(InteracaoDTO::de).toList();
     }
 
-    /** Templates pré-configurados (Gastroproteção, Antiemético, Antibiótico). */
     @GetMapping("/templates")
     public List<TemplateDTO> templates() {
         return listarTemplates.executar().stream().map(TemplateDTO::de).toList();
     }
 
-    /** Validação ao vivo — não persiste, devolve violações e dose máx. segura por item. */
     @PostMapping("/validar")
     public ResultadoValidacaoDTO validar(@RequestBody RequisicaoValidarDTO req) {
         var entrada = new ValidarPrescricaoUseCase.Entrada(
@@ -127,7 +119,6 @@ public class CentralFarmacovigilanciaController {
         return ResultadoValidacaoDTO.de(validar.executar(entrada));
     }
 
-    /** Cria + finaliza atomicamente. Mesmo padrão da F-11 (rejeita se houver BLOQUEIO). */
     @PostMapping("/finalizar-direto")
     public PrescricaoDTO finalizarDireto(@RequestBody RequisicaoFinalizarDTO req, Principal principal) {
         List<CriarEFinalizarPrescricaoUseCase.DadosItem> itens = req.itens().stream()
@@ -161,7 +152,6 @@ public class CentralFarmacovigilanciaController {
         return PrescricaoDTO.de(criarEFinalizar.executar(entrada));
     }
 
-    /** Prescrição vigente do paciente — 204 se não houver. */
     @GetMapping("/pacientes/{pacienteId}/vigente")
     public ResponseEntity<PrescricaoDTO> vigenteDoPaciente(@PathVariable String pacienteId) {
         return consultar.buscarVigenteDoPaciente(PacienteId.de(pacienteId))
@@ -170,7 +160,6 @@ public class CentralFarmacovigilanciaController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
-    /** Histórico de prescrições do paciente (FINALIZADA + SUBSTITUIDA). */
     @GetMapping("/pacientes/{pacienteId}/historico")
     public HistoricoDTO historicoDoPaciente(@PathVariable String pacienteId) {
         List<Prescricao> historico = consultar.listarHistoricoDoPaciente(PacienteId.de(pacienteId));
@@ -179,7 +168,6 @@ public class CentralFarmacovigilanciaController {
         return new HistoricoDTO(historico.stream().map(PrescricaoDTO::de).toList(), nomes);
     }
 
-    /** Detalhe de uma prescrição específica. */
     @GetMapping("/{prescricaoId}")
     public ResponseEntity<PrescricaoDTO> detalhe(@PathVariable String prescricaoId) {
         return consultar.buscarPorId(PrescricaoId.de(prescricaoId))
@@ -188,11 +176,6 @@ public class CentralFarmacovigilanciaController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Contexto do paciente — resolve tutorId, peso atual, idade, alergias e
-     * tags clínicas DERIVADAS (geriátrico por idade > 7, insuficiência renal
-     * via comorbidade do plano nutricional vigente da F-11).
-     */
     @GetMapping("/pacientes/{pacienteId}/contexto")
     public ResponseEntity<ContextoPacienteDTO> contexto(@PathVariable String pacienteId) {
         Optional<ContextoPacienteDTO> doPortal = pacientesPortalRepo.findById(pacienteId)
@@ -208,8 +191,6 @@ public class CentralFarmacovigilanciaController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
     private ContextoPacienteDTO montarDaRecepcao(PacienteRecepcaoJpa pac) {
         LocalDate nasc = pac.getNascimento();
         int idade = nasc == null ? 0 : Math.max(0, Period.between(nasc, LocalDate.now()).getYears());
@@ -221,7 +202,6 @@ public class CentralFarmacovigilanciaController {
                                         String nomePet, BigDecimal pesoKg, int idadeAnos) {
         String nomeTutor = tutoresRepo.findById(tutorId).map(t -> t.getNome()).orElse("Tutor");
 
-        // Tags clínicas DERIVADAS: geriátrico (idade) + renal (comorbidade da F-11)
         Set<TagClinica> tags = EnumSet.noneOf(TagClinica.class);
         if (idadeAnos > 7) tags.add(TagClinica.GERIATRICO);
         consultarPlano.buscarVigenteDoPaciente(PacienteId.de(pacienteId))
@@ -230,7 +210,6 @@ public class CentralFarmacovigilanciaController {
                     if (c == Comorbidade.DOENCA_RENAL) tags.add(TagClinica.INSUFICIENCIA_RENAL);
                 });
 
-        // Alergias: por enquanto não há tabela própria — devolve vazio, a UI permite o médico inserir manualmente.
         return new ContextoPacienteDTO(
                 pacienteId, tutorId, nomePet, nomeTutor,
                 pesoKg, idadeAnos,

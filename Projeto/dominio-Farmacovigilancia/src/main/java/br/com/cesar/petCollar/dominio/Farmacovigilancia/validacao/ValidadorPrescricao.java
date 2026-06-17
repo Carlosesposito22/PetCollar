@@ -19,18 +19,6 @@ import br.com.cesar.petCollar.dominio.Farmacovigilancia.seguranca.DoseMaximaBase
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.seguranca.RedutorPorAlergiaDecorator;
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.seguranca.RedutorPorTagClinicaDecorator;
 
-/**
- * Service de domínio que orquestra todas as camadas de validação da F-12:
- * <ol>
- *   <li>Monta a cadeia de Decorators (base → tag clínica → alergia) para
- *       calcular a dose máxima segura por item;</li>
- *   <li>Compara a dose proposta vs. máxima e emite violação BLOQUEIO se
- *       ultrapassar (RN 2);</li>
- *   <li>Confere via permitida (RN 1);</li>
- *   <li>Consulta a matriz de interações entre os itens (RN 4);</li>
- *   <li>Detecta conflitos de manejo alimentar nos horários (RN 7).</li>
- * </ol>
- */
 public class ValidadorPrescricao {
 
     private final IMedicamentoRepositorio medicamentos;
@@ -55,13 +43,11 @@ public class ValidadorPrescricao {
 
         List<MedicamentoId> idsParaInteracao = new ArrayList<>();
 
-        // ── Camada por item: Decorator + verificações ──────────────────────
         for (RascunhoItem item : itens) {
             Medicamento med = medicamentos.buscarPorId(item.medicamentoId())
                     .orElseThrow(() -> new IllegalStateException(
                             "Medicamento não encontrado no catálogo: " + item.medicamentoId()));
 
-            // Empilha o Decorator: base → tag → alergia
             CalculadoraDoseMaximaSegura base = new DoseMaximaBase(med);
             RedutorPorTagClinicaDecorator comTag = new RedutorPorTagClinicaDecorator(base, tags);
             RedutorPorAlergiaDecorator comAlergia = new RedutorPorAlergiaDecorator(comTag, med, alergias);
@@ -79,7 +65,7 @@ public class ValidadorPrescricao {
             if (comAlergia.foiAplicado()) {
                 violacoes.add(Violacao.bloqueio("ALERGIA",
                         "Paciente é alérgico a componentes de " + med.getNome() + "."));
-                continue; // próximas verificações deste item não fazem sentido
+                continue;
             }
             if (item.doseMgPorKg().compareTo(doseMaxSegura) > 0) {
                 String reduzido = comTag.foiAplicado() ? " (já com redutor de 25% por tag clínica)" : "";
@@ -95,7 +81,6 @@ public class ValidadorPrescricao {
             idsParaInteracao.add(med.getId());
         }
 
-        // ── Camada cruzada: matriz de interação medicamentosa ──────────────
         for (InteracaoMedicamentosa inter : medicamentos.buscarInteracoesEntre(idsParaInteracao)) {
             String nomeA = medicamentos.buscarPorId(inter.medicamentoA()).map(Medicamento::getNome).orElse("?");
             String nomeB = medicamentos.buscarPorId(inter.medicamentoB()).map(Medicamento::getNome).orElse("?");
@@ -107,7 +92,6 @@ public class ValidadorPrescricao {
             }
         }
 
-        // ── Camada cruzada: conflito de manejo alimentar (RN 7) ────────────
         List<Medicamento> jejum = new ArrayList<>();
         List<Medicamento> comAlimento = new ArrayList<>();
         for (RascunhoItem item : itens) {

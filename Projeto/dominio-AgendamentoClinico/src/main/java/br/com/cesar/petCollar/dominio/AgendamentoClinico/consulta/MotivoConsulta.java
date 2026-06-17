@@ -2,10 +2,6 @@ package br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta;
 
 import java.util.Objects;
 
-/**
- * Value Object que encapsula o motivo de uma consulta (RN 3 — motivo obrigatório).
- * Garante que o motivo informado é descritivo o suficiente.
- */
 public final class MotivoConsulta {
 
     private static final int COMPRIMENTO_MINIMO = 5;

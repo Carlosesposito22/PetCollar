@@ -2,11 +2,6 @@ package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.parametros;
 
 import java.math.BigDecimal;
 
-/**
- * Comorbidades clínicas que aplicam um modificador metabólico sobre a NEM
- * (F-11 RN 3). {@link #NENHUMA} mantém o valor sem alteração — modelagem útil
- * para o frontend sem precisar de {@code null}.
- */
 public enum Comorbidade {
 
     NENHUMA       ("Nenhuma",        new BigDecimal("1.0")),

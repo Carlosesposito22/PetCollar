@@ -20,17 +20,11 @@ import br.com.cesar.petCollar.dominio.Gamificacao.conquista.IProgressoBadgeRepos
 import br.com.cesar.petCollar.dominio.Gamificacao.conquista.RaridadeBadge;
 import br.com.cesar.petCollar.dominio.compartilhado.eventos.PublicadorDeEventosDoTutor;
 
-/**
- * Wiring canônico (§6.5) dos services de domínio de F-09 como beans, e seed do
- * catálogo fixo de badges — referência estável, análoga ao seed de
- * especialidades em {@code AgendamentoClinico/SeedInicial}.
- */
 @Configuration
 @EntityScan(basePackages = "br.com.cesar.petCollar.infraestrutura.Gamificacao")
 @EnableJpaRepositories(basePackages = "br.com.cesar.petCollar.infraestrutura.Gamificacao")
 public class GamificacaoConfig {
 
-    /** Catálogo fixo: {nome, descrição, categoria, raridade, chaveEvento, eventoUnico, metaQuantitativa}. */
     private static final Object[][] BADGES_PADRAO = {
             {"Primeira Consulta", "Concedida ao realizar a primeira consulta na clínica", CategoriaBadge.FIDELIDADE, RaridadeBadge.COMUM, "primeira_consulta", true, 1},
             {"Vacina em Dia", "Concedida ao registrar a aplicação de uma vacina", CategoriaBadge.SAUDE_DO_PET, RaridadeBadge.INCOMUM, "vacina_aplicada", true, 1},
@@ -55,14 +49,6 @@ public class GamificacaoConfig {
         return new ConcessaoBadgeService(badgeRepositorio, conquistaRepositorio, progressoRepositorio);
     }
 
-    // ── Observer: publicador de eventos do tutor (padrão Observer, §8) ──────
-
-    /**
-     * Já nasce com o {@link ConcessaoBadgeObservador} inscrito (CLAUDE.md §6.5:
-     * "registrar observadores... antes de devolver o bean") — assim, qualquer
-     * caso de uso que publique um evento do tutor aciona a avaliação de badges
-     * sem conhecer o serviço de Gamificação diretamente.
-     */
     @Bean
     public PublicadorDeEventosDoTutor publicadorDeEventosDoTutor(ConcessaoBadgeService concessaoBadgeService) {
         PublicadorDeEventosDoTutor publicador = new PublicadorDeEventosDoTutor();

@@ -7,13 +7,6 @@ import java.util.Map;
 
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.EstrategiaRecomendacaoRacao.PerfilNutricional;
 
-/**
- * Service de domínio que aplica as {@link EstrategiaRecomendacaoRacao} sobre
- * o catálogo e devolve o top-N ranqueado. Combinação por soma simples — o
- * peso relativo já vem embutido em cada Strategy (ver constantes internas).
- *
- * <p>Padrão Strategy + Service Layer (CLAUDE.md §8).
- */
 public class RecomendacaoRacaoService {
 
     private final IRacaoRepositorio repositorio;

@@ -11,10 +11,6 @@ public class BuscaInteligenteTutorService {
         this.resultadoBuscaRepositorio = resultadoBuscaRepositorio;
     }
 
-    /**
-     * Busca um tutor pelo CPF. Cria e persiste um ResultadoBusca associando o tutor se encontrado.
-     * RN-001, RN-002
-     */
     public ResultadoBusca buscarPorCpf(CPF cpf) {
         if (cpf == null)
             throw new IllegalArgumentException("CPF não pode ser nulo para realizar a busca.");
@@ -32,11 +28,6 @@ public class BuscaInteligenteTutorService {
         return resultado;
     }
 
-    /**
-     * Cadastra um novo tutor sem perder o contexto da busca anterior.
-     * Cria o tutor, persiste e atualiza um novo ResultadoBusca com o tutor associado.
-     * RN-002
-     */
     public ResultadoBusca cadastrarNovoTutor(CPF cpf, String nome, String telefone, String email) {
         if (cpf == null)
             throw new IllegalArgumentException("CPF não pode ser nulo para cadastrar tutor.");

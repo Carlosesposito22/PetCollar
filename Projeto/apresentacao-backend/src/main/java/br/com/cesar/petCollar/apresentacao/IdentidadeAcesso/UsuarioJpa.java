@@ -5,11 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA de {@link UsuarioAutenticavel}. Ids e enums persistidos como
- * String (§6.1). A chave primária é o {@code identificador} — e-mail para
- * TUTOR/ADMIN_CLINICA, matrícula numérica para RECEPCIONISTA/MÉDICO.
- */
 @Entity
 @Table(name = "usuarios")
 public class UsuarioJpa {
@@ -22,13 +17,13 @@ public class UsuarioJpa {
     private String nome;
 
     @Column(nullable = false)
-    private String perfil;       // Perfil.name()
+    private String perfil;
 
     @Column(nullable = false)
     private String senhaHash;
 
     @Column(nullable = false)
-    private String status;       // StatusConta.name()
+    private String status;
 
     private String cpf;
     private String telefone;

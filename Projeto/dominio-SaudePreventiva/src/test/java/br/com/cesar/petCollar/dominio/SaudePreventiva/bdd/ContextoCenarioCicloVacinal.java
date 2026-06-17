@@ -9,7 +9,6 @@ import org.mockito.Mockito;
 
 import java.time.LocalDate;
 
-/** Compartilha estado entre os steps de um mesmo cenário BDD. */
 public class ContextoCenarioCicloVacinal {
 
     public final ICicloVacinalRepositorio repositorioMock = Mockito.mock(ICicloVacinalRepositorio.class);

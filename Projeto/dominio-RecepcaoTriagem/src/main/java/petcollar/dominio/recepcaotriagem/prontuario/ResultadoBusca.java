@@ -10,7 +10,6 @@ public class ResultadoBusca {
     private boolean alertaEpidemiologicoGlobal;
     private final LocalDateTime criadoEm;
 
-    // Construtor de CRIAÇÃO — tutor ausente (pode ser associado depois)
     public ResultadoBusca(ResultadoBuscaId id, CPF cpf) {
         if (id == null)
             throw new IllegalArgumentException("Id do resultado de busca não pode ser nulo.");
@@ -22,7 +21,6 @@ public class ResultadoBusca {
         this.criadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO — todos os campos (para carregar da persistência)
     public ResultadoBusca(ResultadoBuscaId id, CPF cpf, Tutor tutor,
                           boolean alertaEpidemiologicoGlobal, LocalDateTime criadoEm) {
         this.id = id;

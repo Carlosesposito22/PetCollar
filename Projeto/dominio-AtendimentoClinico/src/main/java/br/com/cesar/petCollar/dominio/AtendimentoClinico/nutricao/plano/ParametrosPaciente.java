@@ -5,11 +5,6 @@ import java.math.BigDecimal;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.parametros.Comorbidade;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.parametros.NivelAtividade;
 
-/**
- * Parâmetros que o médico informa para alimentar a NEM (F-11). Validado em
- * construção: pesos positivos, densidade calórica positiva, comorbidade nunca
- * nula (use {@link Comorbidade#NENHUMA} se aplicável).
- */
 public record ParametrosPaciente(
         BigDecimal pesoAtualKg,
         BigDecimal pesoIdealKg,

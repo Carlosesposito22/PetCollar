@@ -9,10 +9,6 @@ import br.com.cesar.petCollar.dominio.Gamificacao.conquista.ConquistaId;
 import br.com.cesar.petCollar.dominio.Gamificacao.conquista.ConquistaTutor;
 import br.com.cesar.petCollar.dominio.Gamificacao.conquista.IConquistaTutorRepositorio;
 
-/**
- * Adapter JPA da interface de domínio {@link IConquistaTutorRepositorio}.
- * Traduz domínio ↔ entidade via {@code fromDomain}/{@code toDomain} (§6.4).
- */
 @Repository
 public class ConquistaTutorRepositorioJpa implements IConquistaTutorRepositorio {
 

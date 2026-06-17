@@ -2,10 +2,6 @@ package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao;
 
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.parametros.Comorbidade;
 
-/**
- * Pontua alto rações que cobrem a comorbidade do paciente. Critério mais
- * crítico — peso maior do que porte/faixa etária.
- */
 public class RecomendacaoPorComorbidadeStrategy implements EstrategiaRecomendacaoRacao {
 
     private static final int PONTUACAO_COBERTURA = 50;

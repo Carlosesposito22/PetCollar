@@ -6,14 +6,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
 import java.time.LocalDateTime;
 
-/**
- * Projeção (read-model) de um atendimento clínico em andamento, exposta pela porta
- * {@link IConsultaAtendimento}. Traz o necessário para a ativação por timeout
- * (RN 1): paciente, tutor responsável e o instante da última interação do tutor.
- *
- * <p>É deliberadamente <b>somente leitura</b>: o protocolo nunca altera o
- * atendimento clínico, preservando sua continuidade (RN 8).
- */
 public final class ResumoAtendimento {
 
     private final AtendimentoId atendimentoId;

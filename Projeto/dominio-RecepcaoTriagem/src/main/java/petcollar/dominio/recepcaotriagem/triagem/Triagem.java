@@ -18,12 +18,10 @@ public class Triagem {
     private final LocalDateTime criadoEm;
     private LocalDateTime finalizadaEm;
 
-    // Construtor de CRIAÇÃO — nova triagem
     public Triagem(TriagemId id, PacienteId pacienteId) {
         this(id, pacienteId, null);
     }
 
-    // Construtor de CRIAÇÃO — triagem de correção (referencia a anterior)
     public Triagem(TriagemId id, PacienteId pacienteId, TriagemId triagemAnteriorId) {
         if (id == null)
             throw new IllegalArgumentException("Id da triagem não pode ser nulo.");
@@ -37,7 +35,6 @@ public class Triagem {
         this.criadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO — todos os campos
     public Triagem(TriagemId id, PacienteId pacienteId, TriagemId triagemAnteriorId,
                    List<RespostaSintoma> respostas, CorDeRisco corDeRisco,
                    StatusTriagem status, LocalDateTime criadoEm, LocalDateTime finalizadaEm) {

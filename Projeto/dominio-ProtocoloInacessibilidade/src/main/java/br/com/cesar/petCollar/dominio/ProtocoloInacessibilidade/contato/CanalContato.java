@@ -1,11 +1,5 @@
 package br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato;
 
-/**
- * Canais de contato com o tutor/responsável durante o protocolo de
- * inacessibilidade (RN 2). Enum com comportamento: cada canal carrega sua
- * prioridade base (menor = tentado primeiro) e o tempo esperado de resposta,
- * usados para ordenar e parametrizar as tentativas.
- */
 public enum CanalContato {
 
     TELEFONE(1, 10),

@@ -5,11 +5,6 @@ import java.time.LocalTime;
 import java.util.EnumSet;
 import java.util.Set;
 
-/**
- * Value Object que descreve o expediente de um médico: a faixa de horário diária,
- * a duração padrão de cada consulta e os dias de atendimento. Serve de base para o
- * cálculo dos horários livres (RN 4).
- */
 public final class Expediente {
 
     private final LocalTime horaInicio;

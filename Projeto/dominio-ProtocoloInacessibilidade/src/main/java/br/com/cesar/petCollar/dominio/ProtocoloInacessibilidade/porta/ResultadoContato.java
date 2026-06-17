@@ -4,10 +4,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.Status
 
 import java.util.Objects;
 
-/**
- * Value Object devolvido por {@link IServicoCanalContato} ao executar uma tentativa
- * de contato: o {@link StatusTentativa} resultante e a mensagem de retorno do canal.
- */
 public final class ResultadoContato {
 
     private final StatusTentativa status;

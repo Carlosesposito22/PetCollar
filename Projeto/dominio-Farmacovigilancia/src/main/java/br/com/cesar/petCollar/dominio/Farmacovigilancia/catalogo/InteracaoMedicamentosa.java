@@ -3,11 +3,6 @@ package br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo;
 import java.util.Objects;
 import java.util.Set;
 
-/**
- * Par ordenado de medicamentos que possuem interação clínica conhecida.
- * O par é simétrico: o método {@link #envolve(MedicamentoId, MedicamentoId)}
- * trata (A,B) e (B,A) como o mesmo par.
- */
 public record InteracaoMedicamentosa(
         MedicamentoId medicamentoA,
         MedicamentoId medicamentoB,
@@ -16,11 +11,11 @@ public record InteracaoMedicamentosa(
 ) {
 
     public enum Gravidade {
-        /** Bloqueia a finalização da prescrição. */
+
         GRAVE,
-        /** Avisa o médico mas permite finalizar. */
+
         MODERADA,
-        /** Apenas informativa. */
+
         LEVE
     }
 

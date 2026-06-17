@@ -3,11 +3,6 @@ package petCollar.dominio.AtendimentoClinico.estrategia;
 import petCollar.dominio.AtendimentoClinico.relatorio.RelatorioClinico;
 import petCollar.dominio.AtendimentoClinico.relatorio.TipoRelatorio;
 
-/**
- * Strategy concreta: Consulta Preventiva (check-up, vacinação, revisão de rotina).
- * Exige apenas o resumo para o tutor; diagnóstico é opcional para atendimentos
- * sem achado patológico significativo.
- */
 public class ValidadorRelatorioPreventivStrategy implements IValidadorRelatorioStrategy {
 
     @Override

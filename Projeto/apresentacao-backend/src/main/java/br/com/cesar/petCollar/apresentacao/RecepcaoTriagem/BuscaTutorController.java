@@ -68,26 +68,17 @@ public class BuscaTutorController {
         this.cicloVacinalService = cicloVacinalService;
     }
 
-    /**
-     * Chave única do tutor compartilhada entre a recepção e o portal do tutor.
-     * Usamos o e-mail (mesmo identificador de login do tutor no portal), de modo
-     * que o paciente cadastrado em qualquer um dos fluxos apareça nos dois.
-     * Sem e-mail, cai no id da recepção (visível só internamente).
-     */
     private String chaveTutor(TutorRecepcaoJpa t) {
         return (t.getEmail() != null && !t.getEmail().isBlank())
             ? t.getEmail().trim()
             : t.getId();
     }
 
-    /** Aceita tanto o e-mail quanto o ID de recepção como tutorId válido do paciente. */
     private boolean pertenceAoTutor(String pacienteTutorId, TutorRecepcaoJpa t) {
         if (pacienteTutorId == null) return false;
         return pacienteTutorId.equalsIgnoreCase(chaveTutor(t))
             || pacienteTutorId.equalsIgnoreCase(t.getId());
     }
-
-    // ── F01: Busca tutor por CPF ──────────────────────────────────────────────
 
     @GetMapping("/tutores")
     public ResponseEntity<?> buscarPorCpf(@RequestParam String cpf) {
@@ -100,8 +91,6 @@ public class BuscaTutorController {
         if (opt.isPresent())
             return ResponseEntity.ok(montarRespostaTutor(opt.get()));
 
-        // Tutor não está em tutores_recepcao — verificar se já existe como usuário portal.
-        // Se existir, cria o vínculo automaticamente para unificar identidades.
         Optional<TutorRecepcaoJpa> vinculado = usuarioRepositorio
             .listarPorPerfil(Perfil.TUTOR)
             .stream()
@@ -159,8 +148,6 @@ public class BuscaTutorController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── Pacientes do tutor ────────────────────────────────────────────────────
-
     @GetMapping("/tutores/{tutorId}/pacientes")
     public List<PacienteDTO> listarPacientes(@PathVariable String tutorId) {
         TutorRecepcaoJpa t = tutorRepo.findById(tutorId).orElseThrow(TutorNaoEncontradoException::new);
@@ -208,14 +195,10 @@ public class BuscaTutorController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── F02: Sintomas ─────────────────────────────────────────────────────────
-
     @GetMapping("/sintomas")
     public List<SintomaDTO> listarSintomas() {
         return CATALOGO;
     }
-
-    // ── F02: Triagem ──────────────────────────────────────────────────────────
 
     @PostMapping("/tutores/{tutorId}/pacientes/{pacienteId}/triagens")
     public ResponseEntity<?> criarTriagem(
@@ -229,7 +212,6 @@ public class BuscaTutorController {
             .filter(x -> pertenceAoTutor(x.tutorId(), t))
             .orElseThrow(() -> new RuntimeException("Paciente não encontrado."));
 
-        // RN: não faz sentido triar/atender de novo um paciente que já está na fila.
         if (fila.contemPaciente(pacienteId))
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
                 "mensagem", paciente.nome() + " já está na fila de espera. "
@@ -243,8 +225,6 @@ public class BuscaTutorController {
         boolean ehVacina = req.aplicacaoVacina();
         List<String> sintomas = req.codigosSintomas() != null ? req.codigosSintomas() : List.of();
 
-        // Aplicação de vacina não passa por triagem clínica: score 0, classificação VERDE
-        // e entra na fila com a MENOR prioridade (flag aplicacaoVacina ordena por último).
         int score = ehVacina ? 0 : calcularScore(sintomas);
         String cor = ehVacina ? "VERDE" : classificarCor(score);
 
@@ -273,12 +253,6 @@ public class BuscaTutorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(TriagemDTO.de(triagem));
     }
 
-    // ── Vacinas (recepção) ────────────────────────────────────────────────────
-
-    /**
-     * Doses vacinais ainda não aplicadas do paciente. A recepção usa para decidir se
-     * pode enviar à fila como "aplicação de vacina" (só se houver dose pendente).
-     */
     @GetMapping("/pacientes/{pacienteId}/vacinas-pendentes")
     public List<VacinaPendenteRecepDTO> vacinasPendentes(@PathVariable String pacienteId) {
         return cicloVacinalService.listarPorPaciente(PacienteId.de(pacienteId)).stream()
@@ -289,10 +263,6 @@ public class BuscaTutorController {
             .toList();
     }
 
-    /**
-     * Cadastra um novo ciclo vacinal para o paciente pela recepção (RN-075). Reflete
-     * na carteira do tutor e habilita o médico a aplicar a dose. Mesma lógica do portal.
-     */
     @PostMapping("/pacientes/{pacienteId}/vacinas")
     public ResponseEntity<Void> cadastrarVacina(@PathVariable String pacienteId,
                                                 @Valid @RequestBody RequisicaoNovaVacinaRecep req) {
@@ -315,8 +285,6 @@ public class BuscaTutorController {
         }
     }
 
-    // ── Fila de atendimento ───────────────────────────────────────────────────
-
     @GetMapping("/fila")
     public List<FilaAtendimentoEmMemoria.ItemFilaDTO> listarFila() {
         return fila.listar();
@@ -328,10 +296,6 @@ public class BuscaTutorController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Encaminha um paciente da fila para um médico específico.
-     * A recepcionista chama este endpoint após escolher o médico na tela "Chamar".
-     */
     @PostMapping("/fila/{triagemId}/encaminhar")
     public ResponseEntity<?> encaminharParaMedico(
             @PathVariable String triagemId,
@@ -347,10 +311,6 @@ public class BuscaTutorController {
             "medicoId", req.medicoId()));
     }
 
-    /**
-     * Lista os médicos ativos — acessível à recepcionista apenas neste contexto
-     * de encaminhamento. Não expõe senhas nem dados sensíveis.
-     */
     @GetMapping("/medicos")
     public List<MedicoDTO> listarMedicos() {
         return usuarioRepositorio.listarPorPerfil(Perfil.MEDICO_VETERINARIO)
@@ -359,8 +319,6 @@ public class BuscaTutorController {
             .map(u -> new MedicoDTO(u.identificador(), u.nome()))
             .toList();
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private RespostaTutorDTO montarRespostaTutor(TutorRecepcaoJpa t) {
         List<Paciente> pacientes = portal.listarPacientesDoTutor(chaveTutor(t));
@@ -386,8 +344,6 @@ public class BuscaTutorController {
         if (score >= 5)  return "AMARELO";
         return "VERDE";
     }
-
-    // ── DTOs ──────────────────────────────────────────────────────────────────
 
     public record RespostaTutorDTO(
         String id, String nome, String cpf, String telefone, String email,
@@ -445,8 +401,6 @@ public class BuscaTutorController {
     public record RequisicaoEncaminhar(
         @NotBlank String medicoId,
         @NotBlank String nomeMedico) {}
-
-    // ── Exceptions ────────────────────────────────────────────────────────────
 
     public static class TutorNaoEncontradoException extends RuntimeException {
         public TutorNaoEncontradoException() { super("Tutor não encontrado."); }

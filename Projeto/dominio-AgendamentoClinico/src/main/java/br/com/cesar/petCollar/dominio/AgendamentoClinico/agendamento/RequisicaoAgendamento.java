@@ -10,12 +10,6 @@ import br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade.Especiali
 
 import java.util.Optional;
 
-/**
- * Value Object de entrada do Template Method de agendamento
- * ({@link AgendamentoService}). Carrega todos os dados necessários para executar o
- * algoritmo, independentemente do tipo de consulta (inicial ou retorno), evitando
- * listas de parâmetros longas nos métodos-gancho.
- */
 public final class RequisicaoAgendamento {
 
     private final PacienteId pacienteId;
@@ -24,16 +18,14 @@ public final class RequisicaoAgendamento {
     private final EspecialidadeId especialidadeId;
     private final MotivoConsulta motivo;
     private final HorarioConsulta horario;
-    private final ConsultaId consultaOrigemId;   // null para consulta inicial
+    private final ConsultaId consultaOrigemId;
 
-    // Construtor para consulta INICIAL (sem vínculo de origem)
     public RequisicaoAgendamento(PacienteId pacienteId, TutorId tutorId,
             MedicoId medicoId, EspecialidadeId especialidadeId,
             MotivoConsulta motivo, HorarioConsulta horario) {
         this(pacienteId, tutorId, medicoId, especialidadeId, motivo, horario, null);
     }
 
-    // Construtor para consulta de RETORNO (com vínculo de origem)
     public RequisicaoAgendamento(PacienteId pacienteId, TutorId tutorId,
             MedicoId medicoId, EspecialidadeId especialidadeId,
             MotivoConsulta motivo, HorarioConsulta horario,

@@ -37,21 +37,10 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Recomend
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RecomendacaoPorPorteStrategy;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RecomendacaoRacaoService;
 
-/**
- * Wiring canônico (§6.5) do contexto F-11. Restringe a varredura JPA ao
- * subpacote {@code nutricao} para coexistir com outros agregados de
- * {@code AtendimentoClinico}.
- *
- * <p>A lista de {@link EstrategiaRecomendacaoRacao} fica concentrada aqui —
- * adicione novas Strategies pontuando em outros critérios e o
- * {@link RecomendacaoRacaoService} as combina automaticamente.
- */
 @Configuration
 @EntityScan(basePackages = "br.com.cesar.petCollar.infraestrutura.AtendimentoClinico.nutricao")
 @EnableJpaRepositories(basePackages = "br.com.cesar.petCollar.infraestrutura.AtendimentoClinico.nutricao")
 public class NutricaoConfig {
-
-    // ── Services de domínio ──────────────────────────────────────────────────
 
     @Bean
     public AvaliacaoCorporalService avaliacaoCorporalService() {
@@ -77,8 +66,6 @@ public class NutricaoConfig {
             List<EstrategiaRecomendacaoRacao> estrategias) {
         return new RecomendacaoRacaoService(repositorio, estrategias);
     }
-
-    // ── Use cases ────────────────────────────────────────────────────────────
 
     @Bean
     public CalcularNEMPreviewUseCase calcularNEMPreviewUseCase(AvaliacaoCorporalService avaliacao) {
@@ -126,8 +113,6 @@ public class NutricaoConfig {
         return new ListarCatalogoRacoesUseCase(repositorio);
     }
 
-    // ── Use cases administrativos do catálogo de rações ──────────────────────
-
     @Bean
     public CriarRacaoUseCase criarRacaoUseCase(IRacaoRepositorio repositorio) {
         return new CriarRacaoUseCase(repositorio);
@@ -149,12 +134,10 @@ public class NutricaoConfig {
         return new ListarRacoesAdminUseCase(repositorio);
     }
 
-    // ── Seed inicial do catálogo (CLAUDE.md §6.5) ────────────────────────────
-
     @Bean
     public CommandLineRunner seedRacoes(IRacaoRepositorio repositorio) {
         return args -> {
-            if (repositorio.contar() > 0) return; // idempotente
+            if (repositorio.contar() > 0) return;
 
             repositorio.salvar(new Racao(RacaoId.gerar(),
                     "Premier Pet", "Formula Filhote Raças Médias",

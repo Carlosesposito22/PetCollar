@@ -1,9 +1,5 @@
 package petcollar.dominio.farmacovigilancia;
 
-/**
- * RN-145, RN-146
- * Orquestra a emissão da prescrição, validando se não há itens travados.
- */
 public class EmissaoPrescricaoService {
 
     private final IPrescricaoRepositorio prescricaoRepositorio;

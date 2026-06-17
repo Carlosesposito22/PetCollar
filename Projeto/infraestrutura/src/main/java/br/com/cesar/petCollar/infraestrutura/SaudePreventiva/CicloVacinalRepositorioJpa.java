@@ -11,10 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Adapter JPA que implementa {@link ICicloVacinalRepositorio} (§6.4).
- * Traduz entre o domínio {@link CicloVacinal} e a entidade {@link CicloVacinalJpa}.
- */
 @Repository
 public class CicloVacinalRepositorioJpa implements ICicloVacinalRepositorio {
 
@@ -62,8 +58,7 @@ public class CicloVacinalRepositorioJpa implements ICicloVacinalRepositorio {
     @Override
     @Transactional
     public void removerPorPaciente(PacienteId pacienteId) {
-        // DELETE em massa via JPQL: remove primeiro as doses (filhas) e depois os
-        // ciclos, evitando o UPDATE SET cicloId=NULL do orphanRemoval (cicloId é NOT NULL).
+
         jpa.deletarDosesPorPaciente(pacienteId.getValor());
         jpa.deletarCiclosPorPaciente(pacienteId.getValor());
     }

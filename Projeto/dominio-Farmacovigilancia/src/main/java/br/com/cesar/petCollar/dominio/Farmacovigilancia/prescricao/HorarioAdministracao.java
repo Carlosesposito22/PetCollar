@@ -1,9 +1,5 @@
 package br.com.cesar.petCollar.dominio.Farmacovigilancia.prescricao;
 
-/**
- * Horário do dia (formato HH:mm) em que uma dose do item da prescrição deve
- * ser administrada. Validado para garantir o formato esperado.
- */
 public record HorarioAdministracao(String valor) {
 
     public HorarioAdministracao {

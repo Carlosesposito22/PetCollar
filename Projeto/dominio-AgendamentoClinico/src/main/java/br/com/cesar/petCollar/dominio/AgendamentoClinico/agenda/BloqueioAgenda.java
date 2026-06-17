@@ -2,10 +2,6 @@ package br.com.cesar.petCollar.dominio.AgendamentoClinico.agenda;
 
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.HorarioConsulta;
 
-/**
- * Value Object que representa um período indisponível na agenda de um médico
- * (férias, bloqueio administrativo, etc.) usado pelo cálculo de disponibilidade (RN 4).
- */
 public final class BloqueioAgenda {
 
     private final HorarioConsulta periodo;

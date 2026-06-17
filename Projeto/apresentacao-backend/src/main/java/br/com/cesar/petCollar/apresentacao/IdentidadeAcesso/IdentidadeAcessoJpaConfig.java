@@ -16,12 +16,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Ativa o mapeamento JPA para o contexto IdentidadeAcesso. Os tipos de domínio
- * (Perfil, StatusConta, UsuarioAutenticavel, UsuarioRepositorio) vivem neste
- * módulo enquanto dominio-IdentidadeAcesso não é formalizado; a camada JPA
- * reside aqui por consequência.
- */
 @Configuration
 @EntityScan(basePackages = "br.com.cesar.petCollar.apresentacao.IdentidadeAcesso")
 @EnableJpaRepositories(basePackages = "br.com.cesar.petCollar.apresentacao.IdentidadeAcesso")
@@ -29,11 +23,6 @@ public class IdentidadeAcessoJpaConfig {
 
     private static final Logger log = LoggerFactory.getLogger(IdentidadeAcessoJpaConfig.class);
 
-    /**
-     * Seed operacional: garante que o administrador-raiz exista e com a senha-padrão
-     * correta. Usa upsert para corrigir automaticamente casos em que o hash ficou
-     * desatualizado entre recriações do banco ou mudança de configuração do encoder.
-     */
     @Bean
     public CommandLineRunner seedAdminPadrao(UsuarioJpaRepository usuarios,
                                               PasswordEncoder encoder) {

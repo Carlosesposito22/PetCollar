@@ -21,7 +21,7 @@ public class PacienteRecepcaoJpa {
     private String raca;
     private LocalDate nascimento;
     private Double pesoKg;
-    private String sexo;                 // MACHO | FEMEA (pode ser nulo)
+    private String sexo;
     private boolean infectocontagiosoRecente;
     private LocalDateTime dataUltimoDiagnostico;
 

@@ -3,11 +3,6 @@ package br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Identidade de um responsável secundário. Pertence conceitualmente ao contexto
- * RelacaoTutor; é representada aqui apenas como referência usada pela porta
- * {@link IResponsavelSecundarioRepositorio} (sem acoplar o agregado externo).
- */
 public final class ResponsavelSecundarioId {
 
     private final String valor;

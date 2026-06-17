@@ -4,11 +4,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato.NivelCri
 
 import java.util.Objects;
 
-/**
- * Value Object com o conteúdo de uma notificação do protocolo: título, corpo e a
- * {@link NivelCriticidade} da etapa (RN 9). O mesmo conteúdo é reutilizado para o
- * tutor e para os responsáveis secundários, trocando apenas o destinatário (RN 14).
- */
 public final class ConteudoNotificacao {
 
     private final String titulo;
@@ -27,7 +22,6 @@ public final class ConteudoNotificacao {
         this.criticidade = criticidade;
     }
 
-    /** Conteúdo da notificação imediata de ativação do protocolo (RN 12). */
     public static ConteudoNotificacao ativacaoProtocolo() {
         return new ConteudoNotificacao(
             "Protocolo de contato ativado",
@@ -36,11 +30,6 @@ public final class ConteudoNotificacao {
             NivelCriticidade.BAIXA);
     }
 
-    /**
-     * Conteúdo de uma tentativa de contato. O mesmo conteúdo é reutilizado para o
-     * tutor e para os responsáveis secundários, mudando apenas o destinatário e a
-     * criticidade (RN 14, RN 9).
-     */
     public static ConteudoNotificacao tentativaDeContato(NivelCriticidade criticidade) {
         return new ConteudoNotificacao(
             "Tentativa de contato — paciente em atendimento",
@@ -49,7 +38,6 @@ public final class ConteudoNotificacao {
             criticidade);
     }
 
-    /** Conteúdo da notificação de avanço de nível de escalonamento (RN 13). */
     public static ConteudoNotificacao escalonamento(NivelCriticidade criticidade) {
         return new ConteudoNotificacao(
             "Escalonamento do protocolo de contato",

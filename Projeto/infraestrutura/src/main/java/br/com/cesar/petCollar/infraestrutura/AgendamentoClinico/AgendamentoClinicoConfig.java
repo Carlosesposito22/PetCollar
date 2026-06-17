@@ -19,12 +19,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-/**
- * Wiring canônico (§6.5) dos serviços de domínio do AgendamentoClinico como beans,
- * a partir dos adapters JPA deste módulo. Toda a persistência usa o banco; o seed
- * operacional (especialidades + médicos) vive no {@code SeedInicial} da apresentação,
- * onde há acesso ao repositório de usuários (IdentidadeAcesso).
- */
 @Configuration
 @EntityScan(basePackages = "br.com.cesar.petCollar.infraestrutura.AgendamentoClinico")
 @EnableJpaRepositories(basePackages = "br.com.cesar.petCollar.infraestrutura.AgendamentoClinico")
@@ -58,8 +52,6 @@ public class AgendamentoClinicoConfig {
             IConsultaRepositorio consultaRepositorio, IServicoNotificacao notificacao) {
         return new GestaoAgendamentoService(consultaRepositorio, notificacao);
     }
-
-    // ── Casos de uso (camada aplicacao) ──────────────────────────────────────
 
     @Bean
     public AgendarConsultaInicialUseCase agendarConsultaInicialUseCase(

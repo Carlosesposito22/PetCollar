@@ -4,10 +4,6 @@ import java.math.BigDecimal;
 
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo.Medicamento;
 
-/**
- * Componente concreto base do Decorator: devolve a dose máxima de segurança
- * (mg/kg) cadastrada para o medicamento no catálogo, sem nenhum redutor.
- */
 public class DoseMaximaBase implements CalculadoraDoseMaximaSegura {
 
     private final Medicamento medicamento;

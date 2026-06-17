@@ -3,10 +3,6 @@ package br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Value Object de identidade de uma dose vacinal ou ciclo vacinal.
- * Factory Method: {@link #gerar()} cria novo id; {@link #de(String)} reconstrói.
- */
 public final class VacinaId {
 
     private final String valor;

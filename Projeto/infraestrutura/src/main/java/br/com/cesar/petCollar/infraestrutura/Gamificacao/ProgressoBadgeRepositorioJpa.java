@@ -9,10 +9,6 @@ import br.com.cesar.petCollar.dominio.Gamificacao.conquista.IProgressoBadgeRepos
 import br.com.cesar.petCollar.dominio.Gamificacao.conquista.ProgressoBadge;
 import br.com.cesar.petCollar.dominio.Gamificacao.conquista.ProgressoBadgeId;
 
-/**
- * Adapter JPA da interface de domínio {@link IProgressoBadgeRepositorio}.
- * Traduz domínio ↔ entidade via {@code fromDomain}/{@code toDomain} (§6.4).
- */
 @Repository
 public class ProgressoBadgeRepositorioJpa implements IProgressoBadgeRepositorio {
 

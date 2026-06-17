@@ -15,11 +15,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA do agregado {@link BeneficioTutor}. Ids de agregados externos
- * (Tutor, Plano, BeneficioCatalogo) ficam apenas como o valor String do Id
- * (§6.2 do CLAUDE.md); enums como String ({@code name()}/{@code valueOf}).
- */
 @Entity
 @Table(name = "beneficios_tutor")
 public class BeneficioTutorJpa {

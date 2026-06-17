@@ -12,12 +12,9 @@ public interface IPrescricaoRepositorio {
 
     Optional<Prescricao> buscarPorId(PrescricaoId id);
 
-    /** Prescrição FINALIZADA vigente do paciente — no máximo 1. */
     Optional<Prescricao> buscarVigenteDoPaciente(PacienteId pacienteId);
 
-    /** Histórico completo (FINALIZADA + SUBSTITUIDA), mais recente primeiro. */
     List<Prescricao> listarHistoricoDoPaciente(PacienteId pacienteId);
 
-    /** Prescrições vigentes (uma por paciente) de todos os pets do tutor. */
     List<Prescricao> listarAtivasDoTutor(TutorId tutorId);
 }

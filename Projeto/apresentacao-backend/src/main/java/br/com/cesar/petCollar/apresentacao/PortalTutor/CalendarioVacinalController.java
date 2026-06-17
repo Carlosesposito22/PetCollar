@@ -24,11 +24,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Retorna o Calendário Vacinal Unificado do tutor: todos os pets, todos os ciclos,
- * agrupados por mês (RN-calendário). Complementa {@link VacinacaoController} que opera
- * por paciente; este endpoint agrega across todos os pacientes do tutor.
- */
 @RestController
 @RequestMapping("/api/tutor/calendario-vacinal")
 public class CalendarioVacinalController {
@@ -42,11 +37,6 @@ public class CalendarioVacinalController {
         this.cicloVacinalService = cicloVacinalService;
     }
 
-    /**
-     * Retorna todos os eventos vacinais do tutor para o mês informado.
-     * Inclui doses registradas e a próxima dose prevista por Strategy para cada ciclo.
-     * @param mes mês no formato YYYY-MM (ex.: 2026-07)
-     */
     @GetMapping
     public CalendarioDTO calendario(@RequestParam String mes, Principal principal) {
         YearMonth yearMonth;
@@ -69,12 +59,9 @@ public class CalendarioVacinalController {
         return new CalendarioDTO(mes, eventos);
     }
 
-    // ── helpers ──────────────────────────────────────────────────────────────
-
     private List<EventoVacinalDTO> gerarEventos(CicloVacinal ciclo, Paciente paciente, YearMonth mes) {
         List<EventoVacinalDTO> eventos = new ArrayList<>();
 
-        // Doses já registradas no ciclo
         for (DoseVacinal dose : ciclo.getDoses()) {
             LocalDate data = dose.dataEfetiva();
             if (YearMonth.from(data).equals(mes)) {
@@ -92,7 +79,6 @@ public class CalendarioVacinalController {
             }
         }
 
-        // Próxima dose prevista pelo Strategy (ainda não agendada formalmente)
         if (ciclo.podeAgendarProximaDose()) {
             try {
                 ICalculoProximaDoseStrategy estrategia =
@@ -113,14 +99,12 @@ public class CalendarioVacinalController {
                         ciclo.lembreteAtivo()));
                 }
             } catch (IllegalStateException ignored) {
-                // ciclo sem doses aplicadas para calcular a previsão
+
             }
         }
 
         return eventos;
     }
-
-    // ── DTOs ─────────────────────────────────────────────────────────────────
 
     public record EventoVacinalDTO(
             LocalDate data,
@@ -136,8 +120,6 @@ public class CalendarioVacinalController {
     ) {}
 
     public record CalendarioDTO(String mes, List<EventoVacinalDTO> eventos) {}
-
-    // ── handlers ─────────────────────────────────────────────────────────────
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> argumentoInvalido(IllegalArgumentException e) {

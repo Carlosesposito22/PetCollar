@@ -27,7 +27,6 @@ public class TriagemJpa {
     private LocalDateTime finalizadaEm;
     private String responsavelId;
 
-    /** true quando o atendimento é apenas aplicação de vacina (definido na recepção). */
     private Boolean aplicacaoVacina;
 
     protected TriagemJpa() {}

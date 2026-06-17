@@ -7,11 +7,6 @@ import br.com.cesar.petCollar.apresentacao.PortalTutor.PacienteJpaRepository;
 
 import org.springframework.stereotype.Component;
 
-/**
- * Adapter da porta {@link IConsultaProntuario} apoiado no banco: considera o
- * prontuário ATIVO quando o paciente existe na base ({@code pacientes}); caso
- * contrário, INATIVO. Substitui o antigo stand-in em memória (RN 1).
- */
 @Component
 public class ProntuarioConsultaJpa implements IConsultaProntuario {
 

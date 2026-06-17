@@ -3,11 +3,6 @@ package petCollar.dominio.AtendimentoClinico.estrategia;
 import petCollar.dominio.AtendimentoClinico.relatorio.RelatorioClinico;
 import petCollar.dominio.AtendimentoClinico.relatorio.TipoRelatorio;
 
-/**
- * Strategy concreta: Procedimento Cirúrgico (RN-124).
- * Além dos campos da consulta rotineira, exige cuidados pós-operatórios
- * e tempo de recuperação estimado antes da assinatura digital.
- */
 public class ValidadorRelatorioCirurgicoStrategy implements IValidadorRelatorioStrategy {
 
     @Override

@@ -32,7 +32,6 @@ public class CalculoProgressoService {
         return progresso;
     }
 
-    // RN-113: retorna as badges com maior percentual de conclusão que ainda não foram conquistadas
     public List<ProgressoBadge> listarProximasConquistas(String tutorId, int quantidade) {
         if (tutorId == null || tutorId.isBlank())
             throw new IllegalArgumentException("TutorId não pode ser vazio.");

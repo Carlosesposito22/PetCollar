@@ -4,9 +4,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
-/**
- * Compatibilidade retroativa — delega para FilaAtendimentoEmMemoria.
- */
 @RestController
 @RequestMapping("/api/recepcao/fila-legado")
 public class FilaAtendimentoController {

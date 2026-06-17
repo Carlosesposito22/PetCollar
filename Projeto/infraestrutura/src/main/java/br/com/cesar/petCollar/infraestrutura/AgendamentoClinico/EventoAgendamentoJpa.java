@@ -12,10 +12,6 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
-/**
- * Linha-filha de auditoria do agregado
- * {@link br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.Consulta} (RN 19).
- */
 @Entity
 @Table(name = "eventos_agendamento")
 public class EventoAgendamentoJpa {
@@ -25,7 +21,7 @@ public class EventoAgendamentoJpa {
     private Long id;
 
     @Column(nullable = false)
-    private String tipo;              // TipoEventoAgendamento.name()
+    private String tipo;
 
     @Column(nullable = false)
     private LocalDateTime ocorridoEm;

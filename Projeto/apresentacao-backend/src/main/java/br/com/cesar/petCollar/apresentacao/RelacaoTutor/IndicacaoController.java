@@ -26,10 +26,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Adapter HTTP fino para o Programa de Indicação com Recompensas (F-04).
- * Toda a lógica de negócio vive em {@link ProgramaIndicacaoService} e no domínio.
- */
 @RestController
 @RequestMapping("/api/tutor/indicacao")
 public class IndicacaoController {
@@ -53,8 +49,6 @@ public class IndicacaoController {
         this.usuarioRepositorio = usuarioRepositorio;
     }
 
-    // ── GET /api/tutor/indicacao/link ─────────────────────────────────────────
-
     @GetMapping("/link")
     public LinkIndicacaoDTO obterLink(Principal principal) {
         TutorId tutorId = TutorId.de(principal.getName());
@@ -62,8 +56,6 @@ public class IndicacaoController {
         LinkIndicacao link = obterOuGerarLinkUseCase.executar(tutorId, ativa);
         return LinkIndicacaoDTO.de(link, baseUrl);
     }
-
-    // ── POST /api/tutor/indicacao/clique/{codigo} — público (sem auth) ────────
 
     @PostMapping("/clique/{codigo}")
     public ResponseEntity<Void> registrarClique(@PathVariable String codigo,
@@ -73,16 +65,12 @@ public class IndicacaoController {
         return ResponseEntity.ok().build();
     }
 
-    // ── POST /api/tutor/indicacao/inscricao — chamado no fluxo de contratação ─
-
     @PostMapping("/inscricao")
     public IndicacaoDTO registrarInscricao(@RequestBody RequisicaoInscricaoDTO req) {
         Indicacao indicacao = programaIndicacao.criarIndicacaoParaInscrito(
             CPF.de(req.cpfIndicado()), CPF.de(req.cpfIndicador()));
         return IndicacaoDTO.de(indicacao);
     }
-
-    // ── GET /api/tutor/indicacao/historico ────────────────────────────────────
 
     @GetMapping("/historico")
     public List<IndicacaoDTO> historico(Principal principal) {
@@ -92,16 +80,12 @@ public class IndicacaoController {
                                 .toList();
     }
 
-    // ── POST /api/tutor/indicacao/webhook/pagamento — chamado pelo gateway ────
-
     @PostMapping("/webhook/pagamento")
     public ResponseEntity<Void> webhookPagamento(@RequestBody RequisicaoWebhookDTO req) {
         confirmarConversaoUseCase.executar(
             IndicacaoId.de(req.indicacaoId()), req.tokenMetodoPagamento());
         return ResponseEntity.ok().build();
     }
-
-    // ── POST /api/tutor/indicacao/{id}/resgatar-desconto — tutor resgata 15% ──
 
     @PostMapping("/{indicacaoId}/resgatar-desconto")
     public ResponseEntity<Map<String, Object>> resgatarDesconto(@PathVariable String indicacaoId,
@@ -122,8 +106,6 @@ public class IndicacaoController {
         ));
     }
 
-    // ── POST /api/tutor/indicacao/confirmacao-manual/{id} ────────────────────
-
     @PostMapping("/confirmacao-manual/{indicacaoId}")
     public ResponseEntity<Void> confirmacaoManual(@PathVariable String indicacaoId,
                                                   Principal principal) {
@@ -131,15 +113,11 @@ public class IndicacaoController {
         return ResponseEntity.ok().build();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
     private boolean contaAtiva(TutorId tutorId) {
         return usuarioRepositorio.buscar(Perfil.TUTOR, tutorId.getValor())
             .map(u -> u.status() == StatusConta.ATIVA)
             .orElse(false);
     }
-
-    // ── DTOs ──────────────────────────────────────────────────────────────────
 
     public record LinkIndicacaoDTO(String id, String codigo, String url) {
         static LinkIndicacaoDTO de(LinkIndicacao link, String baseUrl) {

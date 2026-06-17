@@ -7,11 +7,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato.NivelEsc
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Passos da etapa de escalonamento — exercitando a subclasse
- * {@code EtapaEscalonamentoService} do Template Method (cada execução avança um
- * nível ou esgota) e o {@code OrquestradorEtapasProtocolo}.
- */
 public class PassosEscalonamento {
 
     private final ContextoCenario contexto;

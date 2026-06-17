@@ -6,12 +6,6 @@ import java.util.Set;
 
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.prescricao.TagClinica;
 
-/**
- * Aplica o redutor automático de 25% sobre o teto de dose máxima caso o
- * paciente possua pelo menos uma tag clínica de risco (RN 5 da F-12).
- * Se há múltiplas tags, o redutor é aplicado uma única vez — a regra fala
- * em "redutor automático de 25%", não em fatores cumulativos por tag.
- */
 public class RedutorPorTagClinicaDecorator extends CalculadoraDoseDecorator {
 
     private static final BigDecimal FATOR_REDUTOR = new BigDecimal("0.75");

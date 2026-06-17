@@ -3,10 +3,6 @@ package petCollar.dominio.AtendimentoClinico.estrategia;
 import petCollar.dominio.AtendimentoClinico.relatorio.RelatorioClinico;
 import petCollar.dominio.AtendimentoClinico.relatorio.TipoRelatorio;
 
-/**
- * Strategy concreta: Consulta Rotineira.
- * Exige diagnóstico técnico e resumo para o tutor preenchidos (RN-117, RN-118).
- */
 public class ValidadorRelatorioRotineiroStrategy implements IValidadorRelatorioStrategy {
 
     @Override

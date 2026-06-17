@@ -6,6 +6,5 @@ public interface IRegistroCliqueRepositorio {
 
     void salvar(RegistroClique registro);
 
-    /** Retorna o clique mais recente do indicado (Último Clique — RN-11). */
     Optional<RegistroClique> buscarUltimoPorCpf(CPF cpfIndicado);
 }

@@ -16,7 +16,7 @@ public class PassosAuditoria {
 
     @Entao("o serviço de notificação deve ter sido acionado {int} vezes")
     public void notificacaoAcionada(int vezes) {
-        // RN 16 — cada notificação é encaminhada ao contexto Notificacao para registro auditável.
+
         verify(contexto.notificacao, times(vezes)).notificar(any(), any(), any());
     }
 }

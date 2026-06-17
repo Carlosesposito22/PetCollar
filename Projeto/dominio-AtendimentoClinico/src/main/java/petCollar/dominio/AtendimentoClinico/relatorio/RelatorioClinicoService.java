@@ -8,14 +8,6 @@ import petCollar.dominio.AtendimentoClinico.estrategia.IValidadorRelatorioStrate
 
 import java.util.List;
 
-/**
- * Serviço de domínio que orquestra o ciclo de vida do relatório clínico evolutivo (F-10).
- *
- * <p>Padrão Strategy: ao assinar o relatório, delega a validação de completude
- * à estratégia selecionada pela {@link FabricaDeValidadorRelatorio} com base no
- * {@link TipoRelatorio}. Relatórios cirúrgicos exigem campos adicionais (RN-124)
- * sem que o serviço precise conhecer cada regra concreta.
- */
 public class RelatorioClinicoService {
 
     private final IRelatorioClinicoRepositorio repositorio;

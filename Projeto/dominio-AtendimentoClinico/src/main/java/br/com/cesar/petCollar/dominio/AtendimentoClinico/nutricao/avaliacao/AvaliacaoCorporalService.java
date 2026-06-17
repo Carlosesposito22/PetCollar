@@ -5,20 +5,8 @@ import java.math.RoundingMode;
 
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.ParametrosPaciente;
 
-/**
- * Service de domínio que aplica a RN 6 de F-11 — emite alerta visual
- * impeditivo quando a divergência do peso atual em relação ao peso ideal
- * supera o limiar de {@link #LIMIAR_PERCENTUAL}.
- *
- * <ul>
- *   <li>Peso atual &lt; peso ideal por mais que o limiar → <strong>CAQUEXIA</strong></li>
- *   <li>Peso atual &gt; peso ideal por mais que o limiar → <strong>OBESIDADE</strong></li>
- *   <li>Caso contrário → <strong>ADEQUADO</strong></li>
- * </ul>
- */
 public class AvaliacaoCorporalService {
 
-    /** Limiar canônico da F-11 RN 6 — 15% de divergência aciona alerta. */
     public static final BigDecimal LIMIAR_PERCENTUAL = new BigDecimal("15");
 
     public AvaliacaoCorporal avaliar(ParametrosPaciente parametros) {

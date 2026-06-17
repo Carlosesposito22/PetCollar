@@ -1,8 +1,5 @@
 package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao;
 
-/**
- * Pontua rações cujo público inclua a faixa etária do paciente.
- */
 public class RecomendacaoPorFaixaEtariaStrategy implements EstrategiaRecomendacaoRacao {
 
     private static final int PONTUACAO_INDICADA = 20;

@@ -1,14 +1,5 @@
 package br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao;
 
-/**
- * <h2>ConcreteClass — Processamento Automático via Gateway (RN-8)</h2>
- *
- * <p>Confirmação de conversão disparada automaticamente pelo webhook do gateway
- * de pagamentos. Implementa o passo {@link #validarFraude} verificando se o
- * método de pagamento utilizado pelo indicado coincide com algum método já
- * cadastrado pelo Tutor indicador (RN-8). Quando a fraude é detectada, invalida
- * a indicação e interrompe o processamento.
- */
 public class ProcessamentoWebhookAutomatico extends ProcessamentoWebhookTemplate {
 
     public ProcessamentoWebhookAutomatico(IIndicacaoRepositorio indicacaoRepositorio,
@@ -18,11 +9,6 @@ public class ProcessamentoWebhookAutomatico extends ProcessamentoWebhookTemplate
         super(indicacaoRepositorio, auditoriaRepositorio, descontoFatura, motorGamificacao);
     }
 
-    /**
-     * Verifica fraude por método de pagamento (RN-8).
-     * Invalida a indicação e lança exceção se o token coincidir com algum
-     * método do Tutor indicador.
-     */
     @Override
     protected void validarFraude(Indicacao indicacao, String tokenMetodoPagamento) {
         if (tokenMetodoPagamento == null || tokenMetodoPagamento.isBlank())

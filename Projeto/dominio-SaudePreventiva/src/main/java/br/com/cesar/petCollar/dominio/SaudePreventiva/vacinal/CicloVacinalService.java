@@ -7,15 +7,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Serviço de domínio que orquestra o ciclo vacinal de um paciente (F-06).
- *
- * <p>Padrão Strategy: ao agendar a próxima dose, delega o cálculo da data
- * à estratégia selecionada pela {@link FabricaDeProtocolo} com base no
- * {@link TipoProtocolo} armazenado no {@link CicloVacinal}.
- * Cada protocolo (Filhote, Reforço Anual, Viagem, Personalizado) encapsula
- * seu próprio algoritmo de intervalo biológico (RN-075, RN-082).
- */
 public class CicloVacinalService {
 
     private final ICicloVacinalRepositorio repositorio;
@@ -26,10 +17,6 @@ public class CicloVacinalService {
         this.repositorio = repositorio;
     }
 
-    /**
-     * Cria um novo ciclo vacinal com a primeira dose agendada.
-     * O protocolo define qual estratégia será usada nas próximas previsões.
-     */
     public CicloVacinal criarCicloComPrimeiraDose(PacienteId pacienteId, String nomeCiclo,
                                                    TipoProtocolo protocolo, int totalDoses,
                                                    Integer intervaloDias, LocalDate primeiraData) {
@@ -47,17 +34,6 @@ public class CicloVacinalService {
         return ciclo;
     }
 
-    /**
-     * Agenda a próxima dose de um ciclo existente.
-     *
-     * <p>Se {@code dataOverride} não for fornecida, usa o padrão Strategy:
-     * a {@link FabricaDeProtocolo} seleciona a estratégia do protocolo do ciclo
-     * e calcula automaticamente a data com base na última dose registrada (RN-075, RN-082).
-     *
-     * @param cicloId      id do ciclo vacinal
-     * @param dataOverride data manual (prevalece sobre o cálculo da estratégia, se informada)
-     * @return ciclo atualizado com a nova dose
-     */
     public CicloVacinal agendarProximaDose(VacinaId cicloId, LocalDate dataOverride) {
         if (cicloId == null)
             throw new IllegalArgumentException("Id do ciclo não pode ser nulo.");
@@ -77,9 +53,6 @@ public class CicloVacinalService {
         return ciclo;
     }
 
-    /**
-     * Confirma a aplicação de uma dose pelo veterinário (RN-078).
-     */
     public void aplicarDose(VacinaId cicloId, VacinaId doseId,
                              LocalDate dataAplicacao, String medico, String lote) {
         if (cicloId == null)
@@ -94,10 +67,6 @@ public class CicloVacinalService {
         repositorio.salvar(ciclo);
     }
 
-    /**
-     * Reagenda uma dose pendente ou em atraso de um ciclo (RN-079).
-     * Usado pelo tutor para remarcar uma vacina atrasada para uma nova data.
-     */
     public void reagendarDose(VacinaId cicloId, VacinaId doseId, LocalDate novaData) {
         if (cicloId == null)
             throw new IllegalArgumentException("Id do ciclo não pode ser nulo.");
@@ -111,19 +80,12 @@ public class CicloVacinalService {
         repositorio.salvar(ciclo);
     }
 
-    /**
-     * Retorna a carteira completa de vacinação de um paciente (RN-072).
-     */
     public List<CicloVacinal> listarPorPaciente(PacienteId pacienteId) {
         if (pacienteId == null)
             throw new IllegalArgumentException("Id do paciente não pode ser nulo.");
         return repositorio.listarPorPaciente(pacienteId);
     }
 
-    /**
-     * Calcula a data sugerida para a próxima dose usando o padrão Strategy.
-     * Seleciona a estratégia adequada ao protocolo do ciclo via {@link FabricaDeProtocolo}.
-     */
     public LocalDate calcularProximaDataSugerida(CicloVacinal ciclo) {
         if (ciclo == null)
             throw new IllegalArgumentException("Ciclo vacinal não pode ser nulo.");
@@ -132,10 +94,6 @@ public class CicloVacinalService {
         return ciclo.calcularProximaDataComEstrategia(estrategia);
     }
 
-    /**
-     * Configura ou remove o lembrete automático de um ciclo vacinal.
-     * @param diasLembrete dias antes da próxima dose para lembrar; {@code null} desativa.
-     */
     public void configurarLembrete(VacinaId cicloId, Integer diasLembrete) {
         if (cicloId == null)
             throw new IllegalArgumentException("Id do ciclo não pode ser nulo.");
@@ -145,17 +103,11 @@ public class CicloVacinalService {
         repositorio.salvar(ciclo);
     }
 
-    /**
-     * Verifica se o paciente possui algum ciclo vacinal com dose em atraso (RN-077).
-     */
     public boolean possuiVacinaEmAtraso(PacienteId pacienteId) {
         return listarPorPaciente(pacienteId).stream()
                                             .anyMatch(CicloVacinal::possuiDoseEmAtraso);
     }
 
-    /**
-     * Remove um ciclo vacinal pelo id. Permite excluir doses pendentes ou ciclos importados errados.
-     */
     public void removerCiclo(VacinaId cicloId) {
         if (cicloId == null)
             throw new IllegalArgumentException("Id do ciclo não pode ser nulo.");
@@ -164,19 +116,12 @@ public class CicloVacinalService {
         repositorio.remover(cicloId);
     }
 
-    /**
-     * Remove todos os ciclos vacinais de um paciente (cascade ao remover paciente).
-     */
     public void removerPorPaciente(PacienteId pacienteId) {
         if (pacienteId == null)
             throw new IllegalArgumentException("Id do paciente não pode ser nulo.");
         repositorio.removerPorPaciente(pacienteId);
     }
 
-    /**
-     * Busca ciclo existente de um paciente pelo nome do ciclo.
-     * Usado para agendar próxima dose por nome sem conhecer o id do ciclo.
-     */
     public CicloVacinal buscarCicloPorNome(PacienteId pacienteId, String nomeCiclo) {
         if (pacienteId == null)
             throw new IllegalArgumentException("Id do paciente não pode ser nulo.");

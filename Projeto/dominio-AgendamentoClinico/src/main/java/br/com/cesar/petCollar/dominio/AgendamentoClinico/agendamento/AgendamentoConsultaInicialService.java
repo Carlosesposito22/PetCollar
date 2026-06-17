@@ -7,16 +7,6 @@ import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.IConsultaRepos
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IConsultaProntuario;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IServicoNotificacao;
 
-/**
- * Implementação concreta do Template Method para agendamento de CONSULTA INICIAL.
- *
- * <p>Implementa os três passos variantes de {@link AgendamentoService}:
- * <ul>
- *   <li>{@code validarPreCondicoesEspecificas}: motivo preenchido (RN 3);</li>
- *   <li>{@code executarValidacoesExtras}: nenhuma (gancho opcional vazio);</li>
- *   <li>{@code criarConsulta}: cria a {@link Consulta} do tipo INICIAL.</li>
- * </ul>
- */
 public class AgendamentoConsultaInicialService extends AgendamentoService {
 
     public AgendamentoConsultaInicialService(
@@ -29,7 +19,7 @@ public class AgendamentoConsultaInicialService extends AgendamentoService {
 
     @Override
     protected void validarPreCondicoesEspecificas(RequisicaoAgendamento requisicao) {
-        // RN 3 — motivo obrigatório na consulta inicial.
+
         if (requisicao.getMotivo() == null || requisicao.getMotivo().getValor().isBlank())
             throw new IllegalArgumentException(
                     "O motivo da consulta é obrigatório para o agendamento inicial.");
@@ -37,8 +27,7 @@ public class AgendamentoConsultaInicialService extends AgendamentoService {
 
     @Override
     protected void executarValidacoesExtras(RequisicaoAgendamento requisicao) {
-        // Nenhuma validação extra para consulta inicial.
-        // Gancho opcional vazio intencional — subclasses poderiam estender se necessário.
+
     }
 
     @Override
@@ -50,6 +39,6 @@ public class AgendamentoConsultaInicialService extends AgendamentoService {
                 requisicao.getMedicoId(),
                 requisicao.getEspecialidadeId(),
                 requisicao.getMotivo(),
-                requisicao.getHorario());   // construtor de consulta INICIAL
+                requisicao.getHorario());
     }
 }

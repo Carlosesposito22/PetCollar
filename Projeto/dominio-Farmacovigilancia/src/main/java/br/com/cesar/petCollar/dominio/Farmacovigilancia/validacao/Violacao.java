@@ -1,10 +1,5 @@
 package br.com.cesar.petCollar.dominio.Farmacovigilancia.validacao;
 
-/**
- * Resultado de uma verificação de segurança da prescrição. Carrega o nível
- * ({@link Nivel#BLOQUEIO} impede a assinatura; {@link Nivel#ALERTA} é apenas
- * informativo), um código para categorizar e uma mensagem humana.
- */
 public record Violacao(Nivel nivel, String codigo, String mensagem) {
 
     public enum Nivel { BLOQUEIO, ALERTA }

@@ -20,11 +20,6 @@ import br.com.cesar.petCollar.dominio.Farmacovigilancia.prescricao.Prescricao;
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.prescricao.PrescricaoId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * F-12 — visão do tutor sobre as prescrições FINALIZADAS dos seus pets.
- * Sempre read-only. Retorna apenas FINALIZADAS ATIVAS (uma por paciente —
- * substituídas só aparecem no histórico do médico).
- */
 @RestController
 @RequestMapping("/api/tutor/farmacovigilancia")
 public class FarmacovigilanciaDoTutorController {

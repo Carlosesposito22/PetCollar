@@ -20,10 +20,6 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Passos da etapa de acionamento dos responsáveis secundários — exercitando a
- * subclasse {@code EtapaContatoResponsaveisSecundariosService} do Template Method.
- */
 public class PassosResponsaveisSecundarios {
 
     private final ContextoCenario contexto;

@@ -24,12 +24,6 @@ import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.PeriodoRenovacao
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.StatusBeneficio;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Painel de Benefícios do Tutor (F-08). Adapter HTTP fino — toda a regra vive
- * nos use cases de {@code aplicacao.BeneficiosPlano} e nos services/agregados
- * de domínio. O shape dos DTOs segue exatamente o já consumido pela tela
- * {@code TutorBeneficios.tsx}.
- */
 @RestController
 @RequestMapping("/api/tutor/beneficios")
 public class BeneficiosController {
@@ -59,8 +53,6 @@ public class BeneficiosController {
         }
     }
 
-    // ── DTOs ─────────────────────────────────────────────────────────────────
-
     public record BeneficioItemDTO(
             String id,
             String nome,
@@ -86,7 +78,6 @@ public class BeneficiosController {
             );
         }
 
-        /** Data de liberação (EM_CARENCIA) ou de renovação do período (ESGOTADO); null quando DISPONIVEL. */
         private static LocalDate dataReferencia(BeneficioTutor bt) {
             return switch (bt.getStatus()) {
                 case EM_CARENCIA -> bt.getDataLiberacao().toLocalDate();
@@ -105,8 +96,6 @@ public class BeneficiosController {
             );
         }
     }
-
-    // ── Exceções ────────────────────────────────────────────────────────────
 
     public static class BeneficioNaoEncontradoException extends RuntimeException {
         public BeneficioNaoEncontradoException() { super("Benefício não encontrado para o tutor logado."); }

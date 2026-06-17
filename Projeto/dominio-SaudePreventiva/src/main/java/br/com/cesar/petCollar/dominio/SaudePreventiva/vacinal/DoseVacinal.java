@@ -2,13 +2,6 @@ package br.com.cesar.petCollar.dominio.SaudePreventiva.vacinal;
 
 import java.time.LocalDate;
 
-/**
- * Entidade que representa uma dose individual dentro de um {@link CicloVacinal}.
- * Pertence ao agregado — nunca é referenciada fora do ciclo pelo Id.
- *
- * <p>Padrão State: {@link #status()} protege transições; apenas o médico
- * pode {@link #aplicar(LocalDate, String, String)} a dose (RN-078).
- */
 public class DoseVacinal {
 
     private final VacinaId id;
@@ -18,7 +11,6 @@ public class DoseVacinal {
     private String medico;
     private String lote;
 
-    /** Construtor de criação — dose recém-agendada. */
     public DoseVacinal(VacinaId id, int doseNumero, LocalDate dataAgendada) {
         if (id == null)
             throw new IllegalArgumentException("Id da dose não pode ser nulo.");
@@ -31,7 +23,6 @@ public class DoseVacinal {
         this.dataAgendada = dataAgendada;
     }
 
-    // Construtor de RECONSTRUÇÃO — usado pela infraestrutura ao recarregar do banco.
     public DoseVacinal(VacinaId id, int doseNumero, LocalDate dataAgendada,
                        LocalDate dataAplicacao, String medico, String lote) {
         if (id == null)
@@ -48,10 +39,6 @@ public class DoseVacinal {
         this.lote          = lote;
     }
 
-    /**
-     * Confirma a aplicação da dose pelo veterinário (RN-074, RN-078).
-     * Somente pode ser chamado uma única vez por dose.
-     */
     public void aplicar(LocalDate dataAplicacao, String medico, String lote) {
         if (this.dataAplicacao != null)
             throw new IllegalStateException("Esta dose já foi aplicada em " + this.dataAplicacao + ".");
@@ -67,11 +54,6 @@ public class DoseVacinal {
         this.dataAgendada  = dataAplicacao;
     }
 
-    /**
-     * Reagenda a data prevista de uma dose ainda não aplicada (RN-079).
-     * Permite ao tutor remarcar uma dose pendente ou em atraso para uma nova data,
-     * mantendo o histórico de doses já aplicadas intacto.
-     */
     public void reagendar(LocalDate novaData) {
         if (this.dataAplicacao != null)
             throw new IllegalStateException("Não é possível reagendar uma dose já aplicada em " + this.dataAplicacao + ".");
@@ -80,17 +62,12 @@ public class DoseVacinal {
         this.dataAgendada = novaData;
     }
 
-    /**
-     * Computa o status da dose a partir das datas (RN-073).
-     * APLICADA → verde; PENDENTE → amarelo; EM_ATRASO → vermelho.
-     */
     public StatusDoseVacinal status() {
         if (dataAplicacao != null)        return StatusDoseVacinal.APLICADA;
         if (dataAgendada.isBefore(LocalDate.now())) return StatusDoseVacinal.EM_ATRASO;
         return StatusDoseVacinal.PENDENTE;
     }
 
-    /** Retorna a data mais relevante: aplicação se confirmada, senão a data agendada. */
     public LocalDate dataEfetiva() {
         return dataAplicacao != null ? dataAplicacao : dataAgendada;
     }

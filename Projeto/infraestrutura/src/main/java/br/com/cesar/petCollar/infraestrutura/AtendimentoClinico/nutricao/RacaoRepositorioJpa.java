@@ -9,9 +9,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.IRacaoRe
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Racao;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RacaoId;
 
-/**
- * Adapter JPA do {@link IRacaoRepositorio}.
- */
 @Repository
 public class RacaoRepositorioJpa implements IRacaoRepositorio {
 

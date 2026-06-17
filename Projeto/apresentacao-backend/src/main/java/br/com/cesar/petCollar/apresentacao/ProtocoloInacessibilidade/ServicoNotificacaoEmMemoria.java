@@ -15,25 +15,17 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Implementação em memória desativada (não é bean Spring). A persistência real é
- * feita por {@code ServicoNotificacaoJpa} na camada de infraestrutura (RN 16).
- * Mantida apenas como referência/fallback local de desenvolvimento.
- */
 public class ServicoNotificacaoEmMemoria implements IServicoNotificacao {
 
     private static final Logger log = LoggerFactory.getLogger(ServicoNotificacaoEmMemoria.class);
 
-    /** Registros por protocoloId. CopyOnWriteArrayList garante iteração segura. */
     private final ConcurrentHashMap<String, CopyOnWriteArrayList<RegistroNotificacao>> registros =
         new ConcurrentHashMap<>();
-
-    // ── IServicoNotificacao ───────────────────────────────────────────────────
 
     @Override
     public void notificar(String destinatarioId, ConteudoNotificacao conteudo,
                           NivelCriticidade criticidade) {
-        // Chamada sem contexto de protocolo: apenas loga (não persiste).
+
         log.info("[NOTIFICAÇÃO {} → {}] {} — {}",
             criticidade, destinatarioId, conteudo.getTitulo(), conteudo.getCorpo());
     }
@@ -58,16 +50,12 @@ public class ServicoNotificacaoEmMemoria implements IServicoNotificacao {
                  .add(registro);
     }
 
-    // ── Consulta (usada pelo NotificacaoController) ───────────────────────────
-
     public List<RegistroNotificacao> listarPorProtocolo(String protocoloId) {
         List<RegistroNotificacao> lista = registros.getOrDefault(protocoloId, new CopyOnWriteArrayList<>());
         List<RegistroNotificacao> ordenada = new ArrayList<>(lista);
         ordenada.sort((a, b) -> b.registradoEm().compareTo(a.registradoEm()));
         return Collections.unmodifiableList(ordenada);
     }
-
-    // ── VO interno ──────────────────────────────────────────────────────────
 
     public record RegistroNotificacao(
         String id,

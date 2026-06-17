@@ -16,11 +16,6 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Entidade JPA do agregado {@link Especialidade}. Os médicos habilitados (RN 2)
- * são guardados como uma coleção de Strings de {@code MedicoId} (referência
- * cross-agregado), dentro do próprio agregado.
- */
 @Entity
 @Table(name = "especialidades")
 public class EspecialidadeJpa {
@@ -34,8 +29,6 @@ public class EspecialidadeJpa {
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
-    // EAGER: a lista de médicos por especialidade é pequena (poucos itens) e é lida
-    // fora de transação (seed/listagem com open-in-view=false), evitando LazyInit.
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "especialidade_medicos", joinColumns = @JoinColumn(name = "especialidade_id"))
     @Column(name = "medico_id")

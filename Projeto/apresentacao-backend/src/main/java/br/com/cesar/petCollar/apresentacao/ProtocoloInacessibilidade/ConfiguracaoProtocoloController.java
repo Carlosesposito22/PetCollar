@@ -13,10 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Endpoints de gestão da {@link ConfiguracaoProtocolo} vigente (RN 1, 2, 6). A
- * atualização cria uma nova versão, preservando o histórico auditável.
- */
 @RestController
 @RequestMapping("/api/configuracoes-protocolo")
 public class ConfiguracaoProtocoloController {
@@ -55,7 +51,7 @@ public class ConfiguracaoProtocoloController {
                 req.tempoLimiteEsperaMinutos(), canais, req.intervaloEntreTentativasMinutos(),
                 req.quantidadeMaximaTentativasPorCanal(), niveis);
         } else {
-            // Nova versão, preservando o histórico das anteriores.
+
             nova = new ConfiguracaoProtocolo(ConfiguracaoProtocoloId.gerar(),
                 req.tempoLimiteEsperaMinutos(), canais, req.intervaloEntreTentativasMinutos(),
                 req.quantidadeMaximaTentativasPorCanal(), niveis,

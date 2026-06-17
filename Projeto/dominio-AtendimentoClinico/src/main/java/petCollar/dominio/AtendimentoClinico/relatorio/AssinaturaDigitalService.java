@@ -13,14 +13,6 @@ public class AssinaturaDigitalService {
         this.repositorio = repositorio;
     }
 
-    /**
-     * Assina digitalmente o relatório, tornando-o imutável (RN-120).
-     *
-     * <p>Padrão Strategy: delega a validação de completude à estratégia selecionada
-     * pela {@link FabricaDeValidadorRelatorio} com base no {@link TipoRelatorio} do
-     * relatório. Cada tipo (Rotineiro, Cirúrgico, Preventivo) define seus próprios
-     * campos obrigatórios antes da assinatura (RN-117, RN-118, RN-124).
-     */
     public RelatorioClinico assinarRelatorio(RelatorioClinicoId relatorioId) {
         if (relatorioId == null)
             throw new IllegalArgumentException("Id do relatório não pode ser nulo.");

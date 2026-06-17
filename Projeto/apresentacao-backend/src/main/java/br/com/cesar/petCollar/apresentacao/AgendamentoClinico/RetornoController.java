@@ -16,10 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Endpoints do fluxo de retorno: consultas elegíveis (RN 7), exibição dos exames
- * solicitados (RN 8) e confirmação / laudo de exames pelo tutor (RN 9).
- */
 @RestController
 @RequestMapping("/api")
 public class RetornoController {

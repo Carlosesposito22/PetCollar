@@ -4,11 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Cronograma de transição alimentar (F-11 RN 5). Imutável para evitar
- * mutação acidental do plano. Fábricas para os modelos padrão de 7, 10 e
- * 14 dias estão aqui mesmo para o frontend não precisar duplicar os números.
- */
 public record CronogramaTransicao(TipoCronograma tipo, List<DiaTransicao> dias) {
 
     public CronogramaTransicao {

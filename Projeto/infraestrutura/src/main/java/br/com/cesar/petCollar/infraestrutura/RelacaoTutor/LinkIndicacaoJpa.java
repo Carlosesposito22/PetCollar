@@ -38,7 +38,6 @@ public class LinkIndicacaoJpa {
         return j;
     }
 
-    // Construtor de RECONSTRUÇÃO — preserva criadoEm original
     public LinkIndicacao toDomain() {
         return new LinkIndicacao(
             LinkIndicacaoId.de(id),

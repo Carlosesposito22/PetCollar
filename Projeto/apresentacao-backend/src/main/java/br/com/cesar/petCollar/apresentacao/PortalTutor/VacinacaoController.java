@@ -51,7 +51,6 @@ public class VacinacaoController {
         this.consumirBeneficio   = consumirBeneficio;
     }
 
-    /** Retorna a carteira completa de vacinação do paciente (RN-072). */
     @GetMapping
     public CarteiraDTO carteira(@PathVariable String pacienteId, Principal principal) {
         Paciente paciente = obterPacienteDoTutor(pacienteId, principal);
@@ -64,7 +63,6 @@ public class VacinacaoController {
         return new CarteiraDTO(paciente.nome(), paciente.especie(), paciente.raca(), ciclosDTO);
     }
 
-    /** Cria um novo ciclo vacinal com a primeira dose (RN-075). */
     @PostMapping
     public ResponseEntity<CicloDTO> agendarNova(@PathVariable String pacienteId,
                                                  @Valid @RequestBody RequisicaoNovaVacina req,
@@ -72,7 +70,7 @@ public class VacinacaoController {
         obterPacienteDoTutor(pacienteId, principal);
         TutorId tutorId = TutorId.de(principal.getName());
         TipoProtocolo protocolo = resolverProtocolo(req.tipoProtocolo());
-        // Gateia a dose pelo benefício "Vacinação" do plano (carência + limite).
+
         consumirBeneficio.consumir(tutorId, Categoria.VACINACAO, VACINACAO_INDISPONIVEL);
         try {
             CicloVacinal ciclo = cicloVacinalService.criarCicloComPrimeiraDose(
@@ -87,7 +85,6 @@ public class VacinacaoController {
         }
     }
 
-    /** Agenda a próxima dose de um ciclo existente; usa a estratégia do protocolo se data omitida (RN-075). */
     @PostMapping("/proxima-dose")
     public ResponseEntity<CicloDTO> agendarProximaDose(@PathVariable String pacienteId,
                                                         @Valid @RequestBody RequisicaoProximaDose req,
@@ -96,7 +93,7 @@ public class VacinacaoController {
         TutorId tutorId = TutorId.de(principal.getName());
         CicloVacinal ciclo = cicloVacinalService.buscarCicloPorNome(
             PacienteId.de(pacienteId), req.ciclo());
-        // Cada dose agendada debita 1 uso do benefício "Vacinação" do plano.
+
         consumirBeneficio.consumir(tutorId, Categoria.VACINACAO, VACINACAO_INDISPONIVEL);
         try {
             CicloVacinal atualizado = cicloVacinalService.agendarProximaDose(ciclo.getId(), req.data());
@@ -108,7 +105,6 @@ public class VacinacaoController {
         }
     }
 
-    /** Remove um ciclo vacinal (doses pendentes ou registros importados incorretamente). */
     @DeleteMapping("/{cicloId}")
     public ResponseEntity<Void> removerCiclo(@PathVariable String pacienteId,
                                               @PathVariable String cicloId,
@@ -118,7 +114,6 @@ public class VacinacaoController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Configura ou remove o lembrete automático de próxima dose (tutor). */
     @PatchMapping("/{cicloId}/lembrete")
     public ResponseEntity<Void> configurarLembrete(@PathVariable String pacienteId,
                                                     @PathVariable String cicloId,
@@ -129,7 +124,6 @@ public class VacinacaoController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Reagenda uma dose pendente ou em atraso para nova data — tutor remarca vacina atrasada (RN-079). */
     @PatchMapping("/{cicloId}/doses/{doseId}/reagendar")
     public ResponseEntity<CicloDTO> reagendarDose(@PathVariable String pacienteId,
                                                   @PathVariable String cicloId,
@@ -148,7 +142,6 @@ public class VacinacaoController {
         return ResponseEntity.ok(CicloDTO.de(ciclo, sugerida));
     }
 
-    /** Confirma a aplicação de uma dose — exclusivo para médico veterinário (RN-078). */
     @PatchMapping("/{cicloId}/doses/{doseId}/aplicar")
     public ResponseEntity<CicloDTO> aplicarDose(@PathVariable String pacienteId,
                                                  @PathVariable String cicloId,
@@ -166,8 +159,6 @@ public class VacinacaoController {
             .orElseThrow(() -> new IllegalArgumentException("Ciclo não encontrado."));
         return ResponseEntity.ok(CicloDTO.de(ciclo, null));
     }
-
-    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private Paciente obterPacienteDoTutor(String pacienteId, Principal principal) {
         Paciente p = portalRepositorio.buscarPaciente(pacienteId)
@@ -194,8 +185,6 @@ public class VacinacaoController {
             return null;
         }
     }
-
-    // ── DTOs ─────────────────────────────────────────────────────────────────
 
     public record RequisicaoNovaVacina(
             @NotBlank String ciclo,
@@ -284,8 +273,6 @@ public class VacinacaoController {
             String raca,
             List<CicloDTO> ciclos
     ) {}
-
-    // ── Handlers ─────────────────────────────────────────────────────────────
 
     @ExceptionHandler(PacienteController.PacienteNaoEncontradoException.class)
     public ResponseEntity<Map<String, String>> naoEncontrado(PacienteController.PacienteNaoEncontradoException e) {

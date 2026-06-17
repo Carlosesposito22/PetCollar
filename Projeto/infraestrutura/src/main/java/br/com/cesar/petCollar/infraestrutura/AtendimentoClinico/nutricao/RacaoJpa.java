@@ -17,10 +17,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA do catálogo de rações. Sets de enums são persistidos como
- * String separada por "," — simples e suficiente para um catálogo pequeno.
- */
 @Entity
 @Table(name = "racoes")
 public class RacaoJpa {
@@ -32,15 +28,10 @@ public class RacaoJpa {
     @Column(nullable = false) private String linha;
     @Column(nullable = false, precision = 8, scale = 2) private BigDecimal densidadeCaloricaKcalPorKg;
 
-    @Column(nullable = false) private String faixasIndicadas;       // CSV de FaixaEtaria.name()
-    @Column(nullable = false) private String portesIndicados;       // CSV de Porte.name()
-    @Column(nullable = false) private String comorbidadesIndicadas; // CSV de Comorbidade.name()
+    @Column(nullable = false) private String faixasIndicadas;
+    @Column(nullable = false) private String portesIndicados;
+    @Column(nullable = false) private String comorbidadesIndicadas;
 
-    /**
-     * Soft delete. Nullable para suportar linhas pré-existentes na tabela
-     * (Hibernate {@code ddl-auto=update} acrescenta a coluna sem default).
-     * O método {@link #toDomain()} trata null como false.
-     */
     private Boolean desativada;
 
     protected RacaoJpa() {}

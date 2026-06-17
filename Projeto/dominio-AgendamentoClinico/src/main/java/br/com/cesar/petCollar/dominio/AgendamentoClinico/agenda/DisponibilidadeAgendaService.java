@@ -11,11 +11,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Serviço de domínio que calcula os horários livres de um médico (RN 4) cruzando o
- * seu expediente, os bloqueios da agenda e as consultas já agendadas. Stateless;
- * dependências recebidas por construtor.
- */
 public class DisponibilidadeAgendaService {
 
     private final IConsultaRepositorio consultaRepositorio;
@@ -31,7 +26,6 @@ public class DisponibilidadeAgendaService {
         this.agendaRepositorio = agendaRepositorio;
     }
 
-    /** Horários livres do médico dentro da janela [inicio, fim]. */
     public List<HorarioConsulta> listarHorariosLivres(MedicoId medicoId,
                                                        LocalDateTime inicio, LocalDateTime fim) {
         if (medicoId == null)
@@ -58,7 +52,6 @@ public class DisponibilidadeAgendaService {
         return livres;
     }
 
-    /** Indica se um horário específico está livre para o médico (usado ao agendar — RN 4). */
     public boolean estaDisponivel(MedicoId medicoId, HorarioConsulta horario) {
         if (medicoId == null)
             throw new IllegalArgumentException("Id do médico não pode ser nulo.");

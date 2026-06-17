@@ -18,7 +18,6 @@ public class Tutor {
     private final List<PacienteId> pacientesVinculados;
     private final LocalDateTime criadoEm;
 
-    // Construtor de CRIAÇÃO — campos essenciais, lista vazia gerada automaticamente
     public Tutor(TutorId id, String nome, CPF cpf, String telefone, String email) {
         if (id == null)
             throw new IllegalArgumentException("Id do tutor não pode ser nulo.");
@@ -35,7 +34,6 @@ public class Tutor {
         this.criadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO — todos os campos (para carregar da persistência)
     public Tutor(TutorId id, String nome, CPF cpf, String telefone, String email,
                  Endereco endereco, List<PacienteId> pacientesVinculados,
                  LocalDateTime criadoEm) {

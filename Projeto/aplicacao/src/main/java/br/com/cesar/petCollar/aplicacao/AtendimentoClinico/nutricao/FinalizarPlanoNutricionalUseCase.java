@@ -5,10 +5,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.PlanoNut
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.PlanoNutricionalId;
 import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 
-/**
- * Finaliza o plano nutricional, capturando a assinatura digital (PNG base64
- * vindo do {@code SignaturePad}) e tornando o agregado imutável (RN 8).
- */
 public class FinalizarPlanoNutricionalUseCase {
 
     private final IPlanoNutricionalRepositorio repositorio;

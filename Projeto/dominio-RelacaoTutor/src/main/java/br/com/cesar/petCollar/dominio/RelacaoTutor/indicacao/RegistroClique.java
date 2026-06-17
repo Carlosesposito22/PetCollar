@@ -4,11 +4,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
 import java.time.LocalDateTime;
 
-/**
- * Entidade RegistroClique (RN-11, RN-12).
- * Persiste cada acesso a um link de indicação, permitindo aplicar
- * a regra de Último Clique no momento da inscrição do indicado.
- */
 public class RegistroClique {
 
     private final RegistroCliqueId id;

@@ -20,16 +20,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Seed operacional do petCollar, executado no startup (idempotente e auto-curável —
- * garante o estado-alvo, mesmo sobre um banco já populado). Assegura os dados mínimos
- * para a clínica funcionar: as especialidades padrão e {@value #MEDICOS_POR_ESPECIALIDADE}
- * médicos por especialidade (usuários MEDICO_VETERINARIO, login = matrícula). Roda
- * automaticamente ao subir o container Docker.
- *
- * <p>Observação: os <em>enums</em> do domínio (Perfil, StatusConta, StatusConsulta,
- * TipoConsulta, etc.) são constantes de código — não exigem povoamento no banco.
- */
 @Configuration
 public class SeedInicial {
 
@@ -38,7 +28,6 @@ public class SeedInicial {
     private static final String SENHA_PADRAO = "petcollar123";
     private static final int MEDICOS_POR_ESPECIALIDADE = 3;
 
-    /** Especialidades padrão: {nome, descrição}. */
     private static final List<String[]> ESPECIALIDADES_PADRAO = List.of(
         new String[]{"Clínica Geral", "Consultas e diagnósticos gerais para cães e gatos"},
         new String[]{"Cardiologia",   "Diagnóstico e tratamento de doenças cardíacas"},
@@ -46,10 +35,6 @@ public class SeedInicial {
         new String[]{"Ortopedia",     "Fraturas, displasias e doenças articulares"}
     );
 
-    /**
-     * Pool de nomes por especialidade — garante nomes reais e determinísticos a cada
-     * recriação do banco. Cada lista deve ter ao menos {@value #MEDICOS_POR_ESPECIALIDADE} entradas.
-     */
     private static final java.util.Map<String, List<String>> NOMES_POR_ESPECIALIDADE =
         java.util.Map.of(
             "Clínica Geral", List.of(
@@ -91,11 +76,6 @@ public class SeedInicial {
         log.info("[SEED] {} especialidades-padrão criadas.", ESPECIALIDADES_PADRAO.size());
     }
 
-    /**
-     * Garante {@value #MEDICOS_POR_ESPECIALIDADE} médicos válidos por especialidade.
-     * Descarta vínculos para médicos que não existem mais como usuário e completa o
-     * que faltar — funciona tanto num banco zerado quanto num já parcialmente populado.
-     */
     private void garantirMedicosPorEspecialidade(EspecialidadeJpaRepository especialidades,
                                                  UsuarioRepositorio usuarios, PasswordEncoder encoder) {
         String senha = encoder.encode(SENHA_PADRAO);
@@ -104,7 +84,6 @@ public class SeedInicial {
         for (EspecialidadeJpa esp : especialidades.findAll()) {
             Especialidade dominio = esp.toDomain();
 
-            // Mantém apenas os médicos que ainda existem como usuário.
             List<MedicoId> medicos = new ArrayList<>();
             for (MedicoId m : esp.medicos()) {
                 if (usuarios.buscar(Perfil.MEDICO_VETERINARIO, m.getValor()).isPresent()) {
@@ -113,7 +92,6 @@ public class SeedInicial {
             }
             boolean mudou = medicos.size() != esp.medicos().size();
 
-            // Completa até o alvo, criando novos usuários-médico.
             List<String> nomesPool = NOMES_POR_ESPECIALIDADE.getOrDefault(
                     dominio.getNome(), List.of());
             while (medicos.size() < MEDICOS_POR_ESPECIALIDADE) {

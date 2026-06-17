@@ -9,14 +9,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.IPlanoNu
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.PlanoNutricional;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 
-/**
- * Caso de uso: para um paciente, devolve o histórico completo de planos
- * finalizados + a lista de {@link EvolucaoNutricional} entre cada par
- * sequencial (do mais antigo para o mais novo).
- *
- * <p>A UI usa o histórico para o mini-gráfico e os deltas para o card
- * "Evolução desde o último plano".
- */
 public class CompararEvolucaoNutricionalUseCase {
 
     private final IPlanoNutricionalRepositorio repositorio;
@@ -35,8 +27,6 @@ public class CompararEvolucaoNutricionalUseCase {
     public Resultado executar(PacienteId pacienteId) {
         if (pacienteId == null) throw new IllegalArgumentException("PacienteId é obrigatório.");
 
-        // Repositório devolve do mais recente para o mais antigo — invertemos
-        // para calcular a evolução cronológica.
         List<PlanoNutricional> historico = new ArrayList<>(
                 repositorio.listarFinalizadosDoPaciente(pacienteId));
         java.util.Collections.reverse(historico);

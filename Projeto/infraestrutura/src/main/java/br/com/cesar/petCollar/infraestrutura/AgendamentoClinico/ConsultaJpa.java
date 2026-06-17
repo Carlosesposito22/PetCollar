@@ -27,13 +27,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Entidade JPA do agregado {@link Consulta}. Ids e enums são persistidos como
- * String; referências a outros agregados/contextos (paciente, tutor, médico,
- * especialidade, consulta de origem) ficam apenas como o valor String do Id
- * (§6.2 do guia). As subentidades do próprio agregado (histórico e eventos) são
- * mapeadas com cascade total.
- */
 @Entity
 @Table(name = "consultas")
 public class ConsultaJpa {
@@ -54,7 +47,7 @@ public class ConsultaJpa {
     private String especialidadeId;
 
     @Column(nullable = false)
-    private String tipo;                 // TipoConsulta.name()
+    private String tipo;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String motivo;
@@ -66,9 +59,9 @@ public class ConsultaJpa {
     private LocalDateTime horarioFim;
 
     @Column(nullable = false)
-    private String status;               // StatusConsulta.name()
+    private String status;
 
-    private String consultaOrigemId;     // referência cross-agregado (RN 11), pode ser nulo
+    private String consultaOrigemId;
 
     @Column(nullable = false)
     private int quantidadeRemarcacoes;
@@ -115,12 +108,6 @@ public class ConsultaJpa {
         return jpa;
     }
 
-    /**
-     * Projeta esta consulta como {@link ResumoAtendimento} para o protocolo de
-     * inacessibilidade (ACL — §6.2). Uma consulta AGENDADA ou CONFIRMADA é considerada
-     * "em andamento"; a última interação do tutor é a confirmação ou, se ainda não
-     * confirmada, a criação da consulta.
-     */
     public ResumoAtendimento toResumoAtendimento() {
         boolean emAndamento = "AGENDADA".equals(status) || "CONFIRMADA".equals(status);
         java.time.LocalDateTime ultimaInteracao = confirmadaEm != null ? confirmadaEm : criadaEm;

@@ -8,10 +8,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * Adapter JPA de {@link IFilaAtendimentoRepositorio}. Substitui
- * FilaAtendimentoRepositorioEmMemoria quando o banco está ativo.
- */
 @Repository
 public class FilaAtendimentoRepositorioJpa implements IFilaAtendimentoRepositorio {
 

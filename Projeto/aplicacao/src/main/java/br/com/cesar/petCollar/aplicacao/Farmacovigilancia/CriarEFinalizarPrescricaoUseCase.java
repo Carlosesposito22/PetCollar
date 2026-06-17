@@ -24,12 +24,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Caso de uso atômico (mesmo padrão da F-11): valida + cria a {@link Prescricao}
- * já FINALIZADA + assinada num único passo. Se a validação retornar qualquer
- * BLOQUEIO, nada é persistido. Se houver vigente para o paciente, ela é
- * marcada SUBSTITUIDA dentro da mesma transação.
- */
 public class CriarEFinalizarPrescricaoUseCase {
 
     private final IMedicamentoRepositorio medicamentos;
@@ -60,7 +54,6 @@ public class CriarEFinalizarPrescricaoUseCase {
             throw new IllegalStateException("Prescrição não pode ser finalizada: " + motivos);
         }
 
-        // Constrói os itens da prescrição (já com dose total e volume calculados)
         List<ItemPrescricao> itens = new ArrayList<>();
         for (DadosItem dados : entrada.itensComHorarios) {
             Medicamento med = medicamentos.buscarPorId(dados.medicamentoId)
@@ -76,7 +69,6 @@ public class CriarEFinalizarPrescricaoUseCase {
                     dados.notaCuidado == null ? med.getNotaCuidado() : dados.notaCuidado));
         }
 
-        // Marca a vigente atual como SUBSTITUIDA (mesmo padrão da F-11)
         prescricoes.buscarVigenteDoPaciente(entrada.pacienteId)
                 .ifPresent(anterior -> {
                     anterior.marcarComoSubstituida();

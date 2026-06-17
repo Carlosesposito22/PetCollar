@@ -12,7 +12,6 @@ public class Medicamento {
     private final RestricaoManejo restricaoManejo;
     private final LocalDateTime criadoEm;
 
-    // Construtor de CRIAÇÃO
     public Medicamento(MedicamentoId id,
                        String nome,
                        double doseMinimaSeguraMgPorKg,
@@ -38,7 +37,6 @@ public class Medicamento {
         this.criadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO
     public Medicamento(MedicamentoId id,
                        String nome,
                        double doseMinimaSeguraMgPorKg,

@@ -1,10 +1,5 @@
 package br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo;
 
-/**
- * Estados da máquina de estados do agregado
- * {@link ProtocoloInacessibilidade}. As transições válidas estão documentadas e
- * guardadas na própria entidade.
- */
 public enum StatusProtocolo {
     INATIVO,
     ATIVADO,

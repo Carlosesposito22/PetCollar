@@ -1,11 +1,5 @@
 package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano;
 
-/**
- * Uma faixa do cronograma de transição alimentar (F-11 RN 5).
- *
- * <p>Exemplo: dias {@code "1-2"} → 75% ração atual + 25% ração nova.
- * Os percentuais devem somar 100 (validado em construção).
- */
 public record DiaTransicao(
         String faixaDias,
         int percentualRacaoAtual,

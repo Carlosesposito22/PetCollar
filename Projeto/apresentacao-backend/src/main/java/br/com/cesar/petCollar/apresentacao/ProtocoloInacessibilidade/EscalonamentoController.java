@@ -8,9 +8,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Consulta dos eventos de escalonamento auditáveis de um protocolo (RN 7).
- */
 @RestController
 @RequestMapping("/api/protocolos/{id}/escalonamentos")
 public class EscalonamentoController {

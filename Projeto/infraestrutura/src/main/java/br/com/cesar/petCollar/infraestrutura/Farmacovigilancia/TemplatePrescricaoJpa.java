@@ -25,7 +25,7 @@ public class TemplatePrescricaoJpa {
 
     @Column(nullable = false) private String nome;
     @Column(columnDefinition = "TEXT") private String descricao;
-    /** "medId:doseMgPorKg:duracaoDias:freq:via|...". */
+
     @Column(nullable = false, columnDefinition = "TEXT") private String itensTexto;
 
     protected TemplatePrescricaoJpa() {}

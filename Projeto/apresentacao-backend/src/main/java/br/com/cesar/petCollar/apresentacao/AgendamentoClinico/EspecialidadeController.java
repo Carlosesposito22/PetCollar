@@ -15,9 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Endpoints de especialidades e filtro de médicos por especialidade (RN 2).
- */
 @RestController
 @RequestMapping("/api/especialidades")
 public class EspecialidadeController {

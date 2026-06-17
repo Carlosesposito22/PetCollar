@@ -7,12 +7,6 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
-/**
- * Entidade JPA da fila de atendimento operacional. A chave primária é o
- * triagemId, que identifica unicamente a entrada na fila. Campos de
- * encaminhamento (medicoId/nomeMedico) são nulos até a recepcionista chamar
- * o paciente.
- */
 @Entity
 @Table(name = "fila_atendimento")
 public class ItemFilaJpa {

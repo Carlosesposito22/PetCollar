@@ -8,7 +8,6 @@ public class MatrizInteracao {
     private final RegraInteracao regra;
     private final LocalDateTime criadoEm;
 
-    // Construtor de CRIAÇÃO
     public MatrizInteracao(MatrizInteracaoId id, RegraInteracao regra) {
         if (id == null)
             throw new IllegalArgumentException("id não pode ser nulo.");
@@ -19,7 +18,6 @@ public class MatrizInteracao {
         this.criadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO
     public MatrizInteracao(MatrizInteracaoId id, RegraInteracao regra, LocalDateTime criadoEm) {
         this.id = id;
         this.regra = regra;

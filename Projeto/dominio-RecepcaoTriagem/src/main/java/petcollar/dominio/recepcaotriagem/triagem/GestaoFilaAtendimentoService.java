@@ -7,9 +7,9 @@ public class GestaoFilaAtendimentoService {
 
     private static final Comparator<PosicaoFila> ORDENACAO_FILA =
         Comparator
-            
+
             .comparingInt(GestaoFilaAtendimentoService::prioridadeNumerica)
-           
+
             .thenComparing(PosicaoFila::getFinalizadaEm);
 
     private final IFilaAtendimentoRepositorio repositorio;
@@ -20,7 +20,6 @@ public class GestaoFilaAtendimentoService {
         this.repositorio = repositorio;
     }
 
-   
     public List<PosicaoFila> inserirNaFila(Triagem triagem) {
         if (triagem == null)
             throw new IllegalArgumentException("Triagem não pode ser nula.");
@@ -49,8 +48,6 @@ public class GestaoFilaAtendimentoService {
             .toList();
     }
 
-  
-     
     public void removerDaFila(TriagemId triagemId) {
         if (triagemId == null)
             throw new IllegalArgumentException("TriagemId não pode ser nulo.");

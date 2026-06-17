@@ -28,12 +28,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA do agregado {@link PlanoNutricional}. Ids e enums são
- * persistidos como String; o cronograma e as observações são serializados em
- * formato simples (CSV "|") para evitar tabelas filhas e manter a leitura
- * de uma cobrança em 1 SELECT.
- */
 @Entity
 @Table(name = "planos_nutricionais")
 public class PlanoNutricionalJpa {
@@ -52,16 +46,15 @@ public class PlanoNutricionalJpa {
     @Column(nullable = false, precision = 8, scale = 2) private BigDecimal densidadeCaloricaKcalPorKg;
 
     @Column(nullable = false) private String tipoCronograma;
-    /** Faixas serializadas como "faixa:atual:nova|faixa:atual:nova". */
+
     @Column(nullable = false, columnDefinition = "TEXT") private String cronogramaDias;
-    /** Observações serializadas como "texto|texto|texto". */
+
     @Column(nullable = false, columnDefinition = "TEXT") private String observacoesTexto;
 
     @Column(nullable = false) private String status;
     @Column(nullable = false) private LocalDateTime criadoEm;
     @Column(nullable = false) private LocalDateTime atualizadoEm;
 
-    // Snapshot do resultado (preenchido só após finalizar).
     private BigDecimal pesoMetabolico;
     private BigDecimal nemBase;
     private BigDecimal fatorAtividade;
@@ -69,14 +62,11 @@ public class PlanoNutricionalJpa {
     private BigDecimal nemTotal;
     private BigDecimal quantidadeRecomendadaGramasDia;
 
-    // Assinatura digital.
     private String assinadoPorMedicoId;
     @Column(columnDefinition = "TEXT") private String assinaturaImagemBase64;
     private LocalDateTime assinadoEm;
     private String assinaturaHash;
 
-    // F-11 reforçada: ração do catálogo (opcional) + justificativa exigida em
-    // divergências de peso acima do limiar (PlanoNutricional.LIMIAR_*).
     private String racaoId;
     @Column(columnDefinition = "TEXT") private String justificativaDivergencia;
 
@@ -158,8 +148,6 @@ public class PlanoNutricionalJpa {
                 justificativaDivergencia);
     }
 
-    // ── Serialização simples de coleções (separadores | e :) ─────────────────
-
     private static String serializarDias(List<DiaTransicao> dias) {
         StringBuilder sb = new StringBuilder();
         for (DiaTransicao d : dias) {
@@ -197,8 +185,6 @@ public class PlanoNutricionalJpa {
             if (!parte.isBlank()) out.add(new ObservacaoNutricional(parte));
         return out;
     }
-
-    // ── Getters JPA ──────────────────────────────────────────────────────────
 
     public String getId() { return id; }
     public String getPacienteId() { return pacienteId; }

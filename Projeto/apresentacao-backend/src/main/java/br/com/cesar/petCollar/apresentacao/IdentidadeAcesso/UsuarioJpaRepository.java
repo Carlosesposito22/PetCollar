@@ -12,7 +12,6 @@ public interface UsuarioJpaRepository extends JpaRepository<UsuarioJpa, String> 
 
     List<UsuarioJpa> findByPerfilIn(List<String> perfis);
 
-    /** Todos os identificadores do perfil — usado para calcular próxima matrícula. */
     @Query("SELECT u.identificador FROM UsuarioJpa u WHERE u.perfil = :perfil")
     List<String> listarIdentificadoresPorPerfil(String perfil);
 }

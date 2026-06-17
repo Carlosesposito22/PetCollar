@@ -8,12 +8,6 @@ import java.util.HexFormat;
 
 import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 
-/**
- * Assinatura digital anexada a uma {@link Prescricao} no momento da
- * finalização — preserva o desenho do médico (PNG base64), quem assinou,
- * quando e um hash SHA-256 do conteúdo para detecção de adulteração.
- * Idêntica em conceito à da F-11.
- */
 public record AssinaturaDigitalPrescricao(
         MedicoId medicoResponsavel,
         String imagemBase64,

@@ -2,11 +2,6 @@ package petcollar.dominio.farmacovigilancia;
 
 import java.util.List;
 
-/**
- * RN-142, RN-144
- * Aplica fator de redução com base nas tags clínicas do paciente.
- * Converte mg para volume em mL.
- */
 public class AjusteContextualPorTagsService {
 
     public double calcularDoseMaximaEfetivaMgPorKg(double doseMaximaMgPorKg,

@@ -5,10 +5,6 @@ import java.util.List;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.IRacaoRepositorio;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Racao;
 
-/**
- * Lista todas as rações do catálogo (para autocomplete e seleção manual no
- * frontend).
- */
 public class ListarCatalogoRacoesUseCase {
 
     private final IRacaoRepositorio repositorio;
@@ -20,7 +16,7 @@ public class ListarCatalogoRacoesUseCase {
     }
 
     public List<Racao> executar() {
-        // Médico e tutor só veem rações ativas. Admin tem use case próprio.
+
         return repositorio.listarAtivas();
     }
 }

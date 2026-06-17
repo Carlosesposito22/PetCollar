@@ -48,11 +48,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import java.math.BigDecimal;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- * F-11 — endpoints do médico para gestão nutricional. Protegido pelo
- * {@code SecurityConfig} (perfil MEDICO_VETERINARIO). O id do médico autenticado
- * vem do {@code Principal} (subject do JWT).
- */
 @RestController
 @RequestMapping("/api/medico/nutricao")
 public class GestaoNutricionalController {
@@ -93,15 +88,6 @@ public class GestaoNutricionalController {
         this.tutoresRepo = tutoresRepo;
     }
 
-    /**
-     * Resolve o contexto mínimo do paciente para a tela F-11: tutorId real,
-     * nomes, peso atual e idade derivada da data de nascimento.
-     *
-     * <p>O sistema tem dois cadastros de paciente em uso (tabelas {@code pacientes}
-     * do PortalTutor e {@code pacientes_recepcao} da Recepção). Tentamos primeiro
-     * o PortalTutor (onde os tutores cadastram via app) e caímos para a Recepção
-     * como fallback. Só leitura — não modificamos os agregados de outros contextos.
-     */
     @GetMapping("/pacientes/{pacienteId}/contexto")
     public ResponseEntity<ContextoPacienteDTO> contexto(@PathVariable String pacienteId) {
         Optional<ContextoPacienteDTO> doPortal = pacientesPortalRepo.findById(pacienteId)
@@ -137,14 +123,12 @@ public class GestaoNutricionalController {
         return tutoresRepo.findById(tutorId).map(t -> t.getNome()).orElse("Tutor");
     }
 
-    /** Cálculo NEM ao vivo — não persiste nada. */
     @PostMapping("/preview")
     public PreviewNEMDTO preview(@RequestBody RequisicaoPreviewNEMDTO req) {
         var resultado = calcularPreview.executar(NutricaoDTOs.paraDominio(req.parametros()));
         return PreviewNEMDTO.de(resultado);
     }
 
-    /** Cria/atualiza o único rascunho aberto do paciente (idempotente). */
     @PostMapping("/rascunho")
     public PlanoNutricionalDTO salvarRascunho(@RequestBody RequisicaoRascunhoDTO req, Principal principal) {
         var entrada = new SalvarRascunhoPlanoNutricionalUseCase.Entrada(
@@ -160,13 +144,11 @@ public class GestaoNutricionalController {
         return PlanoNutricionalDTO.de(salvarRascunho.executar(entrada));
     }
 
-    /** Catálogo completo de rações. */
     @GetMapping("/racoes")
     public List<RacaoDTO> catalogoRacoes() {
         return listarCatalogoRacoes.executar().stream().map(RacaoDTO::de).toList();
     }
 
-    /** Top-N rações recomendadas para um perfil — usa o Strategy do domínio. */
     @GetMapping("/racoes/recomendacoes")
     public List<RacaoRecomendadaDTO> recomendarRacoes(
             @RequestParam("pesoIdealKg") BigDecimal pesoIdealKg,
@@ -178,13 +160,11 @@ public class GestaoNutricionalController {
         return recomendarRacoes.executar(entrada).stream().map(RacaoRecomendadaDTO::de).toList();
     }
 
-    /** Histórico de planos finalizados + deltas entre planos sequenciais. */
     @GetMapping("/pacientes/{pacienteId}/evolucao")
     public HistoricoEvolutivoDTO evolucao(@PathVariable String pacienteId) {
         return HistoricoEvolutivoDTO.de(compararEvolucao.executar(PacienteId.de(pacienteId)));
     }
 
-    /** Rascunho aberto do paciente — 204 se não houver. */
     @GetMapping("/pacientes/{pacienteId}/rascunho")
     public ResponseEntity<PlanoNutricionalDTO> rascunhoDoPaciente(@PathVariable String pacienteId) {
         return consultar.buscarRascunhoDoPaciente(PacienteId.de(pacienteId))
@@ -193,11 +173,6 @@ public class GestaoNutricionalController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
-    /**
-     * Plano vigente do paciente (FINALIZADO ativo) — usado pelo frontend
-     * para pré-preencher a tela e exibir o aviso de substituição. 204 se
-     * o paciente ainda não tem prescrição nutricional.
-     */
     @GetMapping("/pacientes/{pacienteId}/vigente")
     public ResponseEntity<PlanoNutricionalDTO> vigenteDoPaciente(@PathVariable String pacienteId) {
         return consultar.buscarVigenteDoPaciente(PacienteId.de(pacienteId))
@@ -206,14 +181,12 @@ public class GestaoNutricionalController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
-    /** Histórico de planos finalizados de um paciente. */
     @GetMapping("/pacientes/{pacienteId}/finalizados")
     public List<PlanoNutricionalDTO> finalizadosDoPaciente(@PathVariable String pacienteId) {
         return consultar.listarFinalizadosDoPaciente(PacienteId.de(pacienteId)).stream()
                 .map(PlanoNutricionalDTO::de).toList();
     }
 
-    /** Finaliza o plano capturando a assinatura digital (PNG base64). */
     @PostMapping("/{planoId}/finalizar")
     public PlanoNutricionalDTO finalizar(@PathVariable String planoId,
                                          @RequestBody RequisicaoFinalizarDTO req,
@@ -225,11 +198,6 @@ public class GestaoNutricionalController {
         return PlanoNutricionalDTO.de(finalizado);
     }
 
-    /**
-     * Cria + finaliza o plano num único POST atômico (sem passar por rascunho).
-     * Substitui o fluxo de dois passos pelo qual o médico só vê um botão
-     * "Finalizar e Assinar" — se a validação falhar, nada é persistido.
-     */
     @PostMapping("/finalizar-direto")
     public PlanoNutricionalDTO finalizarDireto(@RequestBody RequisicaoCriarEFinalizarDTO req,
                                                Principal principal) {
@@ -247,7 +215,6 @@ public class GestaoNutricionalController {
         return PlanoNutricionalDTO.de(criarEFinalizar.executar(entrada));
     }
 
-    /** Detalhe de um plano específico. */
     @GetMapping("/{planoId}")
     public ResponseEntity<PlanoNutricionalDTO> detalhe(@PathVariable String planoId) {
         return consultar.buscarPorId(PlanoNutricionalId.de(planoId))

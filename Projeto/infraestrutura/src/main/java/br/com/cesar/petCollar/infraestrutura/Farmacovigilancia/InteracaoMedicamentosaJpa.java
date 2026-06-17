@@ -8,11 +8,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Linha da matriz de interação medicamentosa. O id é determinístico
- * ({@code menorId+"|"+maiorId}) para garantir que o par seja idempotente
- * mesmo se um seed acidentalmente tentar inserir (A,B) e (B,A).
- */
 @Entity
 @Table(name = "interacoes_medicamentosas")
 public class InteracaoMedicamentosaJpa {

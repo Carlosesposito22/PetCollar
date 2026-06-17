@@ -29,13 +29,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
-/**
- * Gerenciamento de planos de saúde (F-07) e do seu catálogo de benefícios
- * (F-08). Rotas públicas para leitura (contratação) e rotas admin para
- * criação/edição. Thin adapter — a regra do plano e o disparo dos Observers
- * ficam em {@link GerenciarPlanoUseCase} e
- * {@link ConfigurarBeneficiosDoPlanoUseCase}.
- */
 @RestController
 public class AdminPlanosController {
 
@@ -48,14 +41,10 @@ public class AdminPlanosController {
         this.configurarBeneficios = configurarBeneficios;
     }
 
-    // ── Leitura pública (usado pelo fluxo de contratação) ────────────────────
-
     @GetMapping("/api/planos")
     public List<PlanoDTO> listarPublico() {
         return listarComBeneficios();
     }
-
-    // ── CRUD admin ───────────────────────────────────────────────────────────
 
     @GetMapping("/api/admin/planos")
     public List<PlanoDTO> listar() {
@@ -85,8 +74,6 @@ public class AdminPlanosController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── Montagem de DTOs ─────────────────────────────────────────────────────
-
     private List<PlanoDTO> listarComBeneficios() {
         return gerenciarPlano.listar().stream().map(this::montarDTO).toList();
     }
@@ -112,8 +99,6 @@ public class AdminPlanosController {
                         b.carenciaDias()))
                 .toList();
     }
-
-    // ── DTOs ─────────────────────────────────────────────────────────────────
 
     public record PlanoDTO(String id, String nome, BigDecimal valorMensalidade, List<BeneficioDTO> beneficios) {}
 
@@ -143,8 +128,6 @@ public class AdminPlanosController {
             @Min(0) int limiteUsosPorPeriodo,
             @Min(0) int carenciaDias
     ) {}
-
-    // ── Exceções ─────────────────────────────────────────────────────────────
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> argumentoInvalido(IllegalArgumentException e) {

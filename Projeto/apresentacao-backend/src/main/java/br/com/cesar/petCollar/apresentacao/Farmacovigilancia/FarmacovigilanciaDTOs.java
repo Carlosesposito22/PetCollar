@@ -20,16 +20,12 @@ public final class FarmacovigilanciaDTOs {
 
     private FarmacovigilanciaDTOs() {}
 
-    // ── Contexto do paciente ─────────────────────────────────────────────────
-
     public record ContextoPacienteDTO(
             String pacienteId, String tutorId,
             String nomePet, String nomeTutor,
             BigDecimal pesoPacienteKg, int idadeAnos,
             List<String> alergiasDoPaciente,
             List<String> tagsClinicasDerivadas) {}
-
-    // ── Catálogo de medicamentos ─────────────────────────────────────────────
 
     public record MedicamentoDTO(
             String id, String nome,
@@ -54,8 +50,6 @@ public final class FarmacovigilanciaDTOs {
         }
     }
 
-    // ── Templates ────────────────────────────────────────────────────────────
-
     public record TemplateDTO(String id, String nome, String descricao, List<TemplateItemDTO> itens) {
         public static TemplateDTO de(TemplatePrescricao t) {
             return new TemplateDTO(
@@ -74,8 +68,6 @@ public final class FarmacovigilanciaDTOs {
         }
     }
 
-    // ── Entrada: validar ─────────────────────────────────────────────────────
-
     public record RequisicaoRascunhoItemDTO(
             String medicamentoId, BigDecimal doseMgPorKg, int duracaoDias,
             String frequencia, String via) {}
@@ -85,8 +77,6 @@ public final class FarmacovigilanciaDTOs {
             List<String> tagsClinicas,
             List<String> alergias,
             List<RequisicaoRascunhoItemDTO> itens) {}
-
-    // ── Saída: resultado de validação ────────────────────────────────────────
 
     public record ViolacaoDTO(String nivel, String codigo, String mensagem) {
         public static ViolacaoDTO de(Violacao v) {
@@ -123,8 +113,6 @@ public final class FarmacovigilanciaDTOs {
         }
     }
 
-    // ── Entrada: criar+finalizar ─────────────────────────────────────────────
-
     public record RequisicaoItemFinalDTO(
             String medicamentoId, BigDecimal doseMgPorKg, int duracaoDias,
             String frequencia, String via, List<String> horarios, String notaCuidado) {}
@@ -137,8 +125,6 @@ public final class FarmacovigilanciaDTOs {
             List<RequisicaoItemFinalDTO> itens,
             List<String> instrucoesGerais,
             String imagemAssinaturaBase64) {}
-
-    // ── Saída: Prescrição finalizada ─────────────────────────────────────────
 
     public record ItemPrescricaoDTO(
             String medicamentoId, String nomeMedicamento,
@@ -192,6 +178,5 @@ public final class FarmacovigilanciaDTOs {
         }
     }
 
-    /** Histórico do paciente: cada prescrição + map de id→nome dos medicamentos pra UI exibir. */
     public record HistoricoDTO(List<PrescricaoDTO> prescricoes, Map<String, String> nomesDosMedicamentos) {}
 }

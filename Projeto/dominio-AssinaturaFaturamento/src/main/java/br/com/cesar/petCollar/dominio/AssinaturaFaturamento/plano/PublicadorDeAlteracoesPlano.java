@@ -4,13 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Subject do padrão Observer: ponto único de publicação de alterações em
- * {@link Plano}. Desacopla o {@code GerenciarPlanoUseCase} dos observadores
- * que reagem à mudança (ex.: notificação de tutores afetados). Domínio puro —
- * o wiring dos observadores acontece em {@code AssinaturaFaturamentoConfig}
- * (CLAUDE.md §6.5).
- */
 public class PublicadorDeAlteracoesPlano {
 
     private final List<IObservadorDeAlteracaoPlano> observadores = new ArrayList<>();

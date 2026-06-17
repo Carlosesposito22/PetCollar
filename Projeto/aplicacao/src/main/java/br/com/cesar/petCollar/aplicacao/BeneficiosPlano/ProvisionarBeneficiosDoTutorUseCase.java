@@ -13,16 +13,6 @@ import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.IBeneficioTutorR
 import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Provisiona os benefícios de um tutor a partir do catálogo do plano contratado
- * (F-08). Para cada {@link BeneficioCatalogo} ativo do plano, cria um
- * {@link BeneficioTutor} cuja {@code dataLiberacao} respeita a carência do
- * catálogo — então o benefício nasce EM_CARENCIA e só fica DISPONIVEL após o
- * prazo. Idempotente: não recria benefícios já provisionados para o tutor.
- *
- * <p>Disparado quando a conta do tutor é ativada (pagamento confirmado), em
- * paralelo à criação da primeira cobrança em {@code ContratarPlanoUseCase}.
- */
 public class ProvisionarBeneficiosDoTutorUseCase {
 
     private final IBeneficioCatalogoRepositorio catalogoRepositorio;

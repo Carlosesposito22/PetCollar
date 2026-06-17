@@ -5,11 +5,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.IRacaoRe
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Racao;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RacaoId;
 
-/**
- * Caso de uso do admin: ativa ou desativa uma ração (soft-delete). Permite
- * consultar previamente quantos planos a referenciam para o aviso de
- * impacto.
- */
 public class AlterarStatusRacaoUseCase {
 
     private final IRacaoRepositorio repositorio;
@@ -39,7 +34,6 @@ public class AlterarStatusRacaoUseCase {
         return racao;
     }
 
-    /** Conta planos que prescreveram esta ração — útil para o aviso de impacto. */
     public long contarPlanosUsando(RacaoId id) {
         if (id == null) throw new IllegalArgumentException("RacaoId é obrigatório.");
         return planosRepositorio.contarPlanosComRacao(id);

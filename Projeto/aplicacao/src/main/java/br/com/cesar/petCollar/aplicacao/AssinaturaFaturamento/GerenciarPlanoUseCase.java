@@ -8,13 +8,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 
 import java.util.List;
 
-/**
- * Caso de uso de administração de planos (F-07 — gestão do catálogo). Criação
- * de novos planos e alteração de nome/mensalidade de planos existentes. Ao
- * alterar, dispara o {@link PublicadorDeAlteracoesPlano} para que os
- * observadores registrados (ex.: {@code NotificacaoAlteracaoPlanoObservador})
- * reajam à mudança sem acoplamento direto (padrão Observer, CLAUDE.md §8).
- */
 public class GerenciarPlanoUseCase {
 
     private final IPlanoRepositorio planoRepositorio;

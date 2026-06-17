@@ -11,11 +11,6 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
-/**
- * Entidade JPA da subentidade {@link EventoEscalonamento} (filho do agregado
- * {@link br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade}),
- * registro auditável de cada avanço de nível (RN 7).
- */
 @Entity
 @Table(name = "eventos_escalonamento")
 public class EventoEscalonamentoJpa {
@@ -24,12 +19,12 @@ public class EventoEscalonamentoJpa {
     private String id;
 
     @Column(nullable = false)
-    private String nivel;                  // NivelEscalonamento.name()
+    private String nivel;
 
     @Column(columnDefinition = "TEXT")
     private String motivo;
 
-    private String responsavelAcionadoId;  // referência cross-agregado, pode ser nula
+    private String responsavelAcionadoId;
 
     @Column(nullable = false)
     private LocalDateTime ocorridoEm;

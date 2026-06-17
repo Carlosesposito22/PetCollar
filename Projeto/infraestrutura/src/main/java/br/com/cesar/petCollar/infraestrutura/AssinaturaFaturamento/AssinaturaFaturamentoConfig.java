@@ -20,22 +20,11 @@ import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.ValorMensalida
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.servico.ClassificacaoInadimplenciaService;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.servico.ConsolidacaoQuitacaoService;
 import br.com.cesar.petCollar.dominio.compartilhado.eventos.PublicadorDeEventosDoTutor;
-/**
- * Wiring canônico (§6.5) dos services de domínio e use cases de F-07 como beans.
- * Spring resolve as interfaces {@code IXxxRepositorio} para os adapters JPA
- * deste mesmo módulo.
- *
- * <p>Inclui um {@link CommandLineRunner} que semeia o "Plano Básico Mensal" no
- * primeiro boot — o id do plano é fixo (UUID determinístico) para permitir que
- * outros tutores (seed do PortalTutor, contratações via API) referenciem o
- * mesmo registro sem precisar consultar.
- */
+
 @Configuration
 @EntityScan(basePackages = "br.com.cesar.petCollar.infraestrutura.AssinaturaFaturamento")
 @EnableJpaRepositories(basePackages = "br.com.cesar.petCollar.infraestrutura.AssinaturaFaturamento")
 public class AssinaturaFaturamentoConfig {
-
-    // ── Services de domínio ──────────────────────────────────────────────────
 
     @Bean
     public ClassificacaoInadimplenciaService classificacaoInadimplenciaService(
@@ -49,26 +38,11 @@ public class AssinaturaFaturamentoConfig {
         return new ConsolidacaoQuitacaoService(cobrancaRepositorio);
     }
 
-    // ── Observer de alteração de planos (padrão Observer, §8) ───────────────
-
-    /**
-     * Subject criado sem observadores para evitar ciclo de dependência entre
-     * este Config (que habilita os repositórios JPA de AssinaturaFaturamento) e
-     * GamificacaoConfig (que define PublicadorDeEventosDoTutor, o qual depende
-     * indiretamente dos mesmos repositórios). O wiring do observador acontece em
-     * {@link #wireObservadorAlteracaoPlano} via CommandLineRunner — após todos os
-     * beans estarem prontos (CLAUDE.md §6.5).
-     */
     @Bean
     public PublicadorDeAlteracoesPlano publicadorDeAlteracoesPlano() {
         return new PublicadorDeAlteracoesPlano();
     }
 
-    /**
-     * Inscreve o {@link NotificacaoAlteracaoPlanoObservador} no subject depois
-     * que o contexto está totalmente inicializado, quebrando o ciclo de
-     * dependência sem comprometer a semântica do padrão Observer.
-     */
     @Bean
     public CommandLineRunner wireObservadorAlteracaoPlano(
             PublicadorDeAlteracoesPlano publicadorDeAlteracoesPlano,
@@ -77,8 +51,6 @@ public class AssinaturaFaturamentoConfig {
         return args -> publicadorDeAlteracoesPlano.inscrever(
                 new NotificacaoAlteracaoPlanoObservador(cobrancaRepositorio, publicadorDeEventosDoTutor));
     }
-
-    // ── Use cases ────────────────────────────────────────────────────────────
 
     @Bean
     public GerenciarPlanoUseCase gerenciarPlanoUseCase(
@@ -108,8 +80,6 @@ public class AssinaturaFaturamentoConfig {
         return new ConsultarResumoFinanceiroUseCase(
                 cobrancaRepositorio, planoRepositorio, classificacaoInadimplenciaService);
     }
-
-    // ── Seed de planos ───────────────────────────────────────────────────────
 
     @Bean
     public CommandLineRunner seedPlanos(IPlanoRepositorio planoRepositorio) {

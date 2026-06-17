@@ -5,12 +5,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato.CanalCon
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Projeção (read-model) de um responsável secundário cadastrado no contexto
- * RelacaoTutor, exposta pela porta {@link IResponsavelSecundarioRepositorio}. Traz
- * o necessário ao acionamento: a identidade, o nome, a ordem de prioridade
- * (crescente — menor é acionado primeiro, RN 4) e os canais de contato disponíveis.
- */
 public final class ResponsavelSecundario {
 
     private final ResponsavelSecundarioId id;

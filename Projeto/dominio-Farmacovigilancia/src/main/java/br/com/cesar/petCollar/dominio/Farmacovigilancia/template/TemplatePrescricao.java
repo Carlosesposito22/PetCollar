@@ -8,11 +8,6 @@ import br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo.Frequencia;
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo.MedicamentoId;
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo.ViaAdministracao;
 
-/**
- * Conjunto pré-configurado de itens de prescrição (Gastroproteção, Antiemético,
- * Antibiótico Amplo Espectro etc) que o médico pode aplicar com 1 clique.
- * O agregado fica em memória — é populado por seed e nunca é editado pela UI.
- */
 public final class TemplatePrescricao {
 
     private final TemplatePrescricaoId id;

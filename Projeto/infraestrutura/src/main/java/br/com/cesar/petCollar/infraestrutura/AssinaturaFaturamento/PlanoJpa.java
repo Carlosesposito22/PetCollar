@@ -11,10 +11,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA do agregado {@link Plano}. Id é persistido como String
- * (valor do PlanoId, gerado no domínio); valor monetário como NUMERIC(10,2).
- */
 @Entity
 @Table(name = "planos")
 public class PlanoJpa {

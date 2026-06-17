@@ -2,11 +2,6 @@ package br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano;
 
 import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 
-/**
- * Agregado Plano (F-07). Representa o catálogo de planos comercializados pela
- * clínica — nome comercial + valor da mensalidade. Identidade compartilhada via
- * {@link PlanoId} para permitir referências de outros contextos sem dependência.
- */
 public class Plano {
 
     private final PlanoId id;

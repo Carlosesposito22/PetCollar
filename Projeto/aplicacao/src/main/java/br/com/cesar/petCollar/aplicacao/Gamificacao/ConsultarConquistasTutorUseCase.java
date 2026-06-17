@@ -16,12 +16,6 @@ import br.com.cesar.petCollar.dominio.Gamificacao.conquista.IProgressoBadgeRepos
 import br.com.cesar.petCollar.dominio.Gamificacao.conquista.ProgressoBadge;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Consolida o painel de conquistas do tutor: catálogo de badges, as já
- * conquistadas, o progresso das quantitativas em andamento e o tempo de
- * assinatura — derivado da cobrança mais antiga (RN-108: badges de fidelidade
- * dependem do tempo de assinatura ativo).
- */
 public class ConsultarConquistasTutorUseCase {
 
     private final IBadgeRepositorio badgeRepositorio;
@@ -72,7 +66,6 @@ public class ConsultarConquistasTutorUseCase {
                 .orElse(0);
     }
 
-    /** Saída do caso de uso, ainda em termos de tipos de domínio. */
     public record Resultado(int tempoAssinaturaMeses,
                             List<Badge> badges,
                             Map<String, ConquistaTutor> conquistasPorBadge,

@@ -10,10 +10,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Porte;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Racao;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RacaoId;
 
-/**
- * Caso de uso do admin: atualiza os campos editáveis de uma ração existente.
- * Não muda o status ativo/desativada — para isso há use cases dedicados.
- */
 public class AtualizarRacaoUseCase {
 
     private final IRacaoRepositorio repositorio;

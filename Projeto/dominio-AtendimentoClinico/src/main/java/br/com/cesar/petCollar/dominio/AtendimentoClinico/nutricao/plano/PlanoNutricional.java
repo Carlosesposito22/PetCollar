@@ -13,17 +13,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Agregado raiz do Plano Nutricional (F-11). Possui uma máquina de estados de
- * dois passos: {@link StatusPlanoNutricional#RASCUNHO RASCUNHO} (o médico ajusta
- * livremente) → {@link StatusPlanoNutricional#FINALIZADO FINALIZADO} (assinado
- * digitalmente, imutável — RN 8).
- *
- * <p>O cálculo da NEM nunca é persistido como número solto: ele é sempre
- * recalculado pela cadeia de Decorators a partir dos {@link ParametrosPaciente}.
- * Quando finaliza, congelamos o {@link ResultadoNEM} junto com a assinatura
- * para preservar o registro histórico.
- */
 public class PlanoNutricional {
 
     private final PlanoNutricionalId id;
@@ -39,22 +28,14 @@ public class PlanoNutricional {
     private StatusPlanoNutricional status;
     private LocalDateTime atualizadoEm;
 
-    // Ração escolhida do catálogo (opcional) — quando vinculada, a densidade
-    // calórica dos {@link ParametrosPaciente} deve refletir a densidade da ração.
     private RacaoId racaoId;
 
-    // Justificativa exigida quando a divergência peso atual ↔ ideal ultrapassa
-    // {@link #LIMIAR_DIVERGENCIA_JUSTIFICATIVA}% (RN reforçada).
     private String justificativaDivergencia;
 
-    // Snapshot do cálculo + assinatura — preenchidos só após finalizar.
     private ResultadoNEM resultadoFinalizado;
     private AssinaturaDigital assinatura;
 
-    /** Acima desta divergência, exige justificativa clínica para finalizar. */
     public static final BigDecimal LIMIAR_DIVERGENCIA_JUSTIFICATIVA = new BigDecimal("30");
-
-    // ── Construtor de CRIAÇÃO ────────────────────────────────────────────────
 
     public PlanoNutricional(PlanoNutricionalId id, PacienteId pacienteId,
                             TutorId tutorId, MedicoId medicoResponsavel,
@@ -76,8 +57,6 @@ public class PlanoNutricional {
         this.criadoEm = LocalDateTime.now();
         this.atualizadoEm = this.criadoEm;
     }
-
-    // ── Construtor de RECONSTRUÇÃO (usado pelos adapters JPA) ────────────────
 
     public PlanoNutricional(PlanoNutricionalId id, PacienteId pacienteId,
                             TutorId tutorId, MedicoId medicoResponsavel,
@@ -103,8 +82,6 @@ public class PlanoNutricional {
         this.justificativaDivergencia = justificativaDivergencia;
     }
 
-    // ── Operações de negócio ─────────────────────────────────────────────────
-
     public void alterarParametros(ParametrosPaciente novos) {
         verificarRascunho();
         if (novos == null) throw new IllegalArgumentException("Parâmetros são obrigatórios.");
@@ -126,7 +103,6 @@ public class PlanoNutricional {
         this.atualizadoEm = LocalDateTime.now();
     }
 
-    /** Vincula uma ração do catálogo ao plano (opcional). */
     public void vincularRacao(RacaoId racaoId) {
         verificarRascunho();
         this.racaoId = racaoId;
@@ -139,11 +115,6 @@ public class PlanoNutricional {
         this.atualizadoEm = LocalDateTime.now();
     }
 
-    /**
-     * Registra a justificativa clínica para divergência de peso superior ao
-     * {@link #LIMIAR_DIVERGENCIA_JUSTIFICATIVA limiar}. Texto vazio remove a
-     * justificativa anterior.
-     */
     public void registrarJustificativaDivergencia(String justificativa) {
         verificarRascunho();
         this.justificativaDivergencia = justificativa == null || justificativa.isBlank()
@@ -152,7 +123,6 @@ public class PlanoNutricional {
         this.atualizadoEm = LocalDateTime.now();
     }
 
-    /** Divergência percentual entre peso atual e ideal, em valor absoluto. */
     public BigDecimal divergenciaPercentual() {
         BigDecimal pesoIdeal = parametros.pesoIdealKg();
         if (pesoIdeal == null || pesoIdeal.signum() == 0) return BigDecimal.ZERO;
@@ -161,16 +131,6 @@ public class PlanoNutricional {
                 .divide(pesoIdeal, 2, RoundingMode.HALF_UP);
     }
 
-    /**
-     * Finaliza com a assinatura digital — torna o plano imutável (RN 8).
-     * Antes de assinar, verifica três invariantes clínicas reforçadas:
-     * <ol>
-     *   <li>se houver comorbidade, exige ao menos uma observação;</li>
-     *   <li>se divergência peso atual ↔ ideal &gt; {@link #LIMIAR_DIVERGENCIA_JUSTIFICATIVA}%,
-     *       exige justificativa registrada;</li>
-     *   <li>apenas o médico responsável pode assinar.</li>
-     * </ol>
-     */
     public void finalizar(MedicoId medicoQueAssina, String imagemAssinaturaBase64) {
         verificarRascunho();
         if (medicoQueAssina == null)
@@ -210,12 +170,6 @@ public class PlanoNutricional {
                     "Plano já finalizado é imutável. Crie um novo plano para ajustes.");
     }
 
-    /**
-     * Marca este plano como SUBSTITUIDO. Só faz sentido em planos
-     * FINALIZADOS — disparado quando o médico finaliza um novo plano para o
-     * mesmo paciente. Preserva o snapshot histórico (assinatura, parâmetros,
-     * resultado), apenas troca o status para indicar que não é mais o vigente.
-     */
     public void marcarComoSubstituido() {
         if (status != StatusPlanoNutricional.FINALIZADO)
             throw new IllegalStateException(
@@ -224,7 +178,6 @@ public class PlanoNutricional {
         this.atualizadoEm = LocalDateTime.now();
     }
 
-    /** Representação textual estável usada para gerar o hash da assinatura. */
     private String resumoParaHash() {
         StringBuilder sb = new StringBuilder()
                 .append("plano=").append(id.getValor())
@@ -243,18 +196,11 @@ public class PlanoNutricional {
         return sb.toString();
     }
 
-    /**
-     * Calcula a NEM sob demanda. Se o plano está finalizado, devolve o
-     * resultado fixado no momento da assinatura (RN 8 — imutabilidade
-     * histórica). Caso contrário, recalcula a partir dos parâmetros atuais.
-     */
     public ResultadoNEM resultadoAtual() {
         if (status == StatusPlanoNutricional.FINALIZADO && resultadoFinalizado != null)
             return resultadoFinalizado;
         return ResultadoNEM.calcular(parametros);
     }
-
-    // ── Getters ──────────────────────────────────────────────────────────────
 
     public PlanoNutricionalId getId()                  { return id; }
     public PacienteId getPacienteId()                  { return pacienteId; }

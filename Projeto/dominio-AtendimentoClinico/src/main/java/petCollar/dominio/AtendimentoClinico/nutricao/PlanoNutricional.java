@@ -17,9 +17,6 @@ public class PlanoNutricional {
     private final LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
 
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-    // CONSTRUTOR DE CRIAÇÃO — auto-calcula tudo e define timestamps
-    // ════════════════════════════════════════════════════════════════════════════════════════════
     public PlanoNutricional(PlanoNutricionalId id, String pacienteId, PesoIdeal pesoIdeal,
                             NivelAtividade nivelAtividade, List<Comorbidade> comorbidades) {
         if (id == null)
@@ -37,9 +34,6 @@ public class PlanoNutricional {
         this.nivelAtividade = nivelAtividade;
         this.comorbidades = comorbidades != null ? List.copyOf(comorbidades) : List.of();
 
-        // ────────────────────────────────────────────────────────────────────────────────────────
-        // Calcular Resultado NEM via serviço
-        // ────────────────────────────────────────────────────────────────────────────────────────
         CalculoNEMService calculoNEMService = new CalculoNEMService();
         double kcalDiarias = calculoNEMService.calcularNEMTotal(
             pesoIdeal,
@@ -47,37 +41,24 @@ public class PlanoNutricional {
             this.comorbidades
         );
 
-        // RN-130: Calcular gramas com densidade energética padrão (3.5 kcal/g)
         double gramasDiarias = calculoNEMService.calcularGramasDiarias(kcalDiarias, 3.5);
 
         this.resultadoNEM = new ResultadoNEM(
             kcalDiarias,
             gramasDiarias,
-            2,  // Número de refeições por dia padrão
-            null  // Data prevista será null (pode ser calculada em futuro com taxa de ganho/perda)
+            2,
+            null
         );
 
-        // ────────────────────────────────────────────────────────────────────────────────────────
-        // Gerar Cronograma de Transição
-        // ────────────────────────────────────────────────────────────────────────────────────────
         GeracaoCronogramaTransicaoService cronogramaService = new GeracaoCronogramaTransicaoService();
         this.cronogramaTransicao = cronogramaService.gerarCronograma7Dias();
 
-        // ────────────────────────────────────────────────────────────────────────────────────────
-        // Analisar Divergência e Gerar Alerta
-        // ────────────────────────────────────────────────────────────────────────────────────────
         AnaliseComparativaPesoService analiseService = new AnaliseComparativaPesoService();
         this.alertaManejoCritico = analiseService.analisarDivergencia(pesoIdeal);
 
-        // ────────────────────────────────────────────────────────────────────────────────────────
-        // Timestamps
-        // ────────────────────────────────────────────────────────────────────────────────────────
         this.criadoEm = LocalDateTime.now();
     }
 
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-    // CONSTRUTOR DE RECONSTRUÇÃO — todos os campos para carregar da persistência
-    // ════════════════════════════════════════════════════════════════════════════════════════════
     public PlanoNutricional(PlanoNutricionalId id, String pacienteId, PesoIdeal pesoIdeal,
                             NivelAtividade nivelAtividade, List<Comorbidade> comorbidades,
                             ResultadoNEM resultadoNEM, CronogramaTransicao cronogramaTransicao,
@@ -95,9 +76,6 @@ public class PlanoNutricional {
         this.atualizadoEm = atualizadoEm;
     }
 
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-    // GETTERS (sem setters — plano é imutável conforme RN-134)
-    // ════════════════════════════════════════════════════════════════════════════════════════════
     public PlanoNutricionalId getId() {
         return id;
     }

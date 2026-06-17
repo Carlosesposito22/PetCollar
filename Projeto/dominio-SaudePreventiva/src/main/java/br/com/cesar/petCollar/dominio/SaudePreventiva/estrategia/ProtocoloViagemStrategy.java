@@ -2,11 +2,6 @@ package br.com.cesar.petCollar.dominio.SaudePreventiva.estrategia;
 
 import java.time.LocalDate;
 
-/**
- * Strategy concreta: Protocolo de Viagem.
- * Aplica intervalo de 30 dias — usado em viagens internacionais ou regiões
- * de risco onde a imunização prévia exige séries de doses mais curtas.
- */
 public class ProtocoloViagemStrategy implements ICalculoProximaDoseStrategy {
 
     private static final int INTERVALO_DIAS = 30;

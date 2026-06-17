@@ -6,12 +6,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.Consulta
 
 import java.util.List;
 
-/**
- * Caso de uso que consulta as diretivas de consentimento do tutor para um
- * paciente (RN 10), retornando as condutas clínicas autorizadas previamente.
- * Usado durante a execução do protocolo de inacessibilidade para garantir que
- * só condutas autorizadas sejam aplicadas.
- */
 public class ConsultarDiretivasConsentimentoUseCase {
 
     private final ConsultaDiretivaConsentimentoService consultaService;

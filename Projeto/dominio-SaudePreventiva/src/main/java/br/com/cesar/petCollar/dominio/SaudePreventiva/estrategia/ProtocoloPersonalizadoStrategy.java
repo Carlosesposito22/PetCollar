@@ -2,11 +2,6 @@ package br.com.cesar.petCollar.dominio.SaudePreventiva.estrategia;
 
 import java.time.LocalDate;
 
-/**
- * Strategy concreta: Protocolo Personalizado.
- * O intervalo em dias é definido pelo médico veterinário no momento da criação
- * do ciclo vacinal, permitindo protocolos específicos não cobertos pelos demais.
- */
 public class ProtocoloPersonalizadoStrategy implements ICalculoProximaDoseStrategy {
 
     private final int intervaloDias;

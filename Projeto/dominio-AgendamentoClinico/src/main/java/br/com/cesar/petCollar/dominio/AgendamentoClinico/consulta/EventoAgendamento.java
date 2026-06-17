@@ -2,10 +2,6 @@ package br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta;
 
 import java.time.LocalDateTime;
 
-/**
- * Subentidade do agregado {@link Consulta}. Cada operação relevante (criar,
- * confirmar, remarcar, cancelar, realizar) gera um evento auditável (RN 19).
- */
 public final class EventoAgendamento {
 
     private final TipoEventoAgendamento tipo;

@@ -5,10 +5,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Tratamento de erros do slice RelacaoTutor (§7.3): argumento inválido vira
- * 400, conflito de regra de negócio vira 409. Escopo restrito a este pacote.
- */
 @RestControllerAdvice(basePackages = "br.com.cesar.petCollar.apresentacao.RelacaoTutor")
 public class IndicacaoExceptionHandler {
 

@@ -4,10 +4,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * RN-143, RN-144, RN-145
- * Calcula a data de fim do tratamento e gera os slots horários de administração.
- */
 public class CronogramaAdministracaoService {
 
     private final IMedicamentoRepositorio medicamentoRepositorio;

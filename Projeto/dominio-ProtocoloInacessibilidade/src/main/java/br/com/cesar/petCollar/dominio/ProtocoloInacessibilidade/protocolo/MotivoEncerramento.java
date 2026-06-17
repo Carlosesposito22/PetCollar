@@ -2,11 +2,6 @@ package br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo;
 
 import java.util.Objects;
 
-/**
- * Value Object que descreve por que um {@link ProtocoloInacessibilidade} foi
- * encerrado: o {@link TipoEncerramento} (sucesso com tutor, sucesso com
- * secundário, esgotamento ou intervenção manual) e um detalhe textual livre.
- */
 public final class MotivoEncerramento {
 
     private final TipoEncerramento tipo;

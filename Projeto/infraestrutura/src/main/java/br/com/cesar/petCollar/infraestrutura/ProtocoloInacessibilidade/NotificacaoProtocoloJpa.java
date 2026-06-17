@@ -9,12 +9,6 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
-/**
- * Entidade JPA que persiste cada notificação enviada durante a execução do protocolo
- * de inacessibilidade (RN 16 — auditabilidade). Ids e enums são strings simples;
- * sem relação JPA com {@link ProtocoloInacessibilidadeJpa} — chave estrangeira
- * implícita via {@code protocoloId} (§6.2 do guia).
- */
 @Entity
 @Table(name = "notificacoes_protocolo")
 public class NotificacaoProtocoloJpa {
@@ -35,7 +29,7 @@ public class NotificacaoProtocoloJpa {
     private String corpo;
 
     @Column(nullable = false)
-    private String criticidade; // NivelCriticidade.name()
+    private String criticidade;
 
     @Column(nullable = false)
     private LocalDateTime registradoEm;

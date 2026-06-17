@@ -12,11 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Repositório em memória do agregado, usado nos cenários BDD para que o estado
- * persista entre as chamadas de serviço (sem banco, sem Spring). Os demais
- * colaboradores externos continuam mockados com Mockito.
- */
 class ProtocoloRepositorioFake implements IProtocoloInacessibilidadeRepositorio {
 
     private final Map<String, ProtocoloInacessibilidade> dados = new LinkedHashMap<>();

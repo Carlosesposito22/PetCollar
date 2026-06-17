@@ -16,10 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Entidade JPA que persiste as condutas autorizadas pelo tutor para um
- * paciente (porta IDiretivaConsentimentoRepositorio).
- */
 @Entity
 @Table(name = "diretivas_consentimento")
 public class DiretivaConsentimentoJpa {

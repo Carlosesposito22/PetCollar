@@ -32,20 +32,12 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 
-/**
- * Estado compartilhado entre os passos BDD (injetado via picocontainer). Reúne
- * repositórios em memória (estado persiste entre chamadas), portas externas
- * mockadas com Mockito, os serviços de domínio reais e os objetos manipulados pelos
- * cenários.
- */
 public class ContextoCenario {
 
-    // ── Repositórios em memória (estado real entre passos) ────────────────────
     public final ProtocoloRepositorioFake protocoloRepositorio = new ProtocoloRepositorioFake();
     public final ConfiguracaoProtocoloRepositorioFake configuracaoRepositorio =
         new ConfiguracaoProtocoloRepositorioFake();
 
-    // ── Portas externas (mockadas) ────────────────────────────────────────────
     public final IConsultaAtendimento atendimentos = Mockito.mock(IConsultaAtendimento.class);
     public final IResponsavelSecundarioRepositorio responsaveis =
         Mockito.mock(IResponsavelSecundarioRepositorio.class);
@@ -54,11 +46,9 @@ public class ContextoCenario {
     public final IServicoCanalContato canalContato = Mockito.mock(IServicoCanalContato.class);
     public final IServicoNotificacao notificacao = Mockito.mock(IServicoNotificacao.class);
 
-    // ── Serviços de domínio (reais) ───────────────────────────────────────────
     public final AtivacaoProtocoloService ativacaoService =
         new AtivacaoProtocoloService(protocoloRepositorio, configuracaoRepositorio, atendimentos, notificacao);
 
-    // Template Method — uma etapa concreta por fase do protocolo, mais o orquestrador.
     public final EtapaContatoTutorService etapaTutor =
         new EtapaContatoTutorService(protocoloRepositorio, notificacao, configuracaoRepositorio, canalContato);
     public final EtapaContatoResponsaveisSecundariosService etapaSecundarios =
@@ -73,12 +63,10 @@ public class ContextoCenario {
     public final ConsultaStatusProtocoloService statusService =
         new ConsultaStatusProtocoloService(protocoloRepositorio);
 
-    // ── Identidades fixas do cenário ──────────────────────────────────────────
     public final AtendimentoId atendimentoId = AtendimentoId.gerar();
     public final PacienteId pacienteId = PacienteId.gerar();
     public final TutorId tutorId = TutorId.gerar();
 
-    // ── Estado mutável ────────────────────────────────────────────────────────
     public ConfiguracaoProtocolo configuracao;
     public ProtocoloInacessibilidade protocolo;
     public TentativaContato ultimaTentativa;
@@ -89,16 +77,13 @@ public class ContextoCenario {
     public Exception excecao;
 
     public ContextoCenario() {
-        // Por padrão, todo canal não responde — os cenários sobrescrevem para sucesso.
+
         lenient().when(canalContato.contatar(any(), any(), any()))
             .thenReturn(ResultadoContato.semResposta("Sem resposta."));
-        // Por padrão, não há responsáveis secundários cadastrados.
+
         lenient().when(responsaveis.listarPorPaciente(any())).thenReturn(List.of());
     }
 
-    // ── Auxiliares de domínio ─────────────────────────────────────────────────
-
-    /** Configuração padrão usada na maioria dos cenários: tempo 15min, TELEFONE→SMS→EMAIL, 2 por canal, 4 níveis. */
     public ConfiguracaoProtocolo configuracaoPadrao() {
         ConfiguracaoProtocolo config = new ConfiguracaoProtocolo(
             ConfiguracaoProtocoloId.gerar(), 15,
@@ -111,7 +96,6 @@ public class ContextoCenario {
         return config;
     }
 
-    /** Cria, ativa e persiste um protocolo (status ATIVADO). */
     public ProtocoloInacessibilidade protocoloAtivado() {
         if (configuracao == null) configuracaoPadrao();
         ProtocoloInacessibilidade p = new ProtocoloInacessibilidade(
@@ -122,7 +106,6 @@ public class ContextoCenario {
         return p;
     }
 
-    /** Protocolo já pronto para escalonar: tutor e secundários acionados (RN 5 satisfeita). */
     public ProtocoloInacessibilidade protocoloProntoParaEscalonar() {
         ProtocoloInacessibilidade p = protocoloAtivado();
         p.iniciarTentativasTutor();

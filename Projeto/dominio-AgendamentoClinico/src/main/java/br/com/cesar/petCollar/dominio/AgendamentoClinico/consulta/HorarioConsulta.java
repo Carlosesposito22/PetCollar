@@ -4,11 +4,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Value Object que representa a janela de tempo de uma consulta (início e fim).
- * Responsável por responder sobre sobreposição (conflito de agenda) e antecedência
- * mínima de remarcação/cancelamento (RN 16).
- */
 public final class HorarioConsulta {
 
     private final LocalDateTime inicio;
@@ -25,14 +20,12 @@ public final class HorarioConsulta {
         this.fim = fim;
     }
 
-    /** Dois horários se sobrepõem quando cada um inicia antes do fim do outro. */
     public boolean sobrepoeCom(HorarioConsulta outro) {
         if (outro == null)
             throw new IllegalArgumentException("Horário de comparação não pode ser nulo.");
         return this.inicio.isBefore(outro.fim) && outro.inicio.isBefore(this.fim);
     }
 
-    /** Antecedência, em horas, entre o instante informado e o início da consulta. */
     public long calcularAntecedenciaEmHoras(LocalDateTime agora) {
         if (agora == null)
             throw new IllegalArgumentException("Instante de referência não pode ser nulo.");

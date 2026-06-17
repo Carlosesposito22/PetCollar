@@ -9,10 +9,6 @@ import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.BeneficioCatalog
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.IBeneficioCatalogoRepositorio;
 import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 
-/**
- * Adapter JPA da interface de domínio {@link IBeneficioCatalogoRepositorio}.
- * Traduz domínio ↔ entidade via {@code fromDomain}/{@code toDomain} (§6.4).
- */
 @Repository
 public class BeneficioCatalogoRepositorioJpa implements IBeneficioCatalogoRepositorio {
 

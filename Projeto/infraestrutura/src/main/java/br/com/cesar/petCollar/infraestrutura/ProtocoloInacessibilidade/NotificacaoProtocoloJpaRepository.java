@@ -7,6 +7,5 @@ import java.util.List;
 public interface NotificacaoProtocoloJpaRepository
         extends JpaRepository<NotificacaoProtocoloJpa, String> {
 
-    /** RN 16 — notificações do protocolo do mais recente ao mais antigo. */
     List<NotificacaoProtocoloJpa> findByProtocoloIdOrderByRegistradoEmDesc(String protocoloId);
 }

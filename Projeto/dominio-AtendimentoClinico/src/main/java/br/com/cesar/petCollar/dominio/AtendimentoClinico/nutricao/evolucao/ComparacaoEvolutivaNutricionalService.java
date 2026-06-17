@@ -7,12 +7,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.PlanoNut
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.ResultadoNEM;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.StatusPlanoNutricional;
 
-/**
- * Service de domínio que calcula a {@link EvolucaoNutricional} entre dois
- * planos finalizados. Stateless — apenas combina valores dos snapshots.
- *
- * <p>Limiar de "estável": variação de peso ≤ 2% do peso anterior.
- */
 public class ComparacaoEvolutivaNutricionalService {
 
     private static final BigDecimal CEM = new BigDecimal("100");
@@ -21,9 +15,7 @@ public class ComparacaoEvolutivaNutricionalService {
     public EvolucaoNutricional comparar(PlanoNutricional anterior, PlanoNutricional atual) {
         if (anterior == null) throw new IllegalArgumentException("Plano anterior é obrigatório.");
         if (atual == null)    throw new IllegalArgumentException("Plano atual é obrigatório.");
-        // A comparação aceita planos FINALIZADO e SUBSTITUIDO — ambos têm
-        // resultado calculado e snapshot histórico. Apenas RASCUNHO é
-        // rejeitado, pois não há ResultadoNEM congelado.
+
         if (anterior.getStatus() == StatusPlanoNutricional.RASCUNHO
                 || atual.getStatus() == StatusPlanoNutricional.RASCUNHO)
             throw new IllegalStateException(

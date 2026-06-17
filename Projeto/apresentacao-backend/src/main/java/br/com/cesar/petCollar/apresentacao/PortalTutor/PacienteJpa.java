@@ -26,7 +26,7 @@ public class PacienteJpa {
     private LocalDate nascimento;
     private Double pesoKg;
     private String sexo;
-    private Boolean infectocontagiosoRecente;   // nullable: coluna adicionada a tabela com dados existentes
+    private Boolean infectocontagiosoRecente;
     private LocalDateTime dataUltimoDiagnostico;
 
     protected PacienteJpa() {}

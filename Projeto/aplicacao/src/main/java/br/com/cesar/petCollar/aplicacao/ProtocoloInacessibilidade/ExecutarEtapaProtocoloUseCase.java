@@ -6,12 +6,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.IProto
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade;
 
-/**
- * Caso de uso que avança o protocolo de inacessibilidade para a próxima etapa
- * (RN 2/4/6). Localiza o protocolo pelo id, delega ao
- * {@link OrquestradorEtapasProtocolo} — que decide qual fase executar conforme
- * a máquina de estados — e devolve o resultado da etapa.
- */
 public class ExecutarEtapaProtocoloUseCase {
 
     private final IProtocoloInacessibilidadeRepositorio protocoloRepositorio;

@@ -128,7 +128,6 @@ public class TutorController {
                         : PlanosPadrao.ID_PLANO_BASICO_MENSAL;
         TutorId tutorId = TutorId.de(tutor.identificador());
 
-        // Verifica se este tutor foi indicado para aplicar 30% na primeira fatura (RN-3)
         Optional<Indicacao> indicacaoPendente = Optional.empty();
         if (tutor.cpf() != null && !tutor.cpf().isBlank()) {
             try {
@@ -144,7 +143,6 @@ public class TutorController {
         contratarPlano.executar(tutorId, planoId, descontoIndicacao);
         provisionarBeneficios.executar(tutorId, planoId);
 
-        // Confirma a conversão: aplica 15% de desconto na próxima fatura do indicador (RN-5)
         indicacaoPendente.ifPresent(ind -> {
             try {
                 programaIndicacaoService.confirmarConversaoManual(ind.getId());
@@ -160,7 +158,7 @@ public class TutorController {
     }
 
     private static String gerarCodigoPix(String identificador) {
-        // Mock: em produção seria o payload BR Code retornado pelo PSP.
+
         return "00020126580014BR.GOV.BCB.PIX0136" +
                 Integer.toHexString(identificador.hashCode()) +
                 "5204000053039865802BR5913petCollar SA6009Sao Paulo62070503***6304ABCD";

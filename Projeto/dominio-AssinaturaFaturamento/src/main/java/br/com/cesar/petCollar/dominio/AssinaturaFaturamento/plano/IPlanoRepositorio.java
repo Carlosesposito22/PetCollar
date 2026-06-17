@@ -11,7 +11,6 @@ public interface IPlanoRepositorio {
 
     Optional<Plano> buscarPorId(PlanoId id);
 
-    /** Plano padrão usado em demos/contratações simples (ex.: Básico Mensal). */
     Optional<Plano> buscarPorNome(String nome);
 
     List<Plano> listar();

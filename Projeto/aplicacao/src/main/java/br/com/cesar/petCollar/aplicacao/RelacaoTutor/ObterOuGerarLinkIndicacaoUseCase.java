@@ -4,11 +4,6 @@ import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.LinkIndicacao;
 import br.com.cesar.petCollar.dominio.RelacaoTutor.indicacao.ProgramaIndicacaoService;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Caso de uso de obtenção ou geração do link de indicação do Tutor
- * (RN-1 / RN-2). Garante que apenas Tutores com conta ativa acessam o painel
- * e que o link é permanente, delegando ao ProgramaIndicacaoService.
- */
 public class ObterOuGerarLinkIndicacaoUseCase {
 
     private final ProgramaIndicacaoService programaIndicacao;

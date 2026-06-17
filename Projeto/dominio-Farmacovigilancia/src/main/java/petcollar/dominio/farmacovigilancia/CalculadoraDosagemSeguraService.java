@@ -1,9 +1,5 @@
 package petcollar.dominio.farmacovigilancia;
 
-/**
- * RN-137, RN-138, RN-139, RN-140
- * Valida a dose informada contra a dose máxima do medicamento × peso do paciente.
- */
 public class CalculadoraDosagemSeguraService {
 
     private static final double LIMIAR_PROXIMO = 0.80;

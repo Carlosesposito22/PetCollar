@@ -30,13 +30,11 @@ public class PassosVisualizacaoAgenda {
 
     @Dado("o paciente possui consultas registradas na agenda")
     public void pacientePossuiConsultas() {
-        Consulta agendada = novaConsulta();           // status AGENDADA
+        Consulta agendada = novaConsulta();
         Consulta confirmada = novaConsulta();
-        confirmada.confirmar();                        // status CONFIRMADA
+        confirmada.confirmar();
         contexto.consultasDoPaciente = List.of(agendada, confirmada);
 
-        // O adapter real aplica os critérios do FiltroConsulta; aqui reproduzimos esse
-        // contrato sobre a lista do paciente para validar a RN 17.
         when(contexto.consultaRepositorio.listarPorPaciente(eq(contexto.pacienteId), any()))
             .thenAnswer(invocacao -> {
                 FiltroConsulta filtro = invocacao.getArgument(1);

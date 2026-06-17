@@ -17,23 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Etapa 1 do protocolo — tentativa de contato com o <b>tutor principal</b> (RN 2).
- * Subclasse concreta do {@link EtapaProtocoloService Template Method}.
- *
- * <p>Ganchos variantes:
- * <ul>
- *   <li><b>prepararEntrada</b>: a partir de {@code ATIVADO}, inicia as tentativas com o tutor;</li>
- *   <li><b>selecionarDestinatarios</b>: apenas o tutor principal do protocolo;</li>
- *   <li><b>resolverCanaisDeContato</b>: os canais habilitados na configuração vigente,
- *       cada um repetido até o limite de tentativas por canal (RN 2);</li>
- *   <li><b>executarTentativaNoCanal</b>: delega ao {@link IServicoCanalContato};</li>
- *   <li><b>avaliarConclusaoDaEtapa</b>: sucesso encerra o protocolo (RN); esgotados os
- *       canais sem resposta, avança para o acionamento dos responsáveis secundários (RN 4).</li>
- * </ul>
- * A notificação ao tutor a cada tentativa (RN 11), com criticidade {@code BAIXA}
- * (RN 9), é feita pelo passo invariante da superclasse.
- */
 public class EtapaContatoTutorService extends EtapaProtocoloService {
 
     private final IConfiguracaoProtocoloRepositorio configuracaoRepositorio;
@@ -82,7 +65,7 @@ public class EtapaContatoTutorService extends EtapaProtocoloService {
     @Override
     protected List<CanalContato> resolverCanaisDeContato(DestinatarioEtapa destinatario,
                                                          ProtocoloInacessibilidade protocolo) {
-        // RN 2 — ordem dos canais habilitados, cada um até o limite de tentativas por canal.
+
         ConfiguracaoProtocolo config = configuracaoRepositorio.buscarVigente()
             .orElseThrow(() -> new IllegalStateException("Não há configuração de protocolo vigente."));
         List<CanalContato> ordem = new ArrayList<>();
@@ -105,7 +88,7 @@ public class EtapaContatoTutorService extends EtapaProtocoloService {
             protocolo.encerrarComSucesso(MotivoEncerramento.sucessoComTutor("Tutor respondeu ao contato."));
             return;
         }
-        // RN 4 — esgotadas as tentativas com o tutor, passa aos responsáveis secundários.
+
         protocolo.iniciarAcionamentoSecundarios();
     }
 }

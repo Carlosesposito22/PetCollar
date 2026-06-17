@@ -14,16 +14,9 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.Parametr
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.PlanoNutricional;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.ResultadoNEM;
 
-/**
- * Container de DTOs (records) do contexto F-11 — agrupados para evitar 1
- * arquivo por record. Entrada usa o prefixo {@code Requisicao}; saída usa o
- * sufixo {@code DTO} com factory estático {@code de(...)}.
- */
 public final class NutricaoDTOs {
 
     private NutricaoDTOs() {}
-
-    // ── Entrada ──────────────────────────────────────────────────────────────
 
     public record RequisicaoParametrosDTO(
             BigDecimal pesoAtualKg,
@@ -60,10 +53,6 @@ public final class NutricaoDTOs {
 
     public record RequisicaoFinalizarDTO(String imagemAssinaturaBase64) {}
 
-    /**
-     * Carga atômica: tudo que o plano precisa + assinatura num único POST.
-     * Usada pelo botão "Finalizar e Assinar" (não passa por rascunho).
-     */
     public record RequisicaoCriarEFinalizarDTO(
             String pacienteId,
             String tutorId,
@@ -73,8 +62,6 @@ public final class NutricaoDTOs {
             String racaoId,
             String justificativaDivergencia,
             String imagemAssinaturaBase64) {}
-
-    // ── Saída ────────────────────────────────────────────────────────────────
 
     public record ParametrosDTO(
             BigDecimal pesoAtualKg, BigDecimal pesoIdealKg,
@@ -160,8 +147,6 @@ public final class NutricaoDTOs {
         }
     }
 
-    // ── DTOs do catálogo de ração e da recomendação ──────────────────────────
-
     public record RacaoDTO(
             String id, String fabricante, String linha, String descricaoCurta,
             BigDecimal densidadeCaloricaKcalPorKg,
@@ -182,8 +167,6 @@ public final class NutricaoDTOs {
         }
     }
 
-    // ── DTOs da evolução nutricional ────────────────────────────────────────
-
     public record EvolucaoNutricionalDTO(
             LocalDateTime planoAnteriorEm, LocalDateTime planoAtualEm,
             BigDecimal pesoAtualAnteriorKg, BigDecimal pesoAtualNovoKg,
@@ -201,11 +184,6 @@ public final class NutricaoDTOs {
         }
     }
 
-    /**
-     * Contexto mínimo do paciente para a tela de Gestão Nutricional —
-     * resolve o tutorId real e os dados básicos a partir das tabelas já
-     * existentes (sem mexer em endpoints de colegas).
-     */
     public record ContextoPacienteDTO(
             String pacienteId, String tutorId,
             String nomePet, String nomeTutor,
@@ -219,8 +197,6 @@ public final class NutricaoDTOs {
                     r.evolucoes().stream().map(EvolucaoNutricionalDTO::de).toList());
         }
     }
-
-    // ── Conversor compartilhado entrada → domínio ────────────────────────────
 
     public static ParametrosPaciente paraDominio(RequisicaoParametrosDTO dto) {
         return new ParametrosPaciente(

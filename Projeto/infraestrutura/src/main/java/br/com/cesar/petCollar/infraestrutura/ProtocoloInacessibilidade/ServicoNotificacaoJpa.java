@@ -16,12 +16,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Implementação primária da porta {@link IServicoNotificacao} com persistência
- * real em banco de dados (RN 16 — auditabilidade completa). Implementa também
- * {@link IConsultaNotificacaoProtocolo} para que o controller consulte o histórico
- * sem acoplamento direto à infraestrutura.
- */
 @Primary
 @Service
 public class ServicoNotificacaoJpa implements IServicoNotificacao, IConsultaNotificacaoProtocolo {
@@ -34,12 +28,10 @@ public class ServicoNotificacaoJpa implements IServicoNotificacao, IConsultaNoti
         this.repositorio = repositorio;
     }
 
-    // ── IServicoNotificacao ──────────────────────────────────────────────────
-
     @Override
     public void notificar(String destinatarioId, ConteudoNotificacao conteudo,
                           NivelCriticidade criticidade) {
-        // Sem contexto de protocolo: apenas loga — não persiste pois não há chave de auditoria.
+
         log.info("[NOTIFICAÇÃO {} → {}] {} — {}",
             criticidade, destinatarioId, conteudo.getTitulo(), conteudo.getCorpo());
     }
@@ -60,8 +52,6 @@ public class ServicoNotificacaoJpa implements IServicoNotificacao, IConsultaNoti
             criticidade.name(),
             LocalDateTime.now()));
     }
-
-    // ── IConsultaNotificacaoProtocolo ────────────────────────────────────────
 
     @Override
     public List<RegistroNotificacaoProtocolo> listarPorProtocolo(String protocoloId) {

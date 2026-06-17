@@ -4,13 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Subject do padrão Observer: ponto único de publicação de alterações em
- * {@link BeneficioCatalogo}. Desacopla o {@code AlterarConfiguracaoBeneficioUseCase}
- * (Fase 5) dos observadores que reagem à mudança (ex.: sincronização de
- * {@code BeneficioTutor} ativos vinculados). Domínio puro — o wiring dos
- * observadores acontece em {@code BeneficiosPlanoConfig} (CLAUDE.md §6.5).
- */
 public class PublicadorDeAlteracoesBeneficio {
 
     private final List<IObservadorDeAlteracaoBeneficio> observadores = new ArrayList<>();

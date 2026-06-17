@@ -8,12 +8,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Fila de atendimento dinâmica persistida no banco de dados (tabela
- * {@code fila_atendimento}). Mantém a mesma API pública da implementação
- * anterior em memória para não alterar os callers (BuscaTutorController,
- * FilaAtendimentoController, AtendimentoConsultaComFila).
- */
 @Component
 public class FilaAtendimentoEmMemoria {
 

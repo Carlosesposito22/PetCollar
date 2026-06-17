@@ -28,15 +28,6 @@ import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.Plano;
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.servico.SituacaoConta;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Área Financeira do Tutor (F-07). Adapter HTTP fino — toda a regra vive nos
- * use cases de {@code aplicacao.AssinaturaFaturamento} e nos services/agregados
- * de domínio. Aqui só fazemos:
- *  1) extrair o tutor logado do {@link Principal};
- *  2) chamar o use case;
- *  3) converter o resultado em DTOs (records);
- *  4) propagar a SituacaoConta para o {@code UsuarioAutenticavel} (controla login).
- */
 @RestController
 @RequestMapping("/api/tutor/financeiro")
 public class FinanceiroController {
@@ -88,13 +79,6 @@ public class FinanceiroController {
         return resumo(principal);
     }
 
-    // ── Sincronização de status de login (PortalTutor ↔ IdentidadeAcesso) ────
-
-    /**
-     * Reflete a {@link SituacaoConta} calculada por F-07 no {@code StatusConta}
-     * do usuário autenticável — é isso que controla o bloqueio de login (RN 7).
-     * PENDENTE da contratação inicial é preservado: não rebaixa.
-     */
     private void sincronizarStatusContaDoTutor(TutorId tutorId, SituacaoConta situacao) {
         usuarioRepositorio.buscar(Perfil.TUTOR, tutorId.getValor()).ifPresent(tutor -> {
             if (tutor.status() == StatusConta.PENDENTE) return;
@@ -102,7 +86,7 @@ public class FinanceiroController {
                 case ATIVA        -> StatusConta.ATIVA;
                 case INADIMPLENTE -> StatusConta.INADIMPLENTE;
                 case SUSPENSA     -> StatusConta.SUSPENSA;
-                case PENDENTE     -> tutor.status(); // sem mudança
+                case PENDENTE     -> tutor.status();
             };
             if (tutor.status() != novo) {
                 tutor.mudarStatus(novo);
@@ -110,8 +94,6 @@ public class FinanceiroController {
             }
         });
     }
-
-    // ── DTOs ─────────────────────────────────────────────────────────────────
 
     public record PlanoDTO(String id, String nome, BigDecimal valor) {
         static PlanoDTO de(Plano p) {
@@ -199,8 +181,6 @@ public class FinanceiroController {
                 + "5204000053039865802BR5913petCollar SA6009Sao Paulo62070503***6304"
                 + Integer.toHexString(valor.unscaledValue().intValue()).toUpperCase();
     }
-
-    // ── Exceções ────────────────────────────────────────────────────────────
 
     public static class CobrancaNaoEncontradaException extends RuntimeException {
         public CobrancaNaoEncontradaException() { super("Cobrança não encontrada."); }

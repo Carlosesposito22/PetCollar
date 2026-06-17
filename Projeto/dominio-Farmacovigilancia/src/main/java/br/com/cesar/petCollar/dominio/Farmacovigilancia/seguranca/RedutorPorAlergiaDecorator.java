@@ -5,12 +5,6 @@ import java.util.Set;
 
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo.Medicamento;
 
-/**
- * Camada de bloqueio total: se o paciente é alérgico a qualquer componente
- * do medicamento, a dose máxima segura colapsa para zero — o que dispara
- * uma violação BLOQUEIO pelo validador. É a defesa final contra prescrever
- * princípio ativo declarado como alergia no prontuário.
- */
 public class RedutorPorAlergiaDecorator extends CalculadoraDoseDecorator {
 
     private final Medicamento medicamento;

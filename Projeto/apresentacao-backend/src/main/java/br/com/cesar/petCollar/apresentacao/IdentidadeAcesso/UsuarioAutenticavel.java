@@ -8,7 +8,6 @@ public class UsuarioAutenticavel {
     private final String senhaHash;
     private StatusConta status;
 
-    // Dados extra opcionais (preenchidos no fluxo de contratação)
     private final String cpf;
     private final String telefone;
     private final String endereco;

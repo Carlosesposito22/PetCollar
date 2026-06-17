@@ -36,11 +36,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Endpoints de agendamento (consulta inicial e retorno), remarcação, cancelamento e
- * visualização da agenda do tutor (RN 17). Apenas traduz DTO ↔ domínio e delega aos
- * UseCases; as exceções sobem para o {@link AgendamentoExceptionHandler}.
- */
 @RestController
 @RequestMapping("/api/agendamentos")
 public class AgendamentoController {
@@ -92,8 +87,7 @@ public class AgendamentoController {
             EspecialidadeId.de(req.especialidadeId()),
             MotivoConsulta.de(req.motivo()),
             new HorarioConsulta(req.inicio(), req.fim()));
-        // Gateia a consulta pelo benefício do plano: debita 1 uso (respeitando
-        // carência e limite) antes de agendar; devolve o uso se o agendamento falhar.
+
         consumirBeneficio.consumir(tutorId, Categoria.CONSULTA, CONSULTA_INDISPONIVEL);
         try {
             Consulta consulta = agendarInicialUseCase.executar(requisicao);
@@ -121,12 +115,6 @@ public class AgendamentoController {
             .body(ConsultaDTO.de(retorno, resolverNomeMedico(retorno.getMedicoId())));
     }
 
-    /**
-     * Médico finaliza a consulta após o atendimento (RN 7/8). Confirma a consulta se
-     * ainda estiver AGENDADA, marca como REALIZADA e, conforme a escolha do médico,
-     * transiciona para AGUARDANDO_RETORNO ou EXAMES_SOLICITADOS, tornando o retorno
-     * visível para agendamento pelo tutor.
-     */
     @PatchMapping("/{id}/finalizar")
     public ResponseEntity<ConsultaDTO> finalizar(@PathVariable String id,
                                                  @RequestBody RequisicaoFinalizarConsultaDTO req) {
@@ -134,16 +122,14 @@ public class AgendamentoController {
         Consulta consulta = consultaRepositorio.buscarPorId(consultaId)
             .orElseThrow(() -> new IllegalArgumentException("Consulta não encontrada: " + id));
 
-        // Aceita tanto AGENDADA quanto CONFIRMADA: se o médico atendeu, confirma implicitamente.
         if (consulta.getStatus() == StatusConsulta.AGENDADA) {
             consulta.confirmar();
         }
         consulta.marcarComoRealizada();
 
-        // Consultas de RETORNO encerram o ciclo — nunca geram nova elegibilidade de retorno.
         if (consulta.getTipo() == TipoConsulta.RETORNO) {
             consultaRepositorio.salvar(consulta);
-            // Conclui também a consulta original (AGUARDANDO_RETORNO → REALIZADA).
+
             if (consulta.getConsultaOrigemId() != null) {
                 consultaRepositorio.buscarPorId(consulta.getConsultaOrigemId())
                     .ifPresent(origem -> {
@@ -181,7 +167,7 @@ public class AgendamentoController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelar(@PathVariable String id) {
         ConsultaId consultaId = ConsultaId.de(id);
-        // Captura o tutor antes do cancelamento para devolver o uso do benefício.
+
         TutorId tutorId = consultaRepositorio.buscarPorId(consultaId)
             .map(Consulta::getTutorId)
             .orElse(null);

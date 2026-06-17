@@ -2,10 +2,6 @@ package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao;
 
 import java.math.BigDecimal;
 
-/**
- * Porte do paciente, derivado do peso ideal (kg). É usado pela
- * recomendação de ração para filtrar fórmulas específicas.
- */
 public enum Porte {
     PEQUENO, MEDIO, GRANDE;
 

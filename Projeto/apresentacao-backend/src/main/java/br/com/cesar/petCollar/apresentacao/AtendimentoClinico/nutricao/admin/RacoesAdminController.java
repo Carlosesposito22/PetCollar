@@ -26,11 +26,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Porte;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Racao;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RacaoId;
 
-/**
- * F-11 / Admin — CRUD do catálogo de rações. Protegido pelo SecurityConfig
- * (perfil ADMIN_CLINICA). Devolve {@link RacaoAdminDTO} contendo todas as
- * rações (ativas + desativadas) para o painel administrativo.
- */
 @RestController
 @RequestMapping("/api/admin/nutricao/racoes")
 public class RacoesAdminController {
@@ -80,10 +75,6 @@ public class RacoesAdminController {
         return RacaoAdminDTO.de(atualizada);
     }
 
-    /**
-     * Soft-delete. Retorna no body o número de planos que prescreveram esta
-     * ração, para o frontend mostrar o histórico de impacto.
-     */
     @DeleteMapping("/{racaoId}")
     public ResponseEntity<DesativacaoDTO> desativar(@PathVariable String racaoId) {
         RacaoId id = RacaoId.de(racaoId);
@@ -98,13 +89,10 @@ public class RacoesAdminController {
         return RacaoAdminDTO.de(alterarStatus.reativar(RacaoId.de(racaoId)));
     }
 
-    /** Endpoint auxiliar para o frontend pré-consultar o impacto antes de desativar. */
     @GetMapping("/{racaoId}/impacto")
     public ImpactoDTO impacto(@PathVariable String racaoId) {
         return new ImpactoDTO(alterarStatus.contarPlanosUsando(RacaoId.de(racaoId)));
     }
-
-    // ── DTOs ─────────────────────────────────────────────────────────────────
 
     public record RequisicaoRacaoDTO(
             String fabricante,
@@ -135,8 +123,6 @@ public class RacoesAdminController {
     public record DesativacaoDTO(RacaoAdminDTO racao, long planosAfetados) {}
 
     public record ImpactoDTO(long planosAfetados) {}
-
-    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static Set<FaixaEtaria> parseFaixas(List<String> nomes) {
         if (nomes == null) return EnumSet.noneOf(FaixaEtaria.class);

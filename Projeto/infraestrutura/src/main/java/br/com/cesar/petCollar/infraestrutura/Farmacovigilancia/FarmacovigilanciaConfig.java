@@ -31,24 +31,15 @@ import br.com.cesar.petCollar.dominio.Farmacovigilancia.template.TemplatePrescri
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.template.TemplatePrescricaoId;
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.validacao.ValidadorPrescricao;
 
-/**
- * Wiring canônico (§6.5 do CLAUDE.md) do contexto F-12. Restringe a varredura
- * JPA ao subpacote {@code Farmacovigilancia} e popula o catálogo de
- * medicamentos + matriz de interações + 3 templates no boot do backend.
- */
 @Configuration
 @EntityScan(basePackages = "br.com.cesar.petCollar.infraestrutura.Farmacovigilancia")
 @EnableJpaRepositories(basePackages = "br.com.cesar.petCollar.infraestrutura.Farmacovigilancia")
 public class FarmacovigilanciaConfig {
 
-    // ── Service de domínio ───────────────────────────────────────────────────
-
     @Bean
     public ValidadorPrescricao validadorPrescricao(IMedicamentoRepositorio medicamentos) {
         return new ValidadorPrescricao(medicamentos);
     }
-
-    // ── Use cases ────────────────────────────────────────────────────────────
 
     @Bean
     public ValidarPrescricaoUseCase validarPrescricaoUseCase(ValidadorPrescricao v) {
@@ -76,8 +67,6 @@ public class FarmacovigilanciaConfig {
         return new ConsultarPrescricaoUseCase(r);
     }
 
-    // ── Seeds (idempotentes — só populam tabelas vazias) ─────────────────────
-
     @Bean
     public CommandLineRunner seedFarmacovigilancia(IMedicamentoRepositorio repositorio,
                                                    ITemplatePrescricaoRepositorio templates) {
@@ -91,7 +80,7 @@ public class FarmacovigilanciaConfig {
         if (repositorio.contar() > 0) return;
 
             Map<String, MedicamentoId> ids = new HashMap<>();
-            // Cada chamada aceita: nome, doseMax mg/kg, concentração mg/ml, vias, componentes, manejo, nota
+
             ids.put("omeprazol", criar(repositorio, "Omeprazol",
                     "2.0", "4.0", EnumSet.of(ViaAdministracao.ORAL),
                     Set.of("omeprazol", "benzimidazol"), ManejoAlimentar.JEJUM,
@@ -141,7 +130,6 @@ public class FarmacovigilanciaConfig {
                     Set.of("sucralfato"), ManejoAlimentar.JEJUM,
                     "Administrar pelo menos 2h antes de outros medicamentos orais."));
 
-            // ── Matriz de interação medicamentosa ─────────────────────────────
             repositorio.registrarInteracao(new InteracaoMedicamentosa(
                     ids.get("omeprazol"), ids.get("sucralfato"),
                     InteracaoMedicamentosa.Gravidade.MODERADA,
@@ -172,7 +160,6 @@ public class FarmacovigilanciaConfig {
                                ITemplatePrescricaoRepositorio templates) {
         if (templates.contar() > 0) return;
 
-        // Resolve por nome — catálogo já garantido por seedMedicamentos (mesmo runner).
         Map<String, MedicamentoId> porNome = new HashMap<>();
         for (Medicamento m : medicamentos.listarTodos())
             porNome.put(m.getNome(), m.getId());

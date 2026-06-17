@@ -9,7 +9,6 @@ public class ConquistaTutor {
     private final BadgeId badgeId;
     private final LocalDateTime conquistadoEm;
 
-    // Construtor de CRIAÇÃO
     public ConquistaTutor(ConquistaId id, String tutorId, BadgeId badgeId) {
         if (id == null)
             throw new IllegalArgumentException("ConquistaId não pode ser nulo.");
@@ -23,7 +22,6 @@ public class ConquistaTutor {
         this.conquistadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO
     public ConquistaTutor(ConquistaId id, String tutorId, BadgeId badgeId,
                           LocalDateTime conquistadoEm) {
         this.id = id;

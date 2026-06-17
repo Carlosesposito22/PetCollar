@@ -9,12 +9,6 @@ import br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo.Frequencia;
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo.MedicamentoId;
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo.ViaAdministracao;
 
-/**
- * Item individual de uma {@link Prescricao} — um medicamento com sua
- * dose, duração, via, frequência, horários e notas de cuidado. O VO
- * carrega o {@code doseTotalMg} pré-calculado (dose mg/kg × peso) e o
- * {@code volumeFinalMl} (RN 6) para que o tutor visualize já convertido.
- */
 public record ItemPrescricao(
         MedicamentoId medicamentoId,
         String nomeMedicamento,
@@ -45,10 +39,6 @@ public record ItemPrescricao(
         horarios = horarios == null ? List.of() : Collections.unmodifiableList(List.copyOf(horarios));
     }
 
-    /**
-     * Constrói o item já com dose total e volume calculados a partir do
-     * peso do paciente e da concentração do medicamento.
-     */
     public static ItemPrescricao calcular(MedicamentoId id, String nome,
                                            BigDecimal doseMgPorKg, BigDecimal pesoKg,
                                            BigDecimal concentracaoMgPorMl,

@@ -1,9 +1,5 @@
 package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao;
 
-/**
- * Estágio de vida do paciente, derivado da idade em anos. Filtros simples;
- * regras específicas por espécie poderiam refinar isto no futuro.
- */
 public enum FaixaEtaria {
     FILHOTE, ADULTO, SENIOR;
 

@@ -4,23 +4,17 @@ import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
 import java.time.LocalDateTime;
 
-/**
- * Entidade EventoAuditoria (RN-12).
- * Registra de forma imutável cada etapa relevante do programa de indicação:
- * geração de link, cliques, inscrição, confirmação de pagamento e concessão de bônus.
- */
 public class EventoAuditoria {
 
     private final EventoAuditoriaId id;
     private final TipoEventoAuditoria tipo;
-    /** Tutor envolvido na etapa — nulo se não aplicável. */
+
     private final TutorId tutorId;
-    /** Indicação associada à etapa — nulo se não aplicável. */
+
     private final IndicacaoId indicacaoId;
     private final String descricao;
     private final LocalDateTime timestamp;
 
-    // Construtor de CRIAÇÃO
     public EventoAuditoria(EventoAuditoriaId id, TipoEventoAuditoria tipo,
                            TutorId tutorId, IndicacaoId indicacaoId,
                            String descricao) {
@@ -36,7 +30,6 @@ public class EventoAuditoria {
         this.timestamp = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO — usado pelos adapters de persistência
     public EventoAuditoria(EventoAuditoriaId id, TipoEventoAuditoria tipo,
                            TutorId tutorId, IndicacaoId indicacaoId,
                            String descricao, LocalDateTime timestamp) {

@@ -17,11 +17,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Endpoint que expõe as diretivas de consentimento do tutor para o paciente do
- * protocolo (RN 10). Lista todas as condutas possíveis indicando quais foram
- * autorizadas previamente pelo tutor.
- */
 @RestController
 @RequestMapping("/api/protocolos")
 public class DiretivaConsentimentoController {
@@ -35,10 +30,6 @@ public class DiretivaConsentimentoController {
         this.consultarDiretivasUseCase = consultarDiretivasUseCase;
     }
 
-    /**
-     * RN 10 — retorna todas as condutas clínicas com o status de autorização do
-     * tutor para o paciente do protocolo informado.
-     */
     @GetMapping("/{id}/diretivas")
     public List<DiretivaConsentimentoDTO> listar(@PathVariable String id) {
         ProtocoloInacessibilidade protocolo = protocoloRepositorio.buscarPorId(ProtocoloId.de(id))

@@ -13,14 +13,6 @@ import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.Plano;
 import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Caso de uso F-07 — contratação de plano com confirmação imediata do boleto
- * inicial. Cria a primeira cobrança já como PAGA (representa o pagamento de
- * entrada que disparou a ativação da conta).
- *
- * <p>Idempotente: se o tutor já tiver cobranças, não recria — apenas devolve
- * a 1ª existente.
- */
 public class ContratarPlanoUseCase {
 
     private final IPlanoRepositorio planoRepositorio;
@@ -36,23 +28,16 @@ public class ContratarPlanoUseCase {
         this.cobrancaRepositorio = cobrancaRepositorio;
     }
 
-    /** Contrata o plano sem desconto de indicação. */
     public Cobranca executar(TutorId tutorId, PlanoId planoId) {
         return executar(tutorId, planoId, null);
     }
 
-    /**
-     * Contrata o plano aplicando opcionalmente o desconto de indicação (RN-3).
-     *
-     * @param percentualDesconto fração do valor a descontar (ex.: {@code 0.30} para 30%),
-     *                           ou {@code null} para sem desconto.
-     */
     public Cobranca executar(TutorId tutorId, PlanoId planoId, BigDecimal percentualDesconto) {
         if (tutorId == null) throw new IllegalArgumentException("TutorId é obrigatório.");
         if (planoId == null) throw new IllegalArgumentException("PlanoId é obrigatório.");
 
         if (!cobrancaRepositorio.listarPorTutor(tutorId).isEmpty()) {
-            // Idempotente: tutor já contratou — devolve a primeira existente.
+
             return cobrancaRepositorio.listarPorTutor(tutorId).get(0);
         }
 
@@ -71,7 +56,7 @@ public class ContratarPlanoUseCase {
                 valor, descontoAbsoluto,
                 hoje
         );
-        inicial.registrarPagamento(); // boleto inicial entra já pago
+        inicial.registrarPagamento();
         cobrancaRepositorio.salvar(inicial);
         return inicial;
     }

@@ -101,7 +101,7 @@ public class CicloVacinalSteps {
 
     @Quando("o sistema verifica o status da dose")
     public void sistemaVerificaStatus() {
-        // apenas consulta — sem ação
+
     }
 
     @Então("o status da dose deve ser {string}")

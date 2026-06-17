@@ -9,10 +9,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano.PlanoNut
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Consultas read-only do contexto Nutrição. Usado tanto pelo médico (acessa
- * planos do paciente) quanto pelo tutor (lista de planos finalizados dele).
- */
 public class ConsultarPlanoNutricionalUseCase {
 
     private final IPlanoNutricionalRepositorio repositorio;
@@ -35,7 +31,6 @@ public class ConsultarPlanoNutricionalUseCase {
         return repositorio.listarFinalizadosDoPaciente(pacienteId);
     }
 
-    /** Para o tutor: somente planos ATIVOS (1 por paciente — o vigente). */
     public List<PlanoNutricional> listarAtivosDoTutor(TutorId tutorId) {
         return repositorio.listarAtivosDoTutor(tutorId);
     }
@@ -44,10 +39,6 @@ public class ConsultarPlanoNutricionalUseCase {
         return repositorio.listarFinalizadosDoTutor(tutorId);
     }
 
-    /**
-     * Plano vigente do paciente — usado pelo médico para pré-preencher a
-     * tela e avisar de substituição antes de assinar uma nova prescrição.
-     */
     public Optional<PlanoNutricional> buscarVigenteDoPaciente(PacienteId pacienteId) {
         return repositorio.buscarFinalizadoAtivoDoPaciente(pacienteId);
     }

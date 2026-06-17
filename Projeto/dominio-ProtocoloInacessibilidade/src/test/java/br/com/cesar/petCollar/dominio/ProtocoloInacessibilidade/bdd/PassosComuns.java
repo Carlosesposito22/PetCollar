@@ -12,11 +12,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
-/**
- * Passos compartilhados por mais de uma funcionalidade (montagem de configuração e
- * protocolo, asserções de erro/status e de notificação ao tutor). Mantidos numa
- * única classe para evitar definições de passo duplicadas no glue do Cucumber.
- */
 public class PassosComuns {
 
     private final ContextoCenario contexto;

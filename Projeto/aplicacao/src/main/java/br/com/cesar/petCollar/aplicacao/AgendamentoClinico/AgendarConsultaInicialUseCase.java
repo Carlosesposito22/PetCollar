@@ -4,12 +4,6 @@ import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.Agendamento
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.agendamento.RequisicaoAgendamento;
 import br.com.cesar.petCollar.dominio.AgendamentoClinico.consulta.Consulta;
 
-/**
- * Caso de uso de agendamento de consulta inicial (F-05).
- * Delega ao Template Method {@link AgendamentoConsultaInicialService}, que aplica
- * os passos invariantes (prontuário ativo, disponibilidade, conflito, notificações)
- * e os variantes específicos da consulta inicial (motivo obrigatório — RN 3).
- */
 public class AgendarConsultaInicialUseCase {
 
     private final AgendamentoConsultaInicialService agendamentoService;

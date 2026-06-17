@@ -13,13 +13,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Caso de uso atômico: cria o plano nutricional já com todos os dados +
- * finaliza imediatamente com a assinatura digital. Substitui o fluxo de
- * dois passos (Salvar Rascunho → Finalizar) pelo qual o médico só vê um
- * botão "Finalizar e Assinar". Se a assinatura falhar a validação, nada
- * é persistido — o agregado nunca chega a ir pro banco em estado parcial.
- */
 public class CriarEFinalizarPlanoNutricionalUseCase {
 
     private final IPlanoNutricionalRepositorio repositorio;
@@ -33,9 +26,6 @@ public class CriarEFinalizarPlanoNutricionalUseCase {
     public PlanoNutricional executar(Entrada entrada) {
         if (entrada == null) throw new IllegalArgumentException("Entrada é obrigatória.");
 
-        // Se há um plano FINALIZADO vigente para este paciente, ele será
-        // substituído pelo novo (regra 1-ativo-por-paciente). O anterior
-        // permanece no banco como SUBSTITUIDO para auditoria e histórico.
         repositorio.buscarFinalizadoAtivoDoPaciente(entrada.pacienteId)
                 .ifPresent(anterior -> {
                     anterior.marcarComoSubstituido();

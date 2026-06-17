@@ -4,11 +4,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
 
-/**
- * Valor monetário do plano em reais. Encapsula o {@link BigDecimal} com 2 casas
- * decimais e validação de não-negatividade, evitando a propagação de double pelo
- * domínio.
- */
 public final class ValorMensalidade {
 
     private final BigDecimal valor;

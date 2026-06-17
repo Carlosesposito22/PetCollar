@@ -7,14 +7,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * Adapter JPA de {@link UsuarioRepositorio}. Traduz entre
- * {@link UsuarioAutenticavel} (domínio) e {@link UsuarioJpa} (persistência).
- */
 @Repository
 public class UsuarioRepositorioJpa implements UsuarioRepositorio {
 
-    // Prefixos fixos de matrícula por perfil (regra de negócio de IdentidadeAcesso)
     private static final Map<Perfil, Long> BASE_MATRICULA = Map.of(
             Perfil.RECEPCIONISTA,      100_000L,
             Perfil.MEDICO_VETERINARIO, 200_000L,

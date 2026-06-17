@@ -8,14 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Agregado que define os parâmetros configuráveis do protocolo de inacessibilidade
- * (RN 1, 2, 6), ajustáveis pela recepção/administração. Encapsula o tempo limite de
- * espera pela resposta do tutor, os canais habilitados (na ordem de uso), o
- * intervalo e a quantidade máxima de tentativas por canal, e os níveis de
- * escalonamento habilitados (na ordem de avanço). Mantém uma {@code versao} para
- * preservar o histórico auditável das mudanças.
- */
 public class ConfiguracaoProtocolo {
 
     private final ConfiguracaoProtocoloId id;
@@ -28,7 +20,6 @@ public class ConfiguracaoProtocolo {
     private final LocalDateTime criadaEm;
     private LocalDateTime atualizadaEm;
 
-    // Construtor de CRIAÇÃO.
     public ConfiguracaoProtocolo(ConfiguracaoProtocoloId id, int tempoLimiteEsperaMinutos,
                                  List<CanalContato> canaisHabilitados,
                                  int intervaloEntreTentativasMinutos,
@@ -44,7 +35,6 @@ public class ConfiguracaoProtocolo {
             intervaloEntreTentativasMinutos, quantidadeMaximaTentativasPorCanal, niveisEscalonamento);
     }
 
-    // Construtor de RECONSTRUÇÃO — todos os campos (usado pela infraestrutura).
     public ConfiguracaoProtocolo(ConfiguracaoProtocoloId id, int tempoLimiteEsperaMinutos,
                                  List<CanalContato> canaisHabilitados,
                                  int intervaloEntreTentativasMinutos,
@@ -62,7 +52,6 @@ public class ConfiguracaoProtocolo {
         this.atualizadaEm = atualizadaEm;
     }
 
-    /** Atualiza os parâmetros, valida a consistência e incrementa a versão. */
     public void atualizar(int tempoLimiteEsperaMinutos, List<CanalContato> canaisHabilitados,
                           int intervaloEntreTentativasMinutos, int quantidadeMaximaTentativasPorCanal,
                           List<NivelEscalonamento> niveisEscalonamento) {
@@ -84,7 +73,6 @@ public class ConfiguracaoProtocolo {
         validarConsistencia();
     }
 
-    /** Garante que os parâmetros formam uma configuração utilizável (RN 1, 2, 6). */
     public void validarConsistencia() {
         if (tempoLimiteEsperaMinutos <= 0)
             throw new IllegalArgumentException("O tempo limite de espera deve ser maior que zero.");

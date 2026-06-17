@@ -9,10 +9,6 @@ import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.IPlanoReposito
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.plano.Plano;
 import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 
-/**
- * Adapter JPA da interface de domínio {@link IPlanoRepositorio}. Traduz domínio
- * ↔ entidade via {@code fromDomain}/{@code toDomain} (§6.4 do CLAUDE.md).
- */
 @Repository
 public class PlanoRepositorioJpa implements IPlanoRepositorio {
 

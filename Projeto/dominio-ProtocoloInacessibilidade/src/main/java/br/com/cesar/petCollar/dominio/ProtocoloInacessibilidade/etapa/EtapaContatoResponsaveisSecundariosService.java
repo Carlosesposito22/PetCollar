@@ -18,25 +18,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Etapa 2 do protocolo — acionamento dos <b>responsáveis secundários</b> em ordem
- * de prioridade (RN 4), antes de qualquer escalonamento (RN 5). Subclasse concreta
- * do {@link EtapaProtocoloService Template Method}.
- *
- * <p>Ganchos variantes:
- * <ul>
- *   <li><b>prepararEntrada</b>: normaliza o protocolo até {@code EM_TENTATIVA_SECUNDARIOS},
- *       caso a etapa seja chamada ainda em {@code ATIVADO}/{@code EM_TENTATIVA_TUTOR};</li>
- *   <li><b>selecionarDestinatarios</b>: todos os responsáveis secundários do paciente,
- *       ordenados por prioridade crescente (RN 4);</li>
- *   <li><b>resolverCanaisDeContato</b>: os canais próprios de cada responsável;</li>
- *   <li><b>executarTentativaNoCanal</b>: delega ao {@link IServicoCanalContato};</li>
- *   <li><b>avaliarConclusaoDaEtapa</b>: sucesso encerra o protocolo; esgotados todos
- *       sem resposta, marca o acionamento como concluído para liberar o escalonamento (RN 5).</li>
- * </ul>
- * A notificação a cada responsável, com o mesmo conteúdo do tutor e criticidade
- * {@code MEDIA} (RN 14/RN 9), é feita pelo passo invariante da superclasse.
- */
 public class EtapaContatoResponsaveisSecundariosService extends EtapaProtocoloService {
 
     private final IResponsavelSecundarioRepositorio responsavelRepositorio;
@@ -85,7 +66,7 @@ public class EtapaContatoResponsaveisSecundariosService extends EtapaProtocoloSe
     protected List<DestinatarioEtapa> selecionarDestinatarios(ProtocoloInacessibilidade protocolo) {
         List<ResponsavelSecundario> lista = new ArrayList<>(
             responsavelRepositorio.listarPorPaciente(protocolo.getPacienteId()));
-        lista.sort(Comparator.comparingInt(ResponsavelSecundario::getPrioridade));   // RN 4
+        lista.sort(Comparator.comparingInt(ResponsavelSecundario::getPrioridade));
         return lista.stream().map(DestinatarioEtapa::deResponsavelSecundario).toList();
     }
 
@@ -109,7 +90,7 @@ public class EtapaContatoResponsaveisSecundariosService extends EtapaProtocoloSe
                 MotivoEncerramento.sucessoComSecundario("Responsável secundário respondeu ao contato."));
             return;
         }
-        // RN 5 — esgotados os secundários sem resposta, libera o escalonamento.
+
         protocolo.marcarTodosSecundariosAcionados();
     }
 }

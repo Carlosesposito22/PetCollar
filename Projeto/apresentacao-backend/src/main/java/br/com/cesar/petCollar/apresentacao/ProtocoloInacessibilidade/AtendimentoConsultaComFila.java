@@ -17,19 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Adapter composto da porta {@link IConsultaAtendimento}: combina duas fontes
- * de "atendimento em andamento" —
- * <ol>
- *   <li><b>Fila de espera</b> ({@link FilaAtendimentoEmMemoria}): pacientes que
- *       concluíram a triagem e aguardam chamada. Usa o {@code triagemId} como
- *       {@code atendimentoId}, pois ainda não existe consulta clínica associada.</li>
- *   <li><b>Consultas agendadas/confirmadas</b>: atendimentos com status
- *       {@code AGENDADA} ou {@code CONFIRMADA} na agenda formal.</li>
- * </ol>
- * Anotado com {@code @Primary} para sobrepor o {@code AtendimentoConsultaJpa}
- * da infraestrutura, que só conhece a segunda fonte.
- */
 @Primary
 @Component
 public class AtendimentoConsultaComFila implements IConsultaAtendimento {
@@ -45,14 +32,13 @@ public class AtendimentoConsultaComFila implements IConsultaAtendimento {
 
     @Override
     public Optional<ResumoAtendimento> buscarResumo(AtendimentoId atendimentoId) {
-        // Primeiro tenta encontrar na fila pelo triagemId.
+
         Optional<ResumoAtendimento> daFila = fila.listar().stream()
             .filter(i -> i.triagemId().equals(atendimentoId.getValor()))
             .map(this::toResumo)
             .findFirst();
         if (daFila.isPresent()) return daFila;
 
-        // Fallback: busca na tabela de consultas pelo id.
         return consultaJpa.findById(atendimentoId.getValor())
             .map(ConsultaJpa::toResumoAtendimento);
     }
@@ -61,12 +47,10 @@ public class AtendimentoConsultaComFila implements IConsultaAtendimento {
     public List<ResumoAtendimento> listarEmAndamento() {
         List<ResumoAtendimento> resultado = new ArrayList<>();
 
-        // Pacientes na fila de espera — todos estão ativamente presentes na clínica.
         fila.listar().stream()
             .map(this::toResumo)
             .forEach(resultado::add);
 
-        // Consultas agendadas ou confirmadas (agenda formal).
         consultaJpa.findByStatusIn(List.of("AGENDADA", "CONFIRMADA")).stream()
             .map(ConsultaJpa::toResumoAtendimento)
             .forEach(resultado::add);

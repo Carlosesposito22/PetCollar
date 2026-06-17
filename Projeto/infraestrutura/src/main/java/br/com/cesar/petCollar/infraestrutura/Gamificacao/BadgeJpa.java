@@ -12,10 +12,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA do agregado {@link Badge}. Enums (categoria, raridade) são
- * persistidos como String ({@code name()}/{@code valueOf}, §6.1 do CLAUDE.md).
- */
 @Entity
 @Table(name = "badges")
 public class BadgeJpa {

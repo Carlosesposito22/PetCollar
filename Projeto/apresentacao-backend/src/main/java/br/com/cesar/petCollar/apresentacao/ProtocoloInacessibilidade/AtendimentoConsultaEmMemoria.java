@@ -9,11 +9,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/**
- * Implementação em memória desativada (não é bean Spring). A persistência real é
- * feita por {@code AtendimentoConsultaJpa} na camada de infraestrutura.
- * Mantida apenas como referência/fallback local de desenvolvimento.
- */
 public class AtendimentoConsultaEmMemoria implements IConsultaAtendimento {
 
     private final ConcurrentMap<String, ResumoAtendimento> atendimentos = new ConcurrentHashMap<>();

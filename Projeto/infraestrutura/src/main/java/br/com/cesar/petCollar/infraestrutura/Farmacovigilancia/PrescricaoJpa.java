@@ -29,11 +29,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA do agregado {@link Prescricao}. Coleções (itens, instruções,
- * tags, alergias) são serializadas em TEXT delimitado — evita {@code @Lob}
- * (bug PostgreSQL OID) e mantém leitura em 1 SELECT.
- */
 @Entity
 @Table(name = "prescricoes_farmacovigilancia")
 public class PrescricaoJpa {
@@ -46,16 +41,14 @@ public class PrescricaoJpa {
     @Column(nullable = false) private String medicoResponsavelId;
     @Column(nullable = false, precision = 8, scale = 2) private BigDecimal pesoPacienteKg;
 
-    /** "medId~doseMgPorKg~doseTotalMg~volumeFinalMl~duracaoDias~freq~via~horarios#nota|..."
-     *  (usa '~' como separador de campos porque os horários têm ':'). */
     @Column(nullable = false, columnDefinition = "TEXT") private String itensTexto;
-    /** "nomeMedicamento|nomeMedicamento|..." (paralelo a itensTexto). */
+
     @Column(nullable = false, columnDefinition = "TEXT") private String nomesItens;
-    /** Instruções gerais separadas por '||'. */
+
     @Column(nullable = false, columnDefinition = "TEXT") private String instrucoesTexto;
-    /** Tags clínicas separadas por ','. */
+
     @Column(nullable = false) private String tagsClinicas;
-    /** Alergias consideradas separadas por '|'. */
+
     @Column(nullable = false, columnDefinition = "TEXT") private String alergiasConsideradas;
 
     @Column(nullable = false) private String status;
@@ -122,8 +115,6 @@ public class PrescricaoJpa {
                 dataInicio, dataFim, criadoEm, atualizadoEm);
     }
 
-    // ── Serialização de itens (formato pipe/colon/hash) ───────────────────────
-
     private static String serializarItens(List<ItemPrescricao> itens) {
         StringBuilder sb = new StringBuilder();
         for (ItemPrescricao it : itens) {
@@ -131,8 +122,7 @@ public class PrescricaoJpa {
             String horarios = it.horarios().stream().map(HorarioAdministracao::valor)
                     .collect(Collectors.joining(","));
             String nota = it.notaCuidado() == null ? "" : it.notaCuidado().replace("#", " ").replace("|", "/");
-            // Usa '~' como separador de campos — horários têm ':' e não podem
-            // colidir com o separador.
+
             sb.append(it.medicamentoId().getValor()).append('~')
               .append(it.doseMgPorKg()).append('~')
               .append(it.doseTotalMg()).append('~')

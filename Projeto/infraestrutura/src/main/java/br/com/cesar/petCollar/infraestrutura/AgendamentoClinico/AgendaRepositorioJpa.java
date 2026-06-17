@@ -13,12 +13,6 @@ import java.time.LocalTime;
 import java.util.EnumSet;
 import java.util.List;
 
-/**
- * Adapter JPA de {@link IAgendaRepositorio}. O expediente padrão está
- * hardcoded (segunda a sexta, 08–18h, 30 min) — igual à implementação em
- * memória. Bloqueios pontuais não são persistidos nesta versão:
- * {@link IAgendaRepositorio} não possui método de escrita para eles.
- */
 @Repository
 public class AgendaRepositorioJpa implements IAgendaRepositorio {
 

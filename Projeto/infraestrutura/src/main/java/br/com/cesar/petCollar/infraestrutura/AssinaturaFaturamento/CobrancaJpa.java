@@ -15,12 +15,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA do agregado {@link Cobranca}. Ids de agregados externos (Tutor,
- * Plano) ficam apenas como o valor String do Id, segundo §6.2 do CLAUDE.md.
- * Status NÃO é persistido — é derivado dinamicamente pela entidade de domínio
- * conforme RN 4 ("recalculado a cada acesso").
- */
 @Entity
 @Table(name = "cobrancas")
 public class CobrancaJpa {
@@ -34,7 +28,6 @@ public class CobrancaJpa {
     @Column(nullable = false)
     private String planoId;
 
-    /** Formato yyyy-MM (ex.: 2026-05). */
     @Column(nullable = false, length = 7)
     private String competencia;
 
@@ -49,7 +42,6 @@ public class CobrancaJpa {
 
     private LocalDate dataPagamento;
 
-    /** Juros fixados no momento da quitação (RN 4). Nulo enquanto não paga. */
     @Column(precision = 10, scale = 2)
     private BigDecimal jurosFixados;
 

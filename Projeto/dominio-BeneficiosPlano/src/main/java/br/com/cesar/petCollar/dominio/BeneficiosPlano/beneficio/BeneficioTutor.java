@@ -181,12 +181,6 @@ public class BeneficioTutor {
         this.atualizadoEm = agora;
     }
 
-    /**
-     * Caps {@code usosRestantesPeriodoAtual} to {@code novoLimiteMaximo} when the admin
-     * lowers the catalog quota mid-period — mantém a invariante
-     * {@code usosRestantesPeriodoAtual ≤ limiteUsosPorPeriodo} original e garante
-     * que o tutor não use mais do que o novo teto enquanto o período ainda corre.
-     */
     public void sincronizarLimitePorConfiguracao(int novoLimiteMaximo, LocalDateTime agora) {
         if (novoLimiteMaximo < 0)
             throw new IllegalArgumentException("Novo limite máximo não pode ser negativo.");

@@ -21,23 +21,11 @@ import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.PublicadorDeAlte
 import br.com.cesar.petCollar.dominio.BeneficiosPlano.beneficio.SincronizacaoBeneficioTutorObservador;
 import br.com.cesar.petCollar.dominio.compartilhado.eventos.PublicadorDeEventosDoTutor;
 
-/**
- * Wiring canônico (§6.5) dos services de domínio de F-08 como beans. Spring
- * resolve as interfaces {@code IXxxRepositorio} para os adapters JPA deste
- * mesmo módulo.
- */
 @Configuration
 @EntityScan(basePackages = "br.com.cesar.petCollar.infraestrutura.BeneficiosPlano")
 @EnableJpaRepositories(basePackages = "br.com.cesar.petCollar.infraestrutura.BeneficiosPlano")
 public class BeneficiosPlanoConfig {
 
-    // ── Proxy de cache sobre o catálogo de benefícios (padrão Proxy, §8) ─────
-
-    /**
-     * Sobrepõe o adapter JPA com um proxy de cache (CLAUDE.md §8: "para
-     * sobrepor um bean... use @Primary"): o catálogo é dado de referência, lido
-     * a cada cálculo de status e alterado raramente, só pelo admin.
-     */
     @Bean
     @Primary
     public IBeneficioCatalogoRepositorio beneficioCatalogoRepositorio(BeneficioCatalogoRepositorioJpa repositorioJpa) {
@@ -64,14 +52,6 @@ public class BeneficiosPlanoConfig {
         return new ExpiracaoTicketService(ticketBeneficioRepositorio, beneficioTutorRepositorio);
     }
 
-    // ── Observer: publicador de alterações de catálogo (padrão Observer, §8) ─
-
-    /**
-     * Já nasce com o {@link SincronizacaoBeneficioTutorObservador} inscrito
-     * (CLAUDE.md §6.5). O {@code AlterarConfiguracaoBeneficioUseCase} (Fase 5)
-     * injetará este bean e chamará {@code publicar(catalogo)} após persistir a
-     * alteração — sem precisar conhecer a lógica de sincronização.
-     */
     @Bean
     public PublicadorDeAlteracoesBeneficio publicadorDeAlteracoesBeneficio(
             IBeneficioTutorRepositorio beneficioTutorRepositorio) {
@@ -79,8 +59,6 @@ public class BeneficiosPlanoConfig {
         publicador.inscrever(new SincronizacaoBeneficioTutorObservador(beneficioTutorRepositorio));
         return publicador;
     }
-
-    // ── Casos de uso do Tutor ────────────────────────────────────────────────
 
     @Bean
     public ConsultarBeneficiosTutorUseCase consultarBeneficiosTutorUseCase(
@@ -91,8 +69,6 @@ public class BeneficiosPlanoConfig {
                 beneficioTutorRepositorio, beneficioCatalogoRepositorio, calculoStatusBeneficioService);
     }
 
-    // ── Casos de uso de administração de benefícios do plano (F-08) ──────────
-
     @Bean
     public ConfigurarBeneficiosDoPlanoUseCase configurarBeneficiosDoPlanoUseCase(
             IBeneficioCatalogoRepositorio beneficioCatalogoRepositorio,
@@ -101,11 +77,6 @@ public class BeneficiosPlanoConfig {
                 beneficioCatalogoRepositorio, publicadorDeAlteracoesBeneficio);
     }
 
-    /**
-     * Orquestra o consumo/devolução de benefícios a partir de outros subdomínios
-     * (F-05 consultas, F-06 vacinação). Injetado nos controllers de agendamento
-     * e vacinação para gatear cada serviço pelo benefício do plano.
-     */
     @Bean
     public ConsumirBeneficioUseCase consumirBeneficioUseCase(
             IBeneficioTutorRepositorio beneficioTutorRepositorio,

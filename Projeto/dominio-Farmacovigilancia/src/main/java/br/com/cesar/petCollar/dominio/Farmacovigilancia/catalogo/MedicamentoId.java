@@ -3,9 +3,6 @@ package br.com.cesar.petCollar.dominio.Farmacovigilancia.catalogo;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Identidade canônica de um {@link Medicamento} do catálogo de farmacovigilância.
- */
 public final class MedicamentoId {
     private final String valor;
 

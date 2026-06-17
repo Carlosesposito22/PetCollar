@@ -10,9 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Adapter JPA da interface de domínio {@link IConfiguracaoProtocoloRepositorio}.
- */
 @Repository
 public class ConfiguracaoProtocoloRepositorioJpa implements IConfiguracaoProtocoloRepositorio {
 

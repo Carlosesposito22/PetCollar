@@ -4,7 +4,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.Protoc
 
 import java.time.LocalDateTime;
 
-/** Resumo compacto de um protocolo (usado na listagem de protocolos ativos). */
 public record StatusProtocoloDTO(String id, String atendimentoId, String pacienteId, String status,
                                  String nivelEscalonamentoAtual, LocalDateTime ativadoEm) {
 

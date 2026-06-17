@@ -12,32 +12,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Agregado raiz da F-03 — Protocolo automatizado de tutor inacessível. Representa
- * uma execução do protocolo de contingência vinculada a um atendimento clínico,
- * com tentativas de contato (subentidade {@link TentativaContato}, RN 3) e eventos
- * de escalonamento (subentidade {@link EventoEscalonamento}, RN 7) auditáveis.
- *
- * <p><b>Continuidade do atendimento (RN 8):</b> este agregado guarda apenas o
- * {@code String}/{@link AtendimentoId} de referência ao atendimento clínico e
- * <b>nunca</b> altera o estado desse atendimento — o protocolo de contato roda em
- * paralelo, sem interromper a assistência. Não há qualquer método aqui capaz de
- * mutar o {@code Atendimento}; a continuidade é, portanto, garantida
- * arquiteturalmente.
- *
- * <p><b>Máquina de estados ({@link StatusProtocolo}):</b>
- * <pre>
- *   INATIVO ──ativar()──▶ ATIVADO ──iniciarTentativasTutor()──▶ EM_TENTATIVA_TUTOR
- *   EM_TENTATIVA_TUTOR ──iniciarAcionamentoSecundarios()──▶ EM_TENTATIVA_SECUNDARIOS
- *   EM_TENTATIVA_SECUNDARIOS (todos acionados) ──escalonar()──▶ EM_ESCALONAMENTO
- *   EM_ESCALONAMENTO ──escalonar()──▶ EM_ESCALONAMENTO (avança nível)
- *   EM_ESCALONAMENTO ──encerrarPorEsgotamento()──▶ ENCERRADO_POR_ESGOTAMENTO
- *   {qualquer estado ativo} ──encerrarComSucesso()──▶ ENCERRADO_COM_SUCESSO
- * </pre>
- * Toda transição é guardada com {@link IllegalStateException}. Em especial, só é
- * possível escalonar depois de acionados todos os responsáveis secundários
- * (RN 5).
- */
 public class ProtocoloInacessibilidade {
 
     private final ProtocoloId id;
@@ -54,7 +28,6 @@ public class ProtocoloInacessibilidade {
     private LocalDateTime encerradoEm;
     private MotivoEncerramento motivoEncerramento;
 
-    // Construtor de CRIAÇÃO — protocolo nasce INATIVO, à espera de ativação (RN 1).
     public ProtocoloInacessibilidade(ProtocoloId id, AtendimentoId atendimentoId,
                                      PacienteId pacienteId, TutorId tutorPrincipalId,
                                      ConfiguracaoProtocoloId configuracaoId) {
@@ -79,7 +52,6 @@ public class ProtocoloInacessibilidade {
         this.eventosEscalonamento = new ArrayList<>();
     }
 
-    // Construtor de RECONSTRUÇÃO — todos os campos (usado pela infraestrutura).
     public ProtocoloInacessibilidade(ProtocoloId id, AtendimentoId atendimentoId,
                                      PacienteId pacienteId, TutorId tutorPrincipalId,
                                      ConfiguracaoProtocoloId configuracaoId, StatusProtocolo status,
@@ -103,9 +75,6 @@ public class ProtocoloInacessibilidade {
         this.motivoEncerramento = motivoEncerramento;
     }
 
-    // ── Transições de estado ──────────────────────────────────────────────────
-
-    /** Ativa o protocolo por timeout do tutor (RN 1). */
     public void ativar() {
         if (this.status != StatusProtocolo.INATIVO)
             throw new IllegalStateException("Só é possível ativar protocolos com status INATIVO.");
@@ -113,7 +82,6 @@ public class ProtocoloInacessibilidade {
         this.ativadoEm = LocalDateTime.now();
     }
 
-    /** Inicia a rodada de tentativas com o tutor principal (RN 2). */
     public void iniciarTentativasTutor() {
         if (this.status != StatusProtocolo.ATIVADO)
             throw new IllegalStateException(
@@ -121,7 +89,6 @@ public class ProtocoloInacessibilidade {
         this.status = StatusProtocolo.EM_TENTATIVA_TUTOR;
     }
 
-    /** Registra de forma auditável uma tentativa de contato já executada (RN 3). */
     public void registrarTentativa(TentativaContato tentativa) {
         if (tentativa == null)
             throw new IllegalArgumentException("Tentativa não pode ser nula.");
@@ -132,7 +99,6 @@ public class ProtocoloInacessibilidade {
         this.tentativas.add(tentativa);
     }
 
-    /** Passa a acionar os responsáveis secundários, esgotado o contato com o tutor (RN 4). */
     public void iniciarAcionamentoSecundarios() {
         if (this.status != StatusProtocolo.EM_TENTATIVA_TUTOR)
             throw new IllegalStateException(
@@ -140,7 +106,6 @@ public class ProtocoloInacessibilidade {
         this.status = StatusProtocolo.EM_TENTATIVA_SECUNDARIOS;
     }
 
-    /** Marca que todos os responsáveis secundários cadastrados já foram acionados (RN 5). */
     public void marcarTodosSecundariosAcionados() {
         if (this.status != StatusProtocolo.EM_TENTATIVA_SECUNDARIOS)
             throw new IllegalStateException(
@@ -148,11 +113,6 @@ public class ProtocoloInacessibilidade {
         this.secundariosAcionados = true;
     }
 
-    /**
-     * Avança para o próximo nível de escalonamento, registrando o evento auditável
-     * (RN 6/7). Exige que todos os responsáveis secundários já tenham sido acionados
-     * antes de qualquer escalonamento (RN 5).
-     */
     public void escalonar(NivelEscalonamento nivel, String motivo, String responsavelAcionadoId) {
         if (nivel == null)
             throw new IllegalArgumentException("Nível de escalonamento não pode ser nulo.");
@@ -172,7 +132,6 @@ public class ProtocoloInacessibilidade {
             EventoEscalonamentoId.gerar(), nivel, motivo, responsavelAcionadoId, LocalDateTime.now()));
     }
 
-    /** Encerra o protocolo porque alguém respondeu ao contato (RN). */
     public void encerrarComSucesso(MotivoEncerramento motivo) {
         if (motivo == null)
             throw new IllegalArgumentException("Motivo de encerramento não pode ser nulo.");
@@ -185,7 +144,6 @@ public class ProtocoloInacessibilidade {
         this.motivoEncerramento = motivo;
     }
 
-    /** Encerra o protocolo por esgotamento de todos os níveis de escalonamento. */
     public void encerrarPorEsgotamento() {
         if (this.status != StatusProtocolo.EM_ESCALONAMENTO)
             throw new IllegalStateException(
@@ -195,8 +153,6 @@ public class ProtocoloInacessibilidade {
         this.motivoEncerramento = MotivoEncerramento.esgotamento(
             "Todos os níveis de escalonamento foram acionados sem resposta.");
     }
-
-    // ── Consultas de regra ──────────────────────────────────────────────────────
 
     public boolean isAtivo() {
         return status != StatusProtocolo.INATIVO && !isEncerrado();
@@ -211,7 +167,6 @@ public class ProtocoloInacessibilidade {
         return secundariosAcionados;
     }
 
-    /** Conta as tentativas já executadas para um destinatário, por canal (RN 2). */
     public long contarTentativas(TipoDestinatario tipo, CanalContato canal) {
         return tentativas.stream()
             .filter(t -> t.getTipoDestinatario() == tipo && t.getCanal() == canal)
@@ -227,8 +182,6 @@ public class ProtocoloInacessibilidade {
         return tentativas.stream()
             .anyMatch(t -> t.getTipoDestinatario() == TipoDestinatario.RESPONSAVEL_SECUNDARIO && t.houveSucesso());
     }
-
-    // ── Acessores ───────────────────────────────────────────────────────────────
 
     public ProtocoloId getId()                          { return id; }
     public AtendimentoId getAtendimentoId()             { return atendimentoId; }

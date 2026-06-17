@@ -25,8 +25,6 @@ public class PassosProntuarioUnificado {
         this.contexto = contexto;
     }
 
-    // ── @Dado ────────────────────────────────────────────────────────────────
-
     @Given("existe um tutor cadastrado com CPF {string}")
     public void dadaTutorCadastrado(String cpfStr) {
         contexto.cpf = CPF.de(cpfStr);
@@ -61,8 +59,6 @@ public class PassosProntuarioUnificado {
         contexto.excecaoCapturada = null;
     }
 
-    // ── @E (configuração complementar de estado) ─────────────────────────────
-
     @And("o animal possui diagnostico infectante nos ultimos 40 dias")
     public void eAnimalComDiagnosticoInfectante() {
         when(contexto.diagnosticoRepositorio
@@ -76,8 +72,6 @@ public class PassosProntuarioUnificado {
                 .findInfectantesUltimos(40, contexto.pacienteId))
                 .thenReturn(List.of());
     }
-
-    // ── @Quando ──────────────────────────────────────────────────────────────
 
     @When("o servico buscar o tutor pelo CPF {string}")
     public void quandoBuscarPorCpf(String cpfStr) {
@@ -118,8 +112,6 @@ public class PassosProntuarioUnificado {
             contexto.excecaoCapturada = e;
         }
     }
-
-    // ── @Então ───────────────────────────────────────────────────────────────
 
     @Then("o resultado deve indicar que o tutor foi encontrado")
     public void entaoTutorEncontrado() {

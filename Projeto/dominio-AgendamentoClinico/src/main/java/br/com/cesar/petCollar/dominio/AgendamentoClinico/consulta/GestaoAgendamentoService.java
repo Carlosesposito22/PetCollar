@@ -4,11 +4,6 @@ import br.com.cesar.petCollar.dominio.AgendamentoClinico.porta.IServicoNotificac
 
 import java.time.LocalDateTime;
 
-/**
- * Serviço de domínio responsável pela remarcação (RN 15) e cancelamento de
- * consultas, sempre respeitando a antecedência mínima (RN 16), preservando os
- * vínculos clínicos e a auditoria (RN 18/19), e notificando os envolvidos (RN 14).
- */
 public class GestaoAgendamentoService {
 
     public static final int ANTECEDENCIA_MINIMA_HORAS = 24;
@@ -35,10 +30,9 @@ public class GestaoAgendamentoService {
         Consulta consulta = obrigatoria(consultaId);
         garantirAntecedenciaMinima(consulta, "remarcar");
 
-        consulta.remarcar(novoHorario);             // RN 15/18 — preserva vínculos, audita
+        consulta.remarcar(novoHorario);
         consultaRepositorio.salvar(consulta);
 
-        // RN 14 — notifica tutor e médico
         notificacao.notificarTutor(consulta.getTutorId(),
             "Sua consulta foi remarcada para " + novoHorario + ".");
         notificacao.notificarMedico(consulta.getMedicoId(),
@@ -57,7 +51,6 @@ public class GestaoAgendamentoService {
         consulta.cancelar();
         consultaRepositorio.salvar(consulta);
 
-        // RN 14 — notifica tutor e médico
         notificacao.notificarTutor(consulta.getTutorId(),
             "Sua consulta de " + consulta.getHorario() + " foi cancelada.");
         notificacao.notificarMedico(consulta.getMedicoId(),

@@ -19,7 +19,6 @@ public class Paciente {
     private QueixaComportamento queixa;
     private final LocalDateTime criadoEm;
 
-    // Construtor de CRIAÇÃO
     public Paciente(PacienteId id, String nome, Especie especie, String raca, LocalDate dataNascimento) {
         if (id == null)
             throw new IllegalArgumentException("Id do paciente não pode ser nulo.");
@@ -40,7 +39,6 @@ public class Paciente {
         this.criadoEm = LocalDateTime.now();
     }
 
-    // Construtor de RECONSTRUÇÃO
     public Paciente(PacienteId id, String nome, Especie especie, String raca,
                     LocalDate dataNascimento, List<TagVisual> tags,
                     QueixaComportamento queixa, LocalDateTime criadoEm) {

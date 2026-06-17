@@ -13,11 +13,6 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
-/**
- * Entidade JPA da subentidade {@link TentativaContato} (filho do agregado
- * {@link br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade}).
- * Ids e enums são persistidos como String (§6.1 do guia).
- */
 @Entity
 @Table(name = "tentativas_contato")
 public class TentativaContatoJpa {
@@ -29,13 +24,13 @@ public class TentativaContatoJpa {
     private String destinatarioId;
 
     @Column(nullable = false)
-    private String tipoDestinatario;     // TipoDestinatario.name()
+    private String tipoDestinatario;
 
     @Column(nullable = false)
-    private String canal;                // CanalContato.name()
+    private String canal;
 
     @Column(nullable = false)
-    private String status;               // StatusTentativa.name()
+    private String status;
 
     @Column(nullable = false)
     private LocalDateTime executadaEm;

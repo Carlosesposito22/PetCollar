@@ -10,9 +10,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Adapter JPA da interface de domínio {@link IEspecialidadeRepositorio}.
- */
 @Repository
 public class EspecialidadeRepositorioJpa implements IEspecialidadeRepositorio {
 

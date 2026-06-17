@@ -18,10 +18,6 @@ public class PassosGestaoNutricional {
         this.contexto = contexto;
     }
 
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-    // Passos @Dado — Setup
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-
     @Given("existe um plano nutricional com peso ideal {num} kg")
     public void dadaPlanoComPesoIdeal(double pesoIdealKg) {
         contexto.planoId = PlanoNutricionalId.gerar();
@@ -37,7 +33,7 @@ public class PassosGestaoNutricional {
 
     @Given("nao ha comorbidades")
     public void dadaSemComorbidades() {
-        // Nada a fazer — comorbidades são vazias por padrão
+
     }
 
     @Given("existe um plano com peso ideal {num} kg e nivel {string}")
@@ -76,15 +72,11 @@ public class PassosGestaoNutricional {
 
     @Given("a racao tem {num} kcal por grama")
     public void dadaDensidadeEnergetica(double kcalPorGrama) {
-        // Armazenar para uso no passo @Quando
+
         if (!contexto.toString().contains("kcalPorGrama")) {
-            // Usar um campo adicional que não existe ainda — vamos contornar no @Quando
+
         }
     }
-
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-    // Passos @Quando — Ações (com try/catch obrigatório)
-    // ════════════════════════════════════════════════════════════════════════════════════════════
 
     @When("o servico calcular o NEM")
     public void quandoServicoCalculaNEM() {
@@ -133,10 +125,6 @@ public class PassosGestaoNutricional {
             contexto.excecaoCapturada = e;
         }
     }
-
-    // ════════════════════════════════════════════════════════════════════════════════════════════
-    // Passos @Então — Validações
-    // ════════════════════════════════════════════════════════════════════════════════════════════
 
     @Then("o resultado deve ser aproximadamente {int} kcal por dia")
     public void entaoVerificaNEMEsperado(int nemEsperado) {

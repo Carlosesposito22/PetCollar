@@ -3,12 +3,6 @@ package petcollar.dominio.farmacovigilancia;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * RN-141
- * Verifica interações entre medicamentos da prescrição.
- * Se alguma interação bloqueante for detectada, trava todos os itens envolvidos
- * e muda o status da prescrição para TRAVADA_AGUARDANDO_REVISAO.
- */
 public class ConsultaInteracoesService {
 
     private final IMatrizInteracaoRepositorio matrizRepositorio;

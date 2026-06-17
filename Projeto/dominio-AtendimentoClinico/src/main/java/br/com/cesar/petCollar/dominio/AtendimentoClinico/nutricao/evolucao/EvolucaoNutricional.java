@@ -3,13 +3,6 @@ package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.evolucao;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Resultado da comparação entre dois planos finalizados sequenciais. Carrega
- * deltas absolutos e percentuais que a UI usa para "Evolução desde o último
- * plano: -2,4 kg / NEM reduzido em 18%".
- *
- * <p>Sinais: positivo = aumento; negativo = redução.
- */
 public record EvolucaoNutricional(
         LocalDateTime planoAnteriorEm,
         LocalDateTime planoAtualEm,

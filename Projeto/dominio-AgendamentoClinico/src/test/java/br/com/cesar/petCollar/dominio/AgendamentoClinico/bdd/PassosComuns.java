@@ -15,11 +15,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Passos compartilhados por mais de uma funcionalidade (montagem de prontuário e
- * agenda, asserções de erro/notificação e status da consulta). Mantidos numa única
- * classe para evitar definições de passo duplicadas no glue do Cucumber.
- */
 public class PassosComuns {
 
     private final ContextoCenario contexto;

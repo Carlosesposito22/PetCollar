@@ -10,9 +10,6 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Porte;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Racao;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RacaoId;
 
-/**
- * Caso de uso do admin: cria uma nova ração no catálogo. A ração nasce ativa.
- */
 public class CriarRacaoUseCase {
 
     private final IRacaoRepositorio repositorio;

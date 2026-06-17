@@ -103,7 +103,6 @@ public class MedicoAgendaController {
         LocalDateTime inicio = (data != null ? data : LocalDate.now()).atStartOfDay();
         LocalDateTime fim = (data != null) ? data.atTime(LocalTime.MAX) : inicio.plusYears(1);
 
-        // Merge: consultas do período + pendentes de retorno de qualquer data (sem duplicatas).
         Map<String, Consulta> porId = new LinkedHashMap<>();
         consultas.listarPorMedicoEPeriodo(medicoId, inicio, fim).stream()
             .filter(c -> c.getStatus() != StatusConsulta.CANCELADA)
@@ -117,16 +116,9 @@ public class MedicoAgendaController {
             .toList();
     }
 
-    /**
-     * Prontuário consolidado do paciente para o médico. O paciente pode ter sido
-     * cadastrado pela recepção (tabela pacientes_recepcao) ou pelo próprio tutor
-     * no portal (tabela pacientes). Buscamos nas duas fontes para que o médico
-     * sempre veja os dados, independentemente de como chegou ao atendimento
-     * (fila de triagem encaminhada ou consulta agendada).
-     */
     @GetMapping("/pacientes/{pacienteId}")
     public ResponseEntity<ProntuarioMedicoDTO> prontuario(@PathVariable String pacienteId) {
-        // Fonte canônica unificada: tabela `pacientes` (compartilhada entre recepção e portal).
+
         Paciente pTutor = pacientes.findById(pacienteId).map(PacienteJpa::toDomain).orElse(null);
         if (pTutor != null) {
             String nomeTutor = usuarios.buscar(Perfil.TUTOR, pTutor.tutorId())
@@ -138,7 +130,6 @@ public class MedicoAgendaController {
                 pTutor.infectocontagiosoRecente()));
         }
 
-        // Fallback legado: pacientes antigos só presentes em pacientes_recepcao.
         PacienteRecepcaoJpa pRec = pacienteRecepcao.findById(pacienteId).orElse(null);
         if (pRec != null) {
             String nomeTutor = tutoresRecepcao.findById(pRec.getTutorId())
@@ -153,14 +144,10 @@ public class MedicoAgendaController {
         return ResponseEntity.notFound().build();
     }
 
-    /**
-     * Atualiza o último peso registrado do paciente ao finalizar o prontuário (F-10).
-     * Funciona tanto para pacientes da recepção quanto do portal do tutor.
-     */
     @PatchMapping("/pacientes/{pacienteId}/peso")
     public ResponseEntity<Void> atualizarPeso(@PathVariable String pacienteId,
                                               @RequestBody RequisicaoPesoDTO req) {
-        // Fonte canônica: tabela `pacientes` unificada.
+
         PacienteJpa jpa = pacientes.findById(pacienteId).orElse(null);
         if (jpa != null) {
             Paciente d = jpa.toDomain();
@@ -168,7 +155,7 @@ public class MedicoAgendaController {
             pacientes.save(PacienteJpa.fromDomain(d));
             return ResponseEntity.noContent().build();
         }
-        // Fallback legado
+
         PacienteRecepcaoJpa pRec = pacienteRecepcao.findById(pacienteId).orElse(null);
         if (pRec != null) {
             pRec.setPesoKg(req.pesoKg());
@@ -178,11 +165,6 @@ public class MedicoAgendaController {
         return ResponseEntity.notFound().build();
     }
 
-    /**
-     * Lista as doses vacinais ainda não aplicadas do paciente (carteira do F-06),
-     * para o médico aplicá-las durante uma consulta preventiva. A carteira é a mesma
-     * vista pelo tutor — ao aplicar, o status reflete no portal do tutor.
-     */
     @GetMapping("/pacientes/{pacienteId}/vacinas-pendentes")
     public List<VacinaPendenteDTO> vacinasPendentes(@PathVariable String pacienteId) {
         return cicloVacinalService.listarPorPaciente(PacienteId.de(pacienteId)).stream()
@@ -202,11 +184,6 @@ public class MedicoAgendaController {
             .toList();
     }
 
-    /**
-     * Lista as doses já aplicadas do paciente (histórico vacinal), para o médico
-     * consultar o que o paciente já tomou na tela de vacinação. Ordenadas da
-     * aplicação mais recente para a mais antiga.
-     */
     @GetMapping("/pacientes/{pacienteId}/vacinas-aplicadas")
     public List<VacinaAplicadaDTO> vacinasAplicadas(@PathVariable String pacienteId) {
         return cicloVacinalService.listarPorPaciente(PacienteId.de(pacienteId)).stream()
@@ -228,7 +205,6 @@ public class MedicoAgendaController {
             .toList();
     }
 
-    /** Confirma a aplicação de uma dose vacinal pelo médico durante a consulta (RN-078). */
     @PostMapping("/pacientes/{pacienteId}/vacinas/aplicar")
     public ResponseEntity<Void> aplicarVacina(@PathVariable String pacienteId,
                                               @RequestBody RequisicaoAplicarVacinaDTO req,
@@ -243,11 +219,6 @@ public class MedicoAgendaController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Registra os cuidados pós-operatórios do paciente ao assinar um relatório
-     * cirúrgico (F-10). O alerta fica visível no portal do tutor até expirar, após
-     * a quantidade de dias de cuidado informada pelo médico.
-     */
     @PostMapping("/pacientes/{pacienteId}/cuidados-pos-operatorios")
     public ResponseEntity<Void> registrarCuidadosPosOp(@PathVariable String pacienteId,
                                                        @RequestBody RequisicaoCuidadosPosOpDTO req,
@@ -260,14 +231,6 @@ public class MedicoAgendaController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Libera o direito de retorno para o paciente: cria uma {@link Consulta} já
-     * realizada e marcada como {@code AGUARDANDO_RETORNO} ou {@code EXAMES_SOLICITADOS},
-     * tornando-a visível no portal do tutor para agendamento do retorno (RN 7).
-     * Chamado pelo médico ao final de um atendimento vindo da triagem (sem consulta
-     * prévia agendada). Usa a especialidade do médico autenticado; se ele pertencer
-     * a mais de uma, usa a primeira encontrada.
-     */
     @PostMapping("/pacientes/{pacienteId}/liberar-retorno")
     public ResponseEntity<ConsultaDTO> liberarRetorno(
             @PathVariable String pacienteId,
@@ -276,13 +239,11 @@ public class MedicoAgendaController {
 
         MedicoId medicoId = MedicoId.de(principal.getName());
 
-        // Busca o tutorId do paciente (portal unificado).
         Paciente paciente = pacientes.findById(pacienteId)
             .map(PacienteJpa::toDomain)
             .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado: " + pacienteId));
         TutorId tutorId = TutorId.de(paciente.tutorId());
 
-        // Encontra a especialidade do médico logado; cai em Clínica Geral se nenhuma.
         EspecialidadeId especialidadeId = especialidades.findAll().stream()
             .filter(e -> e.medicos().stream()
                 .anyMatch(m -> m.getValor().equalsIgnoreCase(principal.getName())))
@@ -323,11 +284,6 @@ public class MedicoAgendaController {
             .orElse(medicoId.getValor());
     }
 
-    /**
-     * Finaliza o atendimento do paciente: remove-o da fila de espera, encerrando o
-     * fluxo dentro da recepção. Os cuidados pós-operatórios permanecem ativos até
-     * sua validade, pois o tutor precisa deles durante a recuperação.
-     */
     @PostMapping("/pacientes/{pacienteId}/finalizar-atendimento")
     public ResponseEntity<Void> finalizarAtendimento(@PathVariable String pacienteId) {
         fila.removerPorPaciente(pacienteId);

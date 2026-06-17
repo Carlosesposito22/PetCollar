@@ -17,12 +17,6 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Entidade JPA do agregado {@link ConfiguracaoProtocolo}. Os canais habilitados e
- * os níveis de escalonamento são listas simples de enum, persistidas como
- * {@code @ElementCollection} de String com {@code @OrderColumn} para preservar a
- * ordem (que é significativa — RN 2 e RN 6).
- */
 @Entity
 @Table(name = "configuracoes_protocolo")
 public class ConfiguracaoProtocoloJpa {
@@ -52,13 +46,13 @@ public class ConfiguracaoProtocoloJpa {
     @CollectionTable(name = "configuracao_canais", joinColumns = @JoinColumn(name = "configuracao_id"))
     @OrderColumn(name = "ordem")
     @Column(name = "canal")
-    private List<String> canaisHabilitados;        // CanalContato.name(), na ordem
+    private List<String> canaisHabilitados;
 
     @ElementCollection
     @CollectionTable(name = "configuracao_niveis", joinColumns = @JoinColumn(name = "configuracao_id"))
     @OrderColumn(name = "ordem")
     @Column(name = "nivel")
-    private List<String> niveisEscalonamento;      // NivelEscalonamento.name(), na ordem
+    private List<String> niveisEscalonamento;
 
     protected ConfiguracaoProtocoloJpa() {}
 

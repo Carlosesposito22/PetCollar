@@ -14,15 +14,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Agregado raiz da F-12. Uma {@link Prescricao} nasce já FINALIZADA (assinada
- * digitalmente) — não há estado RASCUNHO persistido, igual à decisão tomada
- * na F-11. Ao emitir uma nova prescrição para o mesmo paciente, a vigente é
- * marcada como SUBSTITUIDA (preserva histórico, audita).
- *
- * <p>A data de fim do tratamento (RN 3) é calculada como
- * {@code maior(duracaoDias) dos itens} a partir da data de início.
- */
 public class Prescricao {
 
     private final PrescricaoId id;
@@ -42,8 +33,6 @@ public class Prescricao {
     private final LocalDate dataFim;
     private final LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
-
-    // ── Construtor de CRIAÇÃO (sempre nasce FINALIZADA + assinada) ────────────
 
     public Prescricao(PrescricaoId id, PacienteId pacienteId, TutorId tutorId,
                       MedicoId medicoResponsavel, BigDecimal pesoPacienteKg,
@@ -93,8 +82,6 @@ public class Prescricao {
                 medicoQueAssina, imagemAssinaturaBase64, LocalDateTime.now(), hash);
     }
 
-    // ── Construtor de RECONSTRUÇÃO (usado pelos adapters JPA) ─────────────────
-
     public Prescricao(PrescricaoId id, PacienteId pacienteId, TutorId tutorId,
                       MedicoId medicoResponsavel, BigDecimal pesoPacienteKg,
                       List<ItemPrescricao> itens, List<String> instrucoesGerais,
@@ -122,14 +109,6 @@ public class Prescricao {
         this.atualizadoEm = atualizadoEm;
     }
 
-    // ── Operações de negócio ──────────────────────────────────────────────────
-
-    /**
-     * Marca esta prescrição como SUBSTITUIDA. Só faz sentido em prescrições
-     * FINALIZADAS — disparado quando o médico finaliza uma nova prescrição
-     * para o mesmo paciente no mesmo atendimento. Preserva todo o snapshot
-     * histórico (assinatura, itens, datas).
-     */
     public void marcarComoSubstituida() {
         if (status != StatusPrescricao.FINALIZADA)
             throw new IllegalStateException(
@@ -137,8 +116,6 @@ public class Prescricao {
         this.status = StatusPrescricao.SUBSTITUIDA;
         this.atualizadoEm = LocalDateTime.now();
     }
-
-    // ── Cálculos auxiliares ───────────────────────────────────────────────────
 
     private int maiorDuracao() {
         return itens.stream().mapToInt(ItemPrescricao::duracaoDias).max().orElse(0);
@@ -157,8 +134,6 @@ public class Prescricao {
               .append(':').append(i.duracaoDias());
         return sb.toString();
     }
-
-    // ── Getters ───────────────────────────────────────────────────────────────
 
     public PrescricaoId getId()                            { return id; }
     public PacienteId getPacienteId()                      { return pacienteId; }

@@ -12,10 +12,6 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
-/**
- * Entidade JPA de {@link PosicaoFila}. A chave primária é o valor de
- * {@link TriagemId} (String). Enums e VOs de Id persistidos como String (§6.1).
- */
 @Entity
 @Table(name = "posicoes_fila")
 public class PosicaoFilaJpa {
@@ -27,7 +23,7 @@ public class PosicaoFilaJpa {
     private String pacienteId;
 
     @Column(nullable = false)
-    private String corDeRisco;   // CorDeRisco.name()
+    private String corDeRisco;
 
     @Column(nullable = false)
     private LocalDateTime finalizadaEm;

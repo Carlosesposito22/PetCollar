@@ -48,7 +48,7 @@ public class PassosAgendamentoRetorno {
         contexto.origem = novaConsultaInicial();
         contexto.origem.confirmar();
         contexto.origem.marcarComoRealizada();
-        contexto.origem.solicitarExames();   // -> EXAMES_SOLICITADOS (elegível)
+        contexto.origem.solicitarExames();
         contexto.origemId = contexto.origem.getId();
         when(contexto.consultaRepositorio.buscarPorId(contexto.origemId))
             .thenReturn(Optional.of(contexto.origem));
@@ -57,7 +57,7 @@ public class PassosAgendamentoRetorno {
     @Dado("uma consulta de origem não elegível a retorno")
     public void origemNaoElegivel() {
         contexto.origem = novaConsultaInicial();
-        contexto.origem.confirmar();          // -> CONFIRMADA (não elegível)
+        contexto.origem.confirmar();
         contexto.origemId = contexto.origem.getId();
         when(contexto.consultaRepositorio.buscarPorId(contexto.origemId))
             .thenReturn(Optional.of(contexto.origem));

@@ -11,17 +11,6 @@ import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.calculo.Val
 import br.com.cesar.petCollar.dominio.compartilhado.PlanoId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Agregado Cobranca (F-07). Representa uma fatura mensal vinculada a um Tutor e
- * a um Plano contratado. Status é derivado dinamicamente da relação entre
- * {@code vencimento}/{@code dataPagamento} e a data atual, em vez de ser
- * persistido — segue a RN 4 ("recalculado a cada acesso").
- *
- * <p>O cálculo do <strong>valor atualizado</strong> usa uma cadeia de
- * <em>Decorators</em> ({@link CalculadoraValor}), permitindo combinar
- * dinamicamente desconto por indicação (F-04) e juros simples (RN 4) sem
- * inflar a entidade com regras condicionais.
- */
 public class Cobranca {
 
     private final CobrancaId id;
@@ -32,7 +21,7 @@ public class Cobranca {
     private final BigDecimal descontoIndicacao;
     private final LocalDate vencimento;
     private LocalDate dataPagamento;
-    /** Juros fixados no momento da quitação — preservam o registro histórico (RN 4). */
+
     private BigDecimal jurosFixados;
 
     public Cobranca(CobrancaId id, TutorId tutorId, PlanoId planoId,
@@ -55,7 +44,6 @@ public class Cobranca {
         this.vencimento = vencimento;
     }
 
-    /** Construtor de RECONSTRUÇÃO — usado pelos adapters de persistência. */
     public Cobranca(CobrancaId id, TutorId tutorId, PlanoId planoId,
                     Competencia competencia, BigDecimal valorOriginal,
                     BigDecimal descontoIndicacao, LocalDate vencimento,
@@ -71,8 +59,6 @@ public class Cobranca {
         this.jurosFixados = jurosFixados;
     }
 
-    // ── Status (derivado) ────────────────────────────────────────────────────
-
     public StatusCobranca status() {
         if (dataPagamento != null) return StatusCobranca.PAGA;
         if (vencimento.isBefore(LocalDate.now())) return StatusCobranca.EM_ATRASO;
@@ -84,14 +70,6 @@ public class Cobranca {
         return (int) ChronoUnit.DAYS.between(vencimento, LocalDate.now());
     }
 
-    // ── Cálculo de valor (Decorator) ─────────────────────────────────────────
-
-    /**
-     * Constrói a cadeia de cálculo apropriada para o estado atual da cobrança.
-     * Ordem da chain: <strong>ValorBase → Desconto → Juros</strong>, ou seja,
-     * desconto é aplicado antes dos juros incidirem (o que faz mais sentido
-     * financeiramente: juros incidem sobre o valor já descontado).
-     */
     public CalculadoraValor montarCalculadora() {
         CalculadoraValor calc = new ValorBase(valorOriginal);
         if (descontoIndicacao.signum() > 0) {
@@ -103,15 +81,10 @@ public class Cobranca {
         return calc;
     }
 
-    /** Valor que o tutor deve hoje (já com juros e descontos aplicados). */
     public BigDecimal valorAtualizado() {
         return montarCalculadora().calcular();
     }
 
-    /**
-     * Componente "Juros" do valor atualizado — em registros pagos, devolve os
-     * juros que ficaram fixados no momento da quitação (RN 4).
-     */
     public BigDecimal juros() {
         if (status() == StatusCobranca.PAGA) {
             return jurosFixados == null ? BigDecimal.ZERO : jurosFixados;
@@ -125,20 +98,12 @@ public class Cobranca {
         ).apenasJuros();
     }
 
-    // ── Operações de negócio ─────────────────────────────────────────────────
-
-    /**
-     * Registra o pagamento da cobrança. Fixa os juros calculados no momento da
-     * quitação (RN 4: "juros são fixados permanentemente no registro").
-     */
     public void registrarPagamento() {
         if (status() == StatusCobranca.PAGA)
             throw new IllegalStateException("Cobrança já foi paga.");
         this.jurosFixados = juros();
         this.dataPagamento = LocalDate.now();
     }
-
-    // ── Getters ──────────────────────────────────────────────────────────────
 
     public CobrancaId getId()              { return id; }
     public TutorId getTutorId()            { return tutorId; }

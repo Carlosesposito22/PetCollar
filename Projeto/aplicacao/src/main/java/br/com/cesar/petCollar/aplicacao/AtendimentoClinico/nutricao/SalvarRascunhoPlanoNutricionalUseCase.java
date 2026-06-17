@@ -13,11 +13,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.MedicoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Caso de uso que cria um novo rascunho ou atualiza o rascunho aberto do
- * paciente. Mantém a invariante "no máximo 1 rascunho aberto por paciente":
- * se já existir um RASCUNHO, ele é atualizado; caso contrário, novo plano.
- */
 public class SalvarRascunhoPlanoNutricionalUseCase {
 
     private final IPlanoNutricionalRepositorio repositorio;
@@ -41,7 +36,7 @@ public class SalvarRascunhoPlanoNutricionalUseCase {
         plano.alterarParametros(entrada.parametros);
         if (entrada.cronograma != null) plano.alterarCronograma(entrada.cronograma);
         plano.substituirObservacoes(entrada.observacoes);
-        plano.vincularRacao(entrada.racaoId); // null aceito (desvincula)
+        plano.vincularRacao(entrada.racaoId);
         plano.registrarJustificativaDivergencia(entrada.justificativaDivergencia);
 
         repositorio.salvar(plano);

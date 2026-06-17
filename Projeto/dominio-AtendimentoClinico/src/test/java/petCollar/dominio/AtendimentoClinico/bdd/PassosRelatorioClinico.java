@@ -23,21 +23,10 @@ public class PassosRelatorioClinico {
         this.contexto = contexto;
     }
 
-    /**
-     * Conversor de número decimal independente de locale.
-     *
-     * <p>O {@code {num}} embutido do Cucumber usa o locale padrão da JVM ao
-     * interpretar o valor. Em ambiente pt-BR o ponto é tratado como separador de
-     * milhar, fazendo {@code "5.2"} virar {@code 52.0} e {@code "0.4"} virar
-     * {@code 4.0}. {@link Double#parseDouble} sempre trata o ponto como separador
-     * decimal, tornando os cenários determinísticos em qualquer máquina.
-     */
     @ParameterType("[-+]?[0-9]*\\.?[0-9]+")
     public double num(String valor) {
         return Double.parseDouble(valor);
     }
-
-    // ── Passos @Dado ──────────────────────────────────────────────────────────
 
     @Dado("existe um atendimento em curso para o paciente")
     public void dadaAtendimentoEmCurso() {
@@ -188,8 +177,6 @@ public class PassosRelatorioClinico {
         contexto.excecaoCapturada = null;
     }
 
-    // ── Passos @Quando ────────────────────────────────────────────────────────
-
     @Quando("o servico consolidar os sinais vitais do atendimento")
     public void quandoServicoConsolidaSinaisVitais() {
         try {
@@ -283,8 +270,6 @@ public class PassosRelatorioClinico {
             contexto.excecaoCapturada = e;
         }
     }
-
-    // ── Passos @Então / @E ────────────────────────────────────────────────────
 
     @Então("os sinais vitais devem ser registrados no relatorio")
     public void entaoSinaisVitaisRegistrados() {

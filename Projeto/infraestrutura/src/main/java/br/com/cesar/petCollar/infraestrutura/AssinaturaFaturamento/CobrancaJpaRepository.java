@@ -11,10 +11,6 @@ public interface CobrancaJpaRepository extends JpaRepository<CobrancaJpa, String
 
     List<CobrancaJpa> findByTutorIdOrderByVencimentoDesc(String tutorId);
 
-    /**
-     * Conta cobranças do tutor cuja {@code vencimento} já passou e ainda não
-     * possuem {@code dataPagamento} — equivalente a status EM_ATRASO no domínio.
-     */
     @Query("""
             SELECT COUNT(c) FROM CobrancaJpa c
             WHERE c.tutorId = :tutorId
@@ -23,7 +19,6 @@ public interface CobrancaJpaRepository extends JpaRepository<CobrancaJpa, String
             """)
     long contarEmAtraso(@Param("tutorId") String tutorId, @Param("hoje") LocalDate hoje);
 
-    /** Ids distintos de tutores com ao menos uma cobrança não paga no plano dado. Usado pelo observer de alteração de plano. */
     @Query("""
             SELECT DISTINCT c.tutorId FROM CobrancaJpa c
             WHERE c.planoId = :planoId

@@ -1,9 +1,5 @@
 package br.com.cesar.petCollar.dominio.AgendamentoClinico.especialidade;
 
-/**
- * Agregado simples que descreve uma especialidade clínica usada para filtrar os
- * médicos disponíveis ao agendar uma consulta (RN 2).
- */
 public class Especialidade {
 
     private final EspecialidadeId id;

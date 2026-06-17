@@ -11,15 +11,9 @@ public interface IIndicacaoRepositorio {
 
     Optional<Indicacao> buscarPorId(IndicacaoId id);
 
-    /**
-     * Verifica se o CPF já possui ao menos uma indicação com status CONVERTIDA (RN-10).
-     * Independe de cancelamentos, reativações ou novas contratações futuras.
-     */
     boolean existeConversaoPorCpf(CPF cpfIndicado);
 
-    /** Retorna o histórico de indicações realizadas por um Tutor (painel do indicador). */
     List<Indicacao> listarPorTutorIndicador(TutorId tutorId);
 
-    /** Busca indicação PENDENTE onde o CPF dado é o indicado (usado no fluxo de pagamento). */
     Optional<Indicacao> buscarPendenteParaCpfIndicado(CPF cpfIndicado);
 }

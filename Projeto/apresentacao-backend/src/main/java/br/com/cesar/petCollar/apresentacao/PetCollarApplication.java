@@ -5,14 +5,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-/**
- * Bootstrap do petCollar. Escaneamento inclui todos os bounded contexts da
- * infraestrutura com JPA ativo e o pacote de apresentação (controllers, configs
- * de IdentidadeAcesso/PortalTutor e ACL fakes).
- *
- * <p>{@code @EnableScheduling} habilita o monitor de timeout do
- * ProtocoloInacessibilidade (RN 1) — ver {@code MonitorTimeoutTutorScheduler}.
- */
 @SpringBootApplication
 @EnableScheduling
 @ComponentScan(basePackages = {

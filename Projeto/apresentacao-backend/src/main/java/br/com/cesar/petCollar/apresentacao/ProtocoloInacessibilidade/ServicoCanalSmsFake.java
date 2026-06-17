@@ -8,9 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-/**
- * Fake do canal SMS: registra o envio e devolve "sem resposta".
- */
 @Component
 public class ServicoCanalSmsFake implements EstrategiaCanalContato {
 

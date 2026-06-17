@@ -14,11 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Adapter JPA da interface de domínio {@link IProtocoloInacessibilidadeRepositorio}.
- * Traduz domínio ↔ entidade via {@code fromDomain}/{@code toDomain}. Operações que
- * gravam o agregado e suas subentidades (tentativas/eventos) são transacionais.
- */
 @Repository
 public class ProtocoloInacessibilidadeRepositorioJpa implements IProtocoloInacessibilidadeRepositorio {
 

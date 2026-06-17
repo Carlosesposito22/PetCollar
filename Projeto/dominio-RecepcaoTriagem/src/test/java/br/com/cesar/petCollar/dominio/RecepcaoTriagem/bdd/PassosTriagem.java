@@ -28,8 +28,6 @@ public class PassosTriagem {
         this.contexto = contexto;
     }
 
-    // ── Cenários de ClassificacaoDeRiscoService ───────────────────────────────
-
     @Given("existe uma triagem em elaboracao para o paciente")
     public void dadaTriagemEmElaboracao() {
         contexto.triagemId = TriagemId.gerar();
@@ -71,8 +69,6 @@ public class PassosTriagem {
         assertEquals(CorDeRisco.valueOf(corEsperada), contexto.corDeRiscoResultante);
     }
 
-    // ── Cenário de FinalizacaoTriagemService ──────────────────────────────────
-
     @Given("existe uma triagem em elaboracao com cor de risco calculada")
     public void dadaTriagemComCorDeRiscoCalculada() {
         contexto.triagemId = TriagemId.gerar();
@@ -103,8 +99,6 @@ public class PassosTriagem {
         assertTrue(contexto.triagem.isBloqueadaParaAlteracao(),
                 "A triagem deveria estar bloqueada para alteração");
     }
-
-    // ── Cenário de TagueamentoAutomaticoService ───────────────────────────────
 
     @Given("existe um paciente da especie {string} com data de nascimento ha {int} anos")
     public void dadaPacienteComIdadeEmAnos(String especieStr, int anos) {

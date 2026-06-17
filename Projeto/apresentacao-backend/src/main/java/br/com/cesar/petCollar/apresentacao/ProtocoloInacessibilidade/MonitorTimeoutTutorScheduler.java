@@ -14,18 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * Gatilho periódico da F-03 (RN 1). É responsabilidade <b>da infraestrutura/
- * apresentação</b>, não do domínio: a cada minuto ele (1) ativa por timeout os
- * atendimentos sem resposta, via {@link AtivacaoProtocoloService}, e (2) faz cada
- * protocolo ativo avançar uma etapa, via {@link OrquestradorEtapasProtocolo} — que
- * por baixo despacha a subclasse adequada do Template Method (tutor → secundários
- * → escalonamento).
- *
- * <p>Tanto a ativação quanto o avanço são idempotentes em relação ao estado: rodar
- * repetidamente não cria protocolos duplicados nem executa etapas em estados
- * encerrados (o esqueleto do Template valida o estado de entrada).
- */
 @Component
 public class MonitorTimeoutTutorScheduler {
 
@@ -55,13 +43,11 @@ public class MonitorTimeoutTutorScheduler {
             log.warn("[MONITOR F-03] falha na varredura de timeout: {}", e.getMessage());
         }
 
-        // Avança cada protocolo ativo uma etapa (Template Method via orquestrador).
         List<ProtocoloInacessibilidade> ativos = protocoloRepositorio.listarAtivos();
         for (ProtocoloInacessibilidade protocolo : ativos) {
             try {
                 orquestrador.executarProximaEtapa(protocolo);
-                // O serviço de etapa recarrega o agregado internamente; relemos do banco
-                // para verificar se o protocolo foi encerrado por esgotamento.
+
                 protocoloRepositorio.buscarPorId(protocolo.getId()).ifPresent(atualizado -> {
                     if (atualizado.getStatus() == StatusProtocolo.ENCERRADO_POR_ESGOTAMENTO) {
                         fila.removerPorPaciente(atualizado.getPacienteId().getValor());

@@ -11,11 +11,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Adapter JPA da porta {@link IConsultaAtendimento} (ACL para o contexto
- * AgendamentoClinico). Substituí o stand-in em memória; anotado com {@code @Primary}
- * para que o Spring prefira esta implementação.
- */
 @Component
 public class AtendimentoConsultaJpa implements IConsultaAtendimento {
 

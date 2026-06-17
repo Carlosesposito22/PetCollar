@@ -7,13 +7,6 @@ import java.util.List;
 
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Subject do padrão Observer: ponto único de publicação de eventos do tutor,
- * desacoplando quem produz o evento (casos de uso de qualquer contexto) de
- * quem reage a ele (ex.: Gamificação concedendo badges). Domínio puro — o
- * wiring dos observadores concretos acontece no {@code Config} de infra
- * (CLAUDE.md §6.5: "registrar observadores... antes de devolver o bean").
- */
 public class PublicadorDeEventosDoTutor {
 
     private final List<IObservadorDeEventoTutor> observadores = new ArrayList<>();

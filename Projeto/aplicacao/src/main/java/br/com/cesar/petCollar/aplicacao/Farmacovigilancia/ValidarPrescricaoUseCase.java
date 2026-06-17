@@ -9,11 +9,6 @@ import br.com.cesar.petCollar.dominio.Farmacovigilancia.validacao.RascunhoItem;
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.validacao.ResultadoValidacao;
 import br.com.cesar.petCollar.dominio.Farmacovigilancia.validacao.ValidadorPrescricao;
 
-/**
- * Caso de uso "preview" da prescrição — calcula a dose máxima segura por item,
- * detecta superdosagem, alergias, interações medicamentosas e conflitos de
- * manejo. Não persiste nada. Chamado pela UI a cada mudança de itens.
- */
 public class ValidarPrescricaoUseCase {
 
     private final ValidadorPrescricao validador;

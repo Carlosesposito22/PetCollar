@@ -39,8 +39,6 @@ public class AdminController {
         this.provisionarBeneficios = provisionarBeneficios;
     }
 
-    // ── Funcionários (Recepcionista + Médico) ───────────────────────────────
-
     @GetMapping("/funcionarios")
     public List<ResumoUsuario> listarFuncionarios() {
         return repositorio.listarPorPerfil(Perfil.RECEPCIONISTA, Perfil.MEDICO_VETERINARIO)
@@ -87,8 +85,6 @@ public class AdminController {
         return ResumoUsuario.de(u);
     }
 
-    // ── Tutores ─────────────────────────────────────────────────────────────
-
     @GetMapping("/tutores")
     public List<ResumoUsuario> listarTutores() {
         return repositorio.listarPorPerfil(Perfil.TUTOR).stream()
@@ -114,7 +110,7 @@ public class AdminController {
         PlanoId planoId = (tutor.planoId() != null && !tutor.planoId().isBlank())
                 ? PlanoId.de(tutor.planoId())
                 : PlanosPadrao.ID_PLANO_BASICO_MENSAL;
-        // Provisiona os benefícios do plano do tutor (idempotente).
+
         provisionarBeneficios.executar(TutorId.de(identificador), planoId);
         return resumo;
     }
@@ -126,8 +122,6 @@ public class AdminController {
         repositorio.salvar(u);
         return ResumoUsuario.de(u);
     }
-
-    // ── DTOs e exceções ─────────────────────────────────────────────────────
 
     public record RequisicaoCriarFuncionario(
             @NotNull Perfil perfil,

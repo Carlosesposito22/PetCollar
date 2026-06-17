@@ -12,11 +12,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Entidade JPA do agregado {@link BeneficioCatalogo}. PlanoId fica apenas como
- * o valor String do Id (agregado externo, §6.2 do CLAUDE.md); PeriodoRenovacao
- * é persistido como String ({@code name()}/{@code valueOf}).
- */
 @Entity
 @Table(name = "beneficios_catalogo")
 public class BeneficioCatalogoJpa {

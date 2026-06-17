@@ -9,9 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Consulta das tentativas de contato registradas em um protocolo (RN 3).
- */
 @RestController
 @RequestMapping("/api/protocolos/{id}/tentativas")
 public class TentativaContatoController {

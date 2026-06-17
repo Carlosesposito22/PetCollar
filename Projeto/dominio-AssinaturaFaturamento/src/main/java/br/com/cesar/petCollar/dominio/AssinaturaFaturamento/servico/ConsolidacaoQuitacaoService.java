@@ -9,13 +9,6 @@ import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.ICobrancaRe
 import br.com.cesar.petCollar.dominio.AssinaturaFaturamento.cobranca.StatusCobranca;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
-/**
- * Service de domínio que aplica RN 8 do F-07 — consolida em um único valor o
- * total devido por um tutor com conta suspensa. A regularização exige o
- * pagamento integral em transação única; portanto este service apenas soma os
- * valores atualizados das cobranças em atraso, deixando a operação de pagamento
- * para o use case.
- */
 public class ConsolidacaoQuitacaoService {
 
     private final ICobrancaRepositorio cobrancaRepositorio;

@@ -4,11 +4,6 @@ import br.com.cesar.petCollar.dominio.compartilhado.AtendimentoId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.IProtocoloInacessibilidadeRepositorio;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade;
 
-/**
- * Serviço de domínio que monta a visão consolidada do protocolo para exibição ao
- * tutor (RN 15): status atual, nível de escalonamento e o histórico auditável de
- * tentativas e escalonamentos.
- */
 public class ConsultaStatusProtocoloService {
 
     private final IProtocoloInacessibilidadeRepositorio protocoloRepositorio;

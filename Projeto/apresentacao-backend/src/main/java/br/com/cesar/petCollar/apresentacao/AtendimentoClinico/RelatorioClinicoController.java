@@ -103,8 +103,6 @@ public class RelatorioClinicoController {
         return ResponseEntity.ok(dtos);
     }
 
-    // ── DTOs ─────────────────────────────────────────────────────────────────
-
     record RequisicaoIniciarRelatorioDTO(
         String atendimentoId, String pacienteId, String medicoId, String tipoRelatorio) {}
 

@@ -4,9 +4,6 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-/**
- * Ativa o mapeamento JPA para o contexto RecepcaoTriagem (fila de atendimento).
- */
 @Configuration
 @EntityScan(basePackages = "br.com.cesar.petCollar.infraestrutura.RecepcaoTriagem")
 @EnableJpaRepositories(basePackages = "br.com.cesar.petCollar.infraestrutura.RecepcaoTriagem")

@@ -1,8 +1,5 @@
 package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao;
 
-/**
- * Pontua rações cuja indicação inclua o porte do paciente.
- */
 public class RecomendacaoPorPorteStrategy implements EstrategiaRecomendacaoRacao {
 
     private static final int PONTUACAO_INDICADA = 15;

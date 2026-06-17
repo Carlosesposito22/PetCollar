@@ -14,11 +14,6 @@ public class VarreduraEpidemiologicaService {
         this.diagnosticoRepositorio = diagnosticoRepositorio;
     }
 
-    /**
-     * Verifica se algum animal do tutor teve diagnóstico de doença infectocontagiosa
-     * nos últimos 40 dias. Se sim, ativa o alerta epidemiológico no ResultadoBusca.
-     * RN-004, RN-005, RN-006, RN-007
-     */
     public void executarVarredura(Tutor tutor, ResultadoBusca resultado) {
         if (tutor == null)
             throw new IllegalArgumentException(
