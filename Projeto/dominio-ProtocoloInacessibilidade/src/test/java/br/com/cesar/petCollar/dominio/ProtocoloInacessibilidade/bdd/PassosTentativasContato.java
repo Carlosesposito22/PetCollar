@@ -73,6 +73,6 @@ public class PassosTentativasContato {
     @Entao("a última notificação ao tutor deve ter criticidade {string}")
     public void notificacaoComCriticidade(String criticidade) {
         verify(contexto.notificacao, atLeastOnce()).notificar(
-            eq(contexto.tutorId.getValor()), any(), eq(NivelCriticidade.valueOf(criticidade)));
+            eq(contexto.tutorId.getValor()), any(), eq(NivelCriticidade.valueOf(criticidade)), any());
     }
 }

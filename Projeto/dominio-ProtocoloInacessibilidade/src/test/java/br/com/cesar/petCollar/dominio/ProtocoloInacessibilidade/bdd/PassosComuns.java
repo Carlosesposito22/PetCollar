@@ -57,6 +57,6 @@ public class PassosComuns {
     @Entao("o tutor deve ser notificado")
     public void tutorNotificado() {
         verify(contexto.notificacao, atLeastOnce())
-            .notificar(eq(contexto.tutorId.getValor()), any(), any());
+            .notificar(eq(contexto.tutorId.getValor()), any(), any(), any());
     }
 }
