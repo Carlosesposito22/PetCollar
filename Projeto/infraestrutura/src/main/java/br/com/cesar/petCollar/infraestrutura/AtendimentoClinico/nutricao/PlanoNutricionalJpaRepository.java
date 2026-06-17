@@ -26,4 +26,7 @@ public interface PlanoNutricionalJpaRepository extends JpaRepository<PlanoNutric
     /** Histórico completo (FINALIZADO + SUBSTITUIDO) de todos os pacientes do tutor. */
     List<PlanoNutricionalJpa> findByTutorIdAndStatusInOrderByAtualizadoEmDesc(
             String tutorId, List<String> status);
+
+    /** Conta planos (em qualquer status) que prescreveram uma ração específica. */
+    long countByRacaoId(String racaoId);
 }

@@ -110,7 +110,7 @@ export type ExameSolicitadoDTO = {
 
 // ── Tipos do Relatório Clínico Evolutivo ─────────────────────────────────────
 
-export type TipoRelatorio = "ROTINEIRO" | "CIRURGICO" | "PREVENTIVO";
+export type TipoRelatorio = "ROTINEIRO" | "CIRURGICO";
 
 export type RelatorioDTO = {
   id: string;
@@ -381,11 +381,6 @@ export const HISTORICO_STUB: RegistroHistoricoDTO[] = [
   { data: "2026-03-15", pesoKg: 32, temperaturaCelsius: 38.5 },
   { data: "2026-02-10", pesoKg: 31.5, temperaturaCelsius: 38.3 },
   { data: "2026-01-05", pesoKg: 30, temperaturaCelsius: 38.4 },
-];
-
-export const MEDICAMENTOS_STUB = [
-  "Omeprazol 20mg — 1x ao dia por 7 dias",
-  "Metoclopramida 10mg — 2x ao dia por 5 dias",
 ];
 
 function gerarProntuarioStub(pacienteId: string): ProntuarioDTO {

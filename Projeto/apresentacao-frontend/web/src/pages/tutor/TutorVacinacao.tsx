@@ -565,15 +565,24 @@ function CicloCard({ ciclo, pacienteId, onAgendarProxima, onAtualizado }: {
       {/* Lista de doses */}
       {expandido && (
         <ul className="divide-y divide-ink-100/60">
-          {ciclo.doses.map(d => <DoseLinha key={d.id} dose={d} />)}
+          {ciclo.doses.map(d => (
+            <DoseLinha key={d.id} dose={d} pacienteId={pacienteId} cicloId={ciclo.id}
+              onAtualizado={onAtualizado} />
+          ))}
         </ul>
       )}
     </div>
   );
 }
 
-function DoseLinha({ dose }: { dose: Dose }) {
+function DoseLinha({ dose, pacienteId, cicloId, onAtualizado }: {
+  dose: Dose; pacienteId: string; cicloId: string; onAtualizado: () => void;
+}) {
   const vis = STATUS_VISUAL[dose.status] ?? STATUS_VISUAL["PENDENTE"];
+  const [reagendar, setReagendar] = useState(false);
+  // Só doses não aplicadas podem ser remarcadas; o atraso ganha botão de destaque.
+  const podeReagendar = dose.status !== "APLICADA";
+  const emAtraso      = dose.status === "EM_ATRASO";
   return (
     <li className={`flex flex-wrap items-center gap-x-6 gap-y-2 border-l-4 ${vis.borda} ${vis.fundo} px-5 py-3.5`}>
       <div className="flex min-w-[160px] items-center gap-2.5">
@@ -583,10 +592,83 @@ function DoseLinha({ dose }: { dose: Dose }) {
           <span className={`ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${vis.badge}`}>{vis.label}</span>
         </div>
       </div>
-      {dose.data   && <InfoChip icone="📅" rotulo="Data"      valor={formatarData(dose.data)} />}
+      {dose.data   && <InfoChip icone="📅" rotulo={emAtraso ? "Venceu em" : "Data"} valor={formatarData(dose.data)} />}
       {dose.medico && <InfoChip icone="👨‍⚕️" rotulo="Médico"    valor={dose.medico} />}
       {dose.lote   && <InfoChip icone="🔖" rotulo="Lote/Selo" valor={dose.lote} />}
+      {podeReagendar && (
+        <button onClick={() => setReagendar(true)}
+          className={
+            "ml-auto inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition " +
+            (emAtraso
+              ? "bg-rose-500 text-white shadow-sm hover:bg-rose-600"
+              : "bg-white text-ink-700 ring-1 ring-ink-300 hover:bg-brand-50 hover:ring-brand-300")
+          }>
+          📅 Reagendar
+        </button>
+      )}
+      {reagendar && (
+        <ReagendarDoseModal dose={dose} pacienteId={pacienteId} cicloId={cicloId}
+          onFechar={() => setReagendar(false)}
+          onReagendado={() => { setReagendar(false); onAtualizado(); }} />
+      )}
     </li>
+  );
+}
+
+function ReagendarDoseModal({ dose, pacienteId, cicloId, onFechar, onReagendado }: {
+  dose: Dose; pacienteId: string; cicloId: string; onFechar: () => void; onReagendado: () => void;
+}) {
+  const { apiFetch } = useAuth();
+  const hoje = new Date().toISOString().slice(0, 10);
+  const [novaData, setNovaData]   = useState(hoje);
+  const [erro, setErro]           = useState<string | null>(null);
+  const [enviando, setEnviando]   = useState(false);
+  const emAtraso = dose.status === "EM_ATRASO";
+  const rotuloDose = dose.totalDoses > 1 ? `Dose ${dose.doseNumero}/${dose.totalDoses}` : "Dose única";
+
+  async function confirmar(e: React.FormEvent) {
+    e.preventDefault(); setErro(null); setEnviando(true);
+    try {
+      const res = await apiFetch(`/api/tutor/pacientes/${pacienteId}/vacinas/${cicloId}/doses/${dose.id}/reagendar`, {
+        method: "PATCH", body: JSON.stringify({ novaData }),
+      });
+      if (!res.ok) { const b = await res.json().catch(() => ({} as { mensagem?: string })); throw new Error(b?.mensagem ?? `HTTP ${res.status}`); }
+      onReagendado();
+    } catch (e2) { setErro((e2 as Error).message); }
+    finally { setEnviando(false); }
+  }
+
+  return (
+    <ModalShell titulo={`Reagendar ${rotuloDose} — ${dose.ciclo}`} onFechar={onFechar}>
+      <div className={
+        "mb-5 flex items-start gap-3 rounded-xl p-4 ring-1 " +
+        (emAtraso ? "bg-rose-50 ring-rose-100" : "bg-brand-50/60 ring-brand-100")
+      }>
+        <span className="text-2xl">{emAtraso ? "⚠️" : "📅"}</span>
+        <div>
+          <p className={`font-semibold ${emAtraso ? "text-rose-800" : "text-brand-900"}`}>
+            {emAtraso ? "Esta dose está em atraso" : "Remarcar dose pendente"}
+          </p>
+          <p className={`mt-0.5 text-sm ${emAtraso ? "text-rose-700" : "text-brand-700"}`}>
+            {dose.data
+              ? <>Estava agendada para <strong>{formatarData(dose.data)}</strong>. Escolha uma nova data para manter a imunização do seu pet em dia.</>
+              : "Escolha uma nova data para esta dose."}
+          </p>
+        </div>
+      </div>
+      {erro && <div role="alert" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{erro}</div>}
+      <form onSubmit={confirmar} className="grid gap-4">
+        <div>
+          <label className="label" htmlFor="novaData">Nova data da vacinação</label>
+          <input id="novaData" type="date" required className="input mt-1"
+            min={hoje} value={novaData} onChange={e => setNovaData(e.target.value)} />
+        </div>
+        <div className="mt-2 flex justify-end gap-2">
+          <button type="button" onClick={onFechar} className="btn-ghost ring-1 ring-ink-300">Cancelar</button>
+          <button type="submit" disabled={enviando} className="btn-primary w-auto">{enviando ? "Reagendando…" : "Confirmar nova data"}</button>
+        </div>
+      </form>
+    </ModalShell>
   );
 }
 

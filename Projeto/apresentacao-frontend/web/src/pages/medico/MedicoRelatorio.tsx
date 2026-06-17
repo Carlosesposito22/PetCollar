@@ -3,7 +3,6 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import {
   criarMedicoService,
-  MEDICAMENTOS_STUB,
   type ProntuarioDTO,
   type RegistroHistoricoDTO,
   type TipoRelatorio,
@@ -57,15 +56,6 @@ const CONFIGURACOES_TIPO: Record<TipoRelatorio, ConfiguracaoTipoRelatorio> = {
       if (!tempoRecuperacao.trim()) return "O tempo de recuperação estimado é obrigatório para relatório cirúrgico.";
       if (!diasCuidado.trim() || Number(diasCuidado) <= 0)
         return "Informe os dias sob cuidado pós-operatório (número maior que zero) para o alerta ao tutor.";
-      return null;
-    },
-  },
-  PREVENTIVO: {
-    rotulo: "Consulta Preventiva",
-    descricao: "Vermifugação ou check-up de rotina",
-    icone: "💉",
-    validar({ resumoTutor }) {
-      if (!resumoTutor.trim()) return "O resumo para o tutor é obrigatório.";
       return null;
     },
   },
@@ -221,7 +211,6 @@ export function MedicoRelatorio() {
       }
     }
 
-    const preventivo = tipoRelatorio === "PREVENTIVO";
     const salvo: RelatorioSalvo = {
       id: (crypto as any).randomUUID?.() ?? `rel-${Date.now()}`,
       pacienteId: pacienteId ?? "",
@@ -237,8 +226,7 @@ export function MedicoRelatorio() {
       peso, temperatura, frequenciaCardiaca,
       diagnostico, resumoTutor, orientacoes,
       cuidadosPosOp, tempoRecuperacao, diasCuidado,
-      medicamentos: preventivo ? [] : MEDICAMENTOS_STUB,
-      anexos: preventivo ? [] : arquivosSelecionados.map((f) => f.name),
+      anexos: arquivosSelecionados.map((f) => f.name),
       assinaturaDataUrl,
       assinadoEm: new Date().toISOString(),
     };
@@ -367,7 +355,7 @@ export function MedicoRelatorio() {
           <p className="mb-4 text-xs text-ink-500">
             Define os campos obrigatórios e a estratégia de validação — padrão Strategy (RN-124)
           </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {(Object.entries(CONFIGURACOES_TIPO) as [TipoRelatorio, ConfiguracaoTipoRelatorio][]).map(
               ([valor, config]) => (
                 <button
@@ -449,71 +437,8 @@ export function MedicoRelatorio() {
           </div>
         </div>
 
-        {/* ── Evolução comparativa ─────────────────────────────────────────── */}
-        <div className="card p-6">
-          <h2 className="mb-1 text-base font-semibold text-ink-900">Evolução Comparativa</h2>
-          <p className="mb-4 text-xs text-ink-500">Histórico dos últimos atendimentos (RN-116)</p>
-          {historico.length === 0 ? (
-            <p className="text-sm text-ink-500">Primeiro atendimento — sem histórico anterior.</p>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-ink-100">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-ink-100 bg-ink-50/70">
-                    {["Data", "Peso (kg)", "Temperatura (°C)"].map((col) => (
-                      <th
-                        key={col}
-                        className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-ink-500"
-                      >
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-ink-100">
-                  {(peso || temperatura) && (
-                    <tr className="bg-brand-50/60">
-                      <td className="px-4 py-2.5">
-                        <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700">
-                          Hoje
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 font-semibold text-brand-800">
-                        {peso || "—"}
-                        {peso && historico[0] && (
-                          <Tendencia atual={parseFloat(peso)} anterior={historico[0].pesoKg} />
-                        )}
-                      </td>
-                      <td className="px-4 py-2.5 text-brand-800">
-                        {temperatura || "—"}
-                        {temperatura && historico[0] && (
-                          <Tendencia atual={parseFloat(temperatura)} anterior={historico[0].temperaturaCelsius} />
-                        )}
-                      </td>
-                    </tr>
-                  )}
-                  {historico.map((r, i) => (
-                    <tr key={i} className="hover:bg-ink-50/40">
-                      <td className="px-4 py-2.5 text-ink-600">{r.data}</td>
-                      <td className="px-4 py-2.5 font-medium text-ink-900">
-                        {r.pesoKg}
-                        {historico[i + 1] && (
-                          <Tendencia atual={r.pesoKg} anterior={historico[i + 1].pesoKg} />
-                        )}
-                      </td>
-                      <td className="px-4 py-2.5 text-ink-800">
-                        {r.temperaturaCelsius}
-                        {historico[i + 1] && (
-                          <Tendencia atual={r.temperaturaCelsius} anterior={historico[i + 1].temperaturaCelsius} />
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        {/* ── Evolução comparativa (gráfico interativo ⇄ tabela) ───────────── */}
+        <EvolucaoComparativa historico={historico} peso={peso} temperatura={temperatura} />
 
         {/* ── Conteúdo clínico ─────────────────────────────────────────────── */}
         <div className="card p-6 space-y-5">
@@ -625,8 +550,7 @@ export function MedicoRelatorio() {
           </div>
         )}
 
-        {/* ── Anexos clínicos (não exibidos em consulta preventiva) ─────────── */}
-        {tipoRelatorio !== "PREVENTIVO" && (
+        {/* ── Anexos clínicos ───────────────────────────────────────────────── */}
         <div className="card p-6">
           <h2 className="mb-1 text-base font-semibold text-ink-900">Anexos Clínicos</h2>
           <p className="mb-3 text-xs text-ink-500">
@@ -671,28 +595,6 @@ export function MedicoRelatorio() {
             </div>
           )}
         </div>
-        )}
-
-        {/* ── Medicamentos prescritos (não exibidos em consulta preventiva) ── */}
-        {tipoRelatorio !== "PREVENTIVO" && (
-        <div className="card p-6">
-          <h2 className="mb-1 text-base font-semibold text-ink-900">Medicamentos Prescritos</h2>
-          <p className="mb-3 text-xs text-ink-500">
-            Incluídos automaticamente com base na prescrição registrada
-          </p>
-          <ul className="space-y-2">
-            {MEDICAMENTOS_STUB.map((m, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-3 rounded-xl bg-ink-50/60 px-3 py-2.5 text-sm text-ink-700"
-              >
-                <span className="mt-0.5 shrink-0 text-brand-500">💊</span>
-                {m}
-              </li>
-            ))}
-          </ul>
-        </div>
-        )}
 
         {/* ── Assinatura digital do médico (desenho com o mouse) ────────────── */}
         <div className="card p-6">
@@ -787,6 +689,214 @@ function Tendencia({ atual, anterior }: { atual: number; anterior: number }) {
   return <span className="ml-1 text-xs text-ink-400" title="Estável">→</span>;
 }
 
+// ── Evolução comparativa: gráficos interativos + tabela ────────────────────────
+
+type PontoGrafico = { rotulo: string; valor: number; hoje?: boolean };
+
+/** Encurta uma data ISO (AAAA-MM-DD) para "DD/MM" no eixo X; demais valores passam direto. */
+function rotuloEixo(data: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(data);
+  return m ? `${m[3]}/${m[2]}` : data;
+}
+
+/**
+ * Mini gráfico de linha em SVG (sem dependências externas). Interativo: ao passar
+ * o mouse sobre um ponto, exibe um tooltip com a data e o valor. O ponto "Hoje"
+ * (atendimento atual) é destacado preenchido.
+ */
+function MiniGraficoLinha({ titulo, unidade, pontos, cor }: {
+  titulo: string;
+  unidade: string;
+  pontos: PontoGrafico[];
+  cor: string;
+}) {
+  const [hover, setHover] = useState<number | null>(null);
+  if (pontos.length === 0) return null;
+
+  const W = 320, H = 150;
+  const padX = 16, padTop = 18, padBottom = 28;
+  const innerW = W - padX * 2;
+  const innerH = H - padTop - padBottom;
+
+  const valores = pontos.map((p) => p.valor);
+  let min = Math.min(...valores);
+  let max = Math.max(...valores);
+  if (min === max) { min -= 1; max += 1; }   // evita divisão por zero em série constante
+  const range = max - min;
+
+  const px = (i: number) =>
+    pontos.length === 1 ? W / 2 : padX + (innerW * i) / (pontos.length - 1);
+  const py = (v: number) => padTop + innerH * (1 - (v - min) / range);
+
+  const linha = pontos.map((p, i) => `${px(i)},${py(p.valor)}`).join(" ");
+  const area = `${px(0)},${padTop + innerH} ${linha} ${px(pontos.length - 1)},${padTop + innerH}`;
+
+  return (
+    <div className="rounded-xl border border-ink-100 bg-white p-3">
+      <div className="mb-1 flex items-baseline justify-between">
+        <p className="text-xs font-semibold text-ink-700">{titulo}</p>
+        <p className="text-[10px] uppercase tracking-wider text-ink-400">{unidade}</p>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Evolução de ${titulo}`}>
+        <polygon points={area} fill={cor} opacity={0.08} />
+        <polyline points={linha} fill="none" stroke={cor} strokeWidth={2}
+                  strokeLinejoin="round" strokeLinecap="round" />
+        {pontos.map((p, i) => (
+          <g key={i} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
+             style={{ cursor: "pointer" }}>
+            {/* alvo de hover ampliado (invisível) */}
+            <circle cx={px(i)} cy={py(p.valor)} r={11} fill="transparent" />
+            <circle cx={px(i)} cy={py(p.valor)} r={p.hoje ? 5 : 3.5}
+                    fill={p.hoje ? cor : "#ffffff"} stroke={cor} strokeWidth={2} />
+            <text x={px(i)} y={H - 9} textAnchor="middle" fontSize={9}
+                  fill={p.hoje ? cor : "#94a3b8"} fontWeight={p.hoje ? 700 : 400}>
+              {p.hoje ? "Hoje" : rotuloEixo(p.rotulo)}
+            </text>
+          </g>
+        ))}
+        {hover !== null && (() => {
+          const p = pontos[hover];
+          const cx = px(hover);
+          const cy = py(p.valor);
+          const label = `${p.hoje ? "Hoje" : rotuloEixo(p.rotulo)} · ${p.valor}`;
+          const boxW = Math.max(54, label.length * 5.4);
+          const boxH = 18;
+          const bx = Math.max(2, Math.min(W - boxW - 2, cx - boxW / 2));
+          const by = Math.max(2, cy - boxH - 7);
+          return (
+            <g pointerEvents="none">
+              <rect x={bx} y={by} width={boxW} height={boxH} rx={4} fill="#0f172a" opacity={0.92} />
+              <text x={bx + boxW / 2} y={by + 12.5} textAnchor="middle" fontSize={9.5} fill="#ffffff">
+                {label}
+              </text>
+            </g>
+          );
+        })()}
+      </svg>
+    </div>
+  );
+}
+
+/**
+ * Bloco de Evolução Comparativa com alternância Gráfico ⇄ Tabela (RN-116).
+ * Reaproveitado no formulário do atendimento e no relatório assinado.
+ */
+function EvolucaoComparativa({ historico, peso, temperatura }: {
+  historico: RegistroHistoricoDTO[];
+  peso: string;
+  temperatura: string;
+}) {
+  const [modo, setModo] = useState<"grafico" | "tabela">("grafico");
+
+  const pesoHoje = parseFloat(peso);
+  const tempHoje = parseFloat(temperatura);
+  const temHoje = !isNaN(pesoHoje) || !isNaN(tempHoje);
+
+  // Histórico chega do mais recente → mais antigo; o gráfico precisa do mais
+  // antigo → mais recente (esquerda → direita), com "Hoje" como último ponto.
+  const cronologico = [...historico].reverse();
+
+  const pontosPeso: PontoGrafico[] = cronologico.map((r) => ({ rotulo: r.data, valor: r.pesoKg }));
+  if (!isNaN(pesoHoje)) pontosPeso.push({ rotulo: "Hoje", valor: pesoHoje, hoje: true });
+
+  const pontosTemp: PontoGrafico[] = cronologico.map((r) => ({ rotulo: r.data, valor: r.temperaturaCelsius }));
+  if (!isNaN(tempHoje)) pontosTemp.push({ rotulo: "Hoje", valor: tempHoje, hoje: true });
+
+  return (
+    <div className="card p-6">
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-base font-semibold text-ink-900">Evolução Comparativa</h2>
+        {historico.length > 0 && (
+          <div className="inline-flex rounded-lg bg-ink-100 p-0.5 text-xs font-medium">
+            <button type="button" onClick={() => setModo("grafico")}
+              className={modo === "grafico"
+                ? "rounded-md bg-white px-3 py-1 text-brand-700 shadow-sm"
+                : "rounded-md px-3 py-1 text-ink-500 hover:text-ink-700"}>
+              📈 Gráfico
+            </button>
+            <button type="button" onClick={() => setModo("tabela")}
+              className={modo === "tabela"
+                ? "rounded-md bg-white px-3 py-1 text-brand-700 shadow-sm"
+                : "rounded-md px-3 py-1 text-ink-500 hover:text-ink-700"}>
+              📋 Tabela
+            </button>
+          </div>
+        )}
+      </div>
+      <p className="mb-4 text-xs text-ink-500">Histórico dos últimos atendimentos (RN-116)</p>
+
+      {historico.length === 0 ? (
+        <p className="text-sm text-ink-500">Primeiro atendimento — sem histórico anterior.</p>
+      ) : modo === "grafico" ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <MiniGraficoLinha titulo="Peso" unidade="kg" pontos={pontosPeso} cor="#0d9488" />
+          <MiniGraficoLinha titulo="Temperatura" unidade="°C" pontos={pontosTemp} cor="#f59e0b" />
+          {temHoje && (
+            <p className="text-[11px] text-ink-400 sm:col-span-2">
+              ● Ponto preenchido = atendimento de hoje · passe o mouse sobre os pontos para ver os valores.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-ink-100">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-ink-100 bg-ink-50/70">
+                {["Data", "Peso (kg)", "Temperatura (°C)"].map((col) => (
+                  <th key={col}
+                    className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-ink-500">
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ink-100">
+              {temHoje && (
+                <tr className="bg-brand-50/60">
+                  <td className="px-4 py-2.5">
+                    <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700">
+                      Hoje
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 font-semibold text-brand-800">
+                    {peso || "—"}
+                    {!isNaN(pesoHoje) && historico[0] && (
+                      <Tendencia atual={pesoHoje} anterior={historico[0].pesoKg} />
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5 text-brand-800">
+                    {temperatura || "—"}
+                    {!isNaN(tempHoje) && historico[0] && (
+                      <Tendencia atual={tempHoje} anterior={historico[0].temperaturaCelsius} />
+                    )}
+                  </td>
+                </tr>
+              )}
+              {historico.map((r, i) => (
+                <tr key={i} className="hover:bg-ink-50/40">
+                  <td className="px-4 py-2.5 text-ink-600">{r.data}</td>
+                  <td className="px-4 py-2.5 font-medium text-ink-900">
+                    {r.pesoKg}
+                    {historico[i + 1] && (
+                      <Tendencia atual={r.pesoKg} anterior={historico[i + 1].pesoKg} />
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5 text-ink-800">
+                    {r.temperaturaCelsius}
+                    {historico[i + 1] && (
+                      <Tendencia atual={r.temperaturaCelsius} anterior={historico[i + 1].temperaturaCelsius} />
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Visualização somente leitura (após assinatura) ─────────────────────────────
 
 function RelatorioLeituraView({
@@ -869,68 +979,8 @@ function RelatorioLeituraView({
         </div>
       </div>
 
-      {/* Evolução comparativa */}
-      {historico.length > 0 && (
-        <div className="card p-6">
-          <h2 className="mb-3 text-base font-semibold text-ink-900">Evolução Comparativa</h2>
-          <div className="overflow-x-auto rounded-xl border border-ink-100">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-ink-100 bg-ink-50/70">
-                  {["Data", "Peso (kg)", "Temperatura (°C)"].map((col) => (
-                    <th
-                      key={col}
-                      className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-ink-500"
-                    >
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-ink-100">
-                {(peso || temperatura) && (
-                  <tr className="bg-brand-50/60">
-                    <td className="px-4 py-2.5">
-                      <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700">
-                        Hoje
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 font-semibold text-brand-800">
-                      {peso || "—"}
-                      {peso && historico[0] && (
-                        <Tendencia atual={parseFloat(peso)} anterior={historico[0].pesoKg} />
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5 text-brand-800">
-                      {temperatura || "—"}
-                      {temperatura && historico[0] && (
-                        <Tendencia atual={parseFloat(temperatura)} anterior={historico[0].temperaturaCelsius} />
-                      )}
-                    </td>
-                  </tr>
-                )}
-                {historico.map((r, i) => (
-                  <tr key={i}>
-                    <td className="px-4 py-2.5 text-ink-600">{r.data}</td>
-                    <td className="px-4 py-2.5 font-medium text-ink-900">
-                      {r.pesoKg}
-                      {historico[i + 1] && (
-                        <Tendencia atual={r.pesoKg} anterior={historico[i + 1].pesoKg} />
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5 text-ink-800">
-                      {r.temperaturaCelsius}
-                      {historico[i + 1] && (
-                        <Tendencia atual={r.temperaturaCelsius} anterior={historico[i + 1].temperaturaCelsius} />
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Evolução comparativa (gráfico interativo ⇄ tabela) */}
+      <EvolucaoComparativa historico={historico} peso={peso} temperatura={temperatura} />
 
       {/* Conteúdo clínico */}
       <div className="card p-6 space-y-5">
@@ -959,24 +1009,6 @@ function RelatorioLeituraView({
               <li key={i} className="flex items-center gap-2 text-sm text-brand-700">
                 <span>📎</span>
                 {nome}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Medicamentos */}
-      {relatorioSalvo.medicamentos.length > 0 && (
-        <div className="card p-6">
-          <h2 className="mb-3 text-base font-semibold text-ink-900">Medicamentos Prescritos</h2>
-          <ul className="space-y-2">
-            {relatorioSalvo.medicamentos.map((m, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-3 rounded-xl bg-ink-50/60 px-3 py-2.5 text-sm text-ink-700"
-              >
-                <span className="mt-0.5 shrink-0 text-brand-500">💊</span>
-                {m}
               </li>
             ))}
           </ul>

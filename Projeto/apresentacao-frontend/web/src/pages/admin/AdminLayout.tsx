@@ -5,6 +5,7 @@ import { BrandWordmark } from "../../components/Brand";
 const abas = [
   { to: "/admin", label: "Gestão", end: true },
   { to: "/admin/protocolos/configuracao", label: "Conf. Protocolo" },
+  { to: "/admin/catalogo-racoes", label: "Catálogo de Rações" },
 ];
 
 export function AdminLayout() {

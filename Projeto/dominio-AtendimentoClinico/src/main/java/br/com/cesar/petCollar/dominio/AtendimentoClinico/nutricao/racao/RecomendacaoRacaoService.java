@@ -33,7 +33,7 @@ public class RecomendacaoRacaoService {
         if (perfil == null) throw new IllegalArgumentException("Perfil nutricional é obrigatório.");
         if (n <= 0) throw new IllegalArgumentException("N deve ser positivo.");
 
-        return repositorio.listarTodas().stream()
+        return repositorio.listarAtivas().stream()
                 .map(racao -> pontuar(racao, perfil))
                 .filter(r -> r.pontuacao() > 0)
                 .sorted(Comparator.comparingInt(RacaoRecomendada::pontuacao).reversed())

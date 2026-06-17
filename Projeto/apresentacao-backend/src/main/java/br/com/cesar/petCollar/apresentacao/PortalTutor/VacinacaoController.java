@@ -129,6 +129,25 @@ public class VacinacaoController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Reagenda uma dose pendente ou em atraso para nova data — tutor remarca vacina atrasada (RN-079). */
+    @PatchMapping("/{cicloId}/doses/{doseId}/reagendar")
+    public ResponseEntity<CicloDTO> reagendarDose(@PathVariable String pacienteId,
+                                                  @PathVariable String cicloId,
+                                                  @PathVariable String doseId,
+                                                  @Valid @RequestBody RequisicaoReagendarDose req,
+                                                  Principal principal) {
+        obterPacienteDoTutor(pacienteId, principal);
+        cicloVacinalService.reagendarDose(
+            VacinaId.de(cicloId), VacinaId.de(doseId), req.novaData());
+        CicloVacinal ciclo = cicloVacinalService.listarPorPaciente(PacienteId.de(pacienteId))
+            .stream()
+            .filter(c -> c.getId().getValor().equals(cicloId))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Ciclo não encontrado."));
+        LocalDate sugerida = ciclo.podeAgendarProximaDose() ? calcularSugerida(ciclo) : null;
+        return ResponseEntity.ok(CicloDTO.de(ciclo, sugerida));
+    }
+
     /** Confirma a aplicação de uma dose — exclusivo para médico veterinário (RN-078). */
     @PatchMapping("/{cicloId}/doses/{doseId}/aplicar")
     public ResponseEntity<CicloDTO> aplicarDose(@PathVariable String pacienteId,
@@ -192,6 +211,8 @@ public class VacinacaoController {
     ) {}
 
     public record RequisicaoLembreteDTO(Integer diasLembrete) {}
+
+    public record RequisicaoReagendarDose(@NotNull LocalDate novaData) {}
 
     public record RequisicaoAplicarDose(
             @NotNull LocalDate dataAplicacao,

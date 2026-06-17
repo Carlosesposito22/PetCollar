@@ -1,5 +1,6 @@
 package petCollar.dominio.AtendimentoClinico.bdd;
 
+import io.cucumber.java.ParameterType;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.E;
 import io.cucumber.java.pt.Então;
@@ -22,6 +23,20 @@ public class PassosRelatorioClinico {
         this.contexto = contexto;
     }
 
+    /**
+     * Conversor de número decimal independente de locale.
+     *
+     * <p>O {@code {num}} embutido do Cucumber usa o locale padrão da JVM ao
+     * interpretar o valor. Em ambiente pt-BR o ponto é tratado como separador de
+     * milhar, fazendo {@code "5.2"} virar {@code 52.0} e {@code "0.4"} virar
+     * {@code 4.0}. {@link Double#parseDouble} sempre trata o ponto como separador
+     * decimal, tornando os cenários determinísticos em qualquer máquina.
+     */
+    @ParameterType("[-+]?[0-9]*\\.?[0-9]+")
+    public double num(String valor) {
+        return Double.parseDouble(valor);
+    }
+
     // ── Passos @Dado ──────────────────────────────────────────────────────────
 
     @Dado("existe um atendimento em curso para o paciente")
@@ -36,7 +51,7 @@ public class PassosRelatorioClinico {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("os sinais vitais foram aferidos com peso {double} kg e temperatura {double} graus")
+    @Dado("os sinais vitais foram aferidos com peso {num} kg e temperatura {num} graus")
     public void dadaSinaisVitais(double pesoKg, double temperaturaCelsius) {
         SinaisVitais sinaisVitais = new SinaisVitais(pesoKg, temperaturaCelsius, 80, LocalDateTime.now());
         contexto.relatorio.registrarSinaisVitais(sinaisVitais);
@@ -44,7 +59,7 @@ public class PassosRelatorioClinico {
             .thenReturn(Optional.of(contexto.relatorio));
     }
 
-    @Dado("existe um relatorio com sinais vitais registrados de peso {double} kg")
+    @Dado("existe um relatorio com sinais vitais registrados de peso {num} kg")
     public void dadaRelatorioComSinaisVitais(double pesoKg) {
         contexto.relatorioId = RelatorioClinicoId.gerar();
         contexto.pacienteId = PacienteId.gerar();
@@ -58,7 +73,7 @@ public class PassosRelatorioClinico {
         contexto.excecaoCapturada = null;
     }
 
-    @Dado("existe um historico de atendimento anterior com peso {double} kg")
+    @Dado("existe um historico de atendimento anterior com peso {num} kg")
     public void dadaHistoricoComPeso(double pesoAnteriorKg) {
         RelatorioClinicoId relatorioAnteriorId = RelatorioClinicoId.gerar();
         RelatorioClinico relatorioAnterior = new RelatorioClinico(
@@ -71,7 +86,7 @@ public class PassosRelatorioClinico {
             .thenReturn(List.of(contexto.relatorio, relatorioAnterior));
     }
 
-    @Dado("existe um relatorio sem historico anterior com peso {double} kg")
+    @Dado("existe um relatorio sem historico anterior com peso {num} kg")
     public void dadaRelatorioSemHistorico(double pesoKg) {
         contexto.relatorioId = RelatorioClinicoId.gerar();
         contexto.pacienteId = PacienteId.gerar();
@@ -282,7 +297,7 @@ public class PassosRelatorioClinico {
         verify(contexto.repositorioRelatorio, atLeastOnce()).salvar(contexto.relatorio);
     }
 
-    @Então("a variacao de peso deve ser {double} kg")
+    @Então("a variacao de peso deve ser {num} kg")
     public void entaoVariacaoPeso(double variacaoEsperada) {
         assertNull(contexto.excecaoCapturada, "Não deveria ter lançado exceção");
         assertNotNull(contexto.relatorio.getEvolucaoComparativa());

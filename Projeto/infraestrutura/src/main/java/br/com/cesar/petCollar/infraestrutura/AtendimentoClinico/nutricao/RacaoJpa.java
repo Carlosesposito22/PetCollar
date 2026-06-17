@@ -36,6 +36,13 @@ public class RacaoJpa {
     @Column(nullable = false) private String portesIndicados;       // CSV de Porte.name()
     @Column(nullable = false) private String comorbidadesIndicadas; // CSV de Comorbidade.name()
 
+    /**
+     * Soft delete. Nullable para suportar linhas pré-existentes na tabela
+     * (Hibernate {@code ddl-auto=update} acrescenta a coluna sem default).
+     * O método {@link #toDomain()} trata null como false.
+     */
+    private Boolean desativada;
+
     protected RacaoJpa() {}
 
     public static RacaoJpa fromDomain(Racao r) {
@@ -47,6 +54,7 @@ public class RacaoJpa {
         j.faixasIndicadas = serializar(r.getFaixasIndicadas());
         j.portesIndicados = serializar(r.getPortesIndicados());
         j.comorbidadesIndicadas = serializar(r.getComorbidadesIndicadas());
+        j.desativada = r.isDesativada();
         return j;
     }
 
@@ -56,8 +64,11 @@ public class RacaoJpa {
         Set<Comorbidade> comorbidades = desserializar(comorbidadesIndicadas, Comorbidade::valueOf, Comorbidade.class);
         return new Racao(
                 RacaoId.de(id), fabricante, linha,
-                densidadeCaloricaKcalPorKg, faixas, portes, comorbidades);
+                densidadeCaloricaKcalPorKg, faixas, portes, comorbidades,
+                Boolean.TRUE.equals(desativada));
     }
+
+    public boolean isDesativada() { return Boolean.TRUE.equals(desativada); }
 
     private static <E extends Enum<E>> String serializar(Set<E> valores) {
         return valores.stream().map(Enum::name).collect(Collectors.joining(","));

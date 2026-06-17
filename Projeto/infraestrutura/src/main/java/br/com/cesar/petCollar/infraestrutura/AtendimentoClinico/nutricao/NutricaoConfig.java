@@ -18,6 +18,10 @@ import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.CompararEvol
 import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.CriarEFinalizarPlanoNutricionalUseCase;
 import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.ListarCatalogoRacoesUseCase;
 import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.RecomendarRacoesUseCase;
+import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.admin.AlterarStatusRacaoUseCase;
+import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.admin.AtualizarRacaoUseCase;
+import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.admin.CriarRacaoUseCase;
+import br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.admin.ListarRacoesAdminUseCase;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.avaliacao.AvaliacaoCorporalService;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.evolucao.ComparacaoEvolutivaNutricionalService;
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.parametros.Comorbidade;
@@ -120,6 +124,29 @@ public class NutricaoConfig {
     @Bean
     public ListarCatalogoRacoesUseCase listarCatalogoRacoesUseCase(IRacaoRepositorio repositorio) {
         return new ListarCatalogoRacoesUseCase(repositorio);
+    }
+
+    // ── Use cases administrativos do catálogo de rações ──────────────────────
+
+    @Bean
+    public CriarRacaoUseCase criarRacaoUseCase(IRacaoRepositorio repositorio) {
+        return new CriarRacaoUseCase(repositorio);
+    }
+
+    @Bean
+    public AtualizarRacaoUseCase atualizarRacaoUseCase(IRacaoRepositorio repositorio) {
+        return new AtualizarRacaoUseCase(repositorio);
+    }
+
+    @Bean
+    public AlterarStatusRacaoUseCase alterarStatusRacaoUseCase(
+            IRacaoRepositorio racoes, IPlanoNutricionalRepositorio planos) {
+        return new AlterarStatusRacaoUseCase(racoes, planos);
+    }
+
+    @Bean
+    public ListarRacoesAdminUseCase listarRacoesAdminUseCase(IRacaoRepositorio repositorio) {
+        return new ListarRacoesAdminUseCase(repositorio);
     }
 
     // ── Seed inicial do catálogo (CLAUDE.md §6.5) ────────────────────────────

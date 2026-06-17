@@ -1,4 +1,4 @@
-package br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao;
+package br.com.cesar.petCollar.aplicacao.AtendimentoClinico.nutricao.admin;
 
 import java.util.List;
 
@@ -6,21 +6,20 @@ import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.IRacaoRe
 import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.Racao;
 
 /**
- * Lista todas as rações do catálogo (para autocomplete e seleção manual no
- * frontend).
+ * Caso de uso do admin: lista todas as rações (ativas + desativadas) para o
+ * CRUD do painel administrativo.
  */
-public class ListarCatalogoRacoesUseCase {
+public class ListarRacoesAdminUseCase {
 
     private final IRacaoRepositorio repositorio;
 
-    public ListarCatalogoRacoesUseCase(IRacaoRepositorio repositorio) {
+    public ListarRacoesAdminUseCase(IRacaoRepositorio repositorio) {
         if (repositorio == null)
             throw new IllegalArgumentException("IRacaoRepositorio é obrigatório.");
         this.repositorio = repositorio;
     }
 
     public List<Racao> executar() {
-        // Médico e tutor só veem rações ativas. Admin tem use case próprio.
-        return repositorio.listarAtivas();
+        return repositorio.listarTodas();
     }
 }

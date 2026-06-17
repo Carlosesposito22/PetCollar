@@ -21,9 +21,13 @@ public class ComparacaoEvolutivaNutricionalService {
     public EvolucaoNutricional comparar(PlanoNutricional anterior, PlanoNutricional atual) {
         if (anterior == null) throw new IllegalArgumentException("Plano anterior é obrigatório.");
         if (atual == null)    throw new IllegalArgumentException("Plano atual é obrigatório.");
-        if (anterior.getStatus() != StatusPlanoNutricional.FINALIZADO
-                || atual.getStatus() != StatusPlanoNutricional.FINALIZADO)
-            throw new IllegalStateException("Comparação só faz sentido entre planos finalizados.");
+        // A comparação aceita planos FINALIZADO e SUBSTITUIDO — ambos têm
+        // resultado calculado e snapshot histórico. Apenas RASCUNHO é
+        // rejeitado, pois não há ResultadoNEM congelado.
+        if (anterior.getStatus() == StatusPlanoNutricional.RASCUNHO
+                || atual.getStatus() == StatusPlanoNutricional.RASCUNHO)
+            throw new IllegalStateException(
+                    "Comparação evolutiva exige planos assinados (FINALIZADO ou SUBSTITUIDO).");
 
         BigDecimal pesoAnt = anterior.getParametros().pesoAtualKg();
         BigDecimal pesoNov = atual.getParametros().pesoAtualKg();

@@ -3,6 +3,7 @@ package br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.plano;
 import java.util.List;
 import java.util.Optional;
 
+import br.com.cesar.petCollar.dominio.AtendimentoClinico.nutricao.racao.RacaoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
 import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
@@ -30,4 +31,11 @@ public interface IPlanoNutricionalRepositorio {
 
     /** Todos os planos finalizados do tutor (em todos os pacientes dele). */
     List<PlanoNutricional> listarFinalizadosDoTutor(TutorId tutorId);
+
+    /**
+     * Quantos planos (em qualquer status) referenciam uma ração específica.
+     * Usado pelo admin para avisar "esta ração está vinculada a X planos"
+     * antes de desativá-la.
+     */
+    long contarPlanosComRacao(RacaoId racaoId);
 }

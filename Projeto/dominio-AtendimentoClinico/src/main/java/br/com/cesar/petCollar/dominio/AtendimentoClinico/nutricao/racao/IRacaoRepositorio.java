@@ -13,6 +13,10 @@ public interface IRacaoRepositorio {
 
     Optional<Racao> buscarPorId(RacaoId id);
 
+    /** Todas as rações ativas (não-desativadas). Usado pelo médico e tutor. */
+    List<Racao> listarAtivas();
+
+    /** Todas as rações, ativas e desativadas. Usado pelo admin no CRUD. */
     List<Racao> listarTodas();
 
     /** Quantidade de rações no catálogo — usado pelo seed para evitar reinserção. */
