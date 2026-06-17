@@ -36,7 +36,9 @@ recepção inteligente e triagem por risco, passando pela medicina preventiva
   como `buscarPorId`, `salvar`, `listarOrdenada`, `finalizar`.
 - **Linguagem onipresente:** use os termos do glossário do domínio — `Tutor`,
   `Paciente`, `Triagem`, `CorDeRisco`, `PesoTotal`, `Fila de Espera Dinâmica`,
-  `Ticket de Benefício`, `Status da Conta`, `NEM`, `Blindagem de Dosagem`.
+  `Ticket de Benefício`, `Status da Conta`, `NEM`, `Blindagem de Dosagem`,
+  `Plano Nutricional`, `Cronograma de Transição`, `Ração`, `Comorbidade`,
+  `Prescrição Farmacológica`, `Tag Clínica`, `Cobrança`, `Status da Prescrição`.
 - **Java 17** · **Spring Boot 4.0.5** · **Spring Security + JWT (HS256)** ·
   **Spring Data JPA + PostgreSQL** (camada-alvo de persistência) ·
   **Cucumber 7 + JUnit 5 + Mockito** · **Lombok** (disponível, mas o domínio
@@ -51,24 +53,28 @@ Diferente de um monólito, **cada bounded context é seu próprio módulo Maven*
 
 ```
 petCollar-pai (pom · groupId br.com.cesar)
-├── dominio-compartilhado     ← Shared Kernel: VOs de Id e enums compartilhados (Java puro)
-├── dominio-RecepcaoTriagem   ← Core: prontuário, triagem, fila por risco (Java puro)
-├── dominio-IdentidadeAcesso  ← acesso, perfis, status da conta (Java puro)
-├── dominio-RelacaoTutor      ← tutor, responsáveis, indicação (Java puro)
-├── dominio-GestaoFluxo       ← fila dinâmica, SLA, chamada (Java puro)
-├── dominio-SaudePreventiva   ← ciclo vacinal, carteira de vacinação (Java puro)
-├── dominio-AtendimentoClinico← relatório clínico, NEM (Java puro)
-├── dominio-Notificacao       ← alertas e notificações (Java puro)
-├── aplicacao                 ← Casos de uso (orquestra os Services do domínio)  [scaffold]
-├── infraestrutura            ← Persistência: JPA, entidades, adapters, @Configuration  [scaffold]
-├── apresentacao-frontend     ← Camada web (fora do escopo deste guia)
-└── apresentacao-backend      ← API REST (Spring Boot, Controllers, DTOs, segurança, bootstrap)
+├── dominio-compartilhado          ← Shared Kernel: VOs de Id e enums compartilhados (Java puro)
+├── dominio-Notificacao            ← alertas e notificações (Java puro)
+├── dominio-IdentidadeAcesso       ← acesso, perfis, status da conta (Java puro)
+├── dominio-RelacaoTutor           ← tutor, responsáveis, indicação (Java puro)
+├── dominio-RecepcaoTriagem        ← Core: prontuário, triagem, fila por risco (Java puro)
+├── dominio-GestaoFluxo            ← fila dinâmica, SLA, chamada (Java puro)
+├── dominio-SaudePreventiva        ← ciclo vacinal, carteira de vacinação (Java puro)
+├── dominio-AtendimentoClinico     ← relatório clínico, plano nutricional + NEM, catálogo de rações, evolução (Java puro)
+├── dominio-AgendamentoClinico     ← agenda, consultas e retornos (Java puro)
+├── dominio-ProtocoloInacessibilidade ← protocolo de tutor inacessível, SLA de contato (Java puro)
+├── dominio-AssinaturaFaturamento  ← contratação de plano, cobrança, juros de mora (Java puro)
+├── dominio-BeneficiosPlano        ← carência e tickets de benefício (Java puro)
+├── dominio-Gamificacao            ← conquistas e indicações (Java puro)
+├── dominio-Farmacovigilancia      ← catálogo de medicamentos, prescrição, matriz de interação (Java puro)
+├── aplicacao                      ← Casos de uso (orquestra os Services do domínio)
+├── infraestrutura                 ← Persistência: JPA, entidades, adapters, @Configuration
+├── apresentacao-frontend          ← Camada web (fora do escopo deste guia)
+└── apresentacao-backend           ← API REST (Spring Boot, Controllers, DTOs, segurança, bootstrap)
 ```
 
-> Os módulos `dominio-AssinaturaFaturamento`, `dominio-BeneficiosPlano`,
-> `dominio-Farmacovigilancia` e `dominio-Gamificacao` existem como pastas/POMs
-> mas **ainda não estão ativados** no `<modules>` do pom-pai. Ao implementá-los,
-> registre-os no pom-pai e siga este mesmo padrão.
+> Todos os bounded contexts acima estão **ativos** no `<modules>` do pom-pai e
+> têm seu próprio agregado raiz, repositório e wiring de beans na infra.
 
 **Regra de dependência (NUNCA inverter):**
 
@@ -420,8 +426,9 @@ Para cada agregado, quatro tipos de arquivo:
 | **Repository** | todo o sistema | interface `IXxxRepositorio` no domínio + impl. na infra |
 | **Adapter** | `*RepositorioJpa` / `*RepositorioEmMemoria` | adapta a tecnologia → interface do domínio |
 | **Factory Method** | `XxxId.gerar()`/`XxxId.de()`, construtor de reconstituição, `XxxDTO.de()` | criação/recriação controlada de objetos |
-| **Strategy** | `ClassificacaoDeRiscoService` | cálculo de `PesoTotal`/`CorDeRisco` por limiares parametrizáveis |
-| **State** | `Triagem` (`StatusTriagem`), `StatusConta` | transições guardadas que bloqueiam operações inválidas |
+| **Decorator** | F-07 `Cobranca` (juros), F-11 `CalculadoraNEM` (peso metabólico → atividade → comorbidade), F-12 `CalculadoraDoseMaximaSegura` (base → tag clínica → alergia) | camadas cumulativas que transformam um cálculo; cada decorator empilha sobre o anterior preservando a interface comum |
+| **Strategy** | F-02 `ClassificacaoDeRiscoService`, F-11 `RecomendacaoRacaoService` (3 strategies pontuam cada ração por comorbidade/faixa etária/porte e o service agrega) | cálculo/ranqueamento por critério intercambiável; novas strategies entram via `List<EstrategiaXxx>` no Config |
+| **State** | F-02 `Triagem`/`StatusTriagem`, F-07 `StatusConta`, F-11 `PlanoNutricional`/`StatusPlanoNutricional` (RASCUNHO→FINALIZADO→SUBSTITUIDO), F-12 `Prescricao`/`StatusPrescricao` (FINALIZADA→SUBSTITUIDA) | transições guardadas (`verificarRascunho()`, `marcarComoSubstituido()`) que bloqueiam operações inválidas e preservam imutabilidade após assinatura |
 | **Observer** | `Notificacao` | Services notificam observadores (alertas de SLA, vacina, estoque) — wiring no `Config` |
 | **Service Layer** | `dominio-*` | regras que cruzam entidades/repositórios |
 

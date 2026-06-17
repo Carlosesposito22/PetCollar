@@ -167,6 +167,18 @@ BoundedContext ContextoAssinaturaFaturamento implements RelacaoTutorSubdomain {
             void quitarTodasEmAberto(@TutorId tutorId);
         }
 
+        // Padrão Decorator (GoF): CalculadoraValor define a interface comum
+        // (calcularValorAtualizado() devolve BigDecimal). ValorBase devolve o
+        // valor original da cobranca. CalculadoraValorDecorator e o decorator
+        // abstrato — empilha sobre uma CalculadoraValor existente. Implementacoes
+        // concretas: JurosSimplesDecorator (acumula 0,033%% ao dia sobre o valor
+        // original — RN 4) e DescontoIndicacaoDecorator (subtrai o desconto da
+        // campanha de indicacao, F-04). A ordem ValorBase -> Juros -> Desconto
+        // garante que o desconto incida sobre o valor ja atualizado por juros.
+        Service CalculadoraValor {
+            BigDecimal calcularValorAtualizado();
+        }
+
         Repository CobrancaRepository {
             List<@Cobranca> buscarPorTutor(@TutorId tutorId);
             List<@Cobranca> buscarEmAtrasoByTutor(@TutorId tutorId);
@@ -1372,69 +1384,106 @@ BoundedContext ContextoAtendimentoClinico implements AtendimentoClinicoSubdomain
 
         Entity PlanoNutricional {
             aggregateRoot
-            - @PlanoNutricionalId   planoId
-            - @PacienteId           pacienteId
-            - @AtendimentoId        atendimentoId
-            - @PesoIdeal            pesoIdeal
-            - @NivelAtividade       nivelAtividade
-            - List<@Comorbidade>    comorbidades
-            - @ResultadoNEM         resultado
-            - @CronogramaTransicao  cronogramaTransicao
-            - @AlertaManejoCritico  alertaManejoCritico
-            DateTime                calculadoEm
-            Boolean                 imutavel
+            - @PlanoNutricionalId       planoId
+            - @PacienteId               pacienteId
+            - @TutorId                  tutorId
+            - @MedicoId                 medicoResponsavel
+            - @ParametrosPaciente       parametros               // peso atual, peso ideal, nivel atividade, comorbidade, densidade calorica da racao
+            - @CronogramaTransicao      cronograma
+            - List<@ObservacaoNutricional> observacoes
+            - @RacaoId                  racaoEscolhida           // referencia opcional ao Aggregate Racao (catalogo)
+            String                      justificativaDivergencia // obrigatorio quando divergencia peso atual vs ideal > 30%% (RN reforcada)
+            - @StatusPlanoNutricional   status                   // RASCUNHO -> FINALIZADO -> SUBSTITUIDO
+            - @ResultadoNEM             resultadoFinalizado      // snapshot congelado ao finalizar
+            - @AssinaturaDigital        assinatura               // PNG base64 + medico + data + hash SHA-256
+            DateTime                    criadoEm
+            DateTime                    atualizadoEm
         }
 
-        ValueObject PesoIdeal {
-            Double pesoAtualKg
-            Double pesoIdealKg
-            Double divergenciaPercentual
+        ValueObject ParametrosPaciente {
+            Double             pesoAtualKg
+            Double             pesoIdealKg
+            - @NivelAtividade  nivelAtividade
+            - @Comorbidade     comorbidade
+            Double             densidadeCaloricaKcalPorKg        // densidade da racao usada para converter NEM em gramas/dia
         }
 
         ValueObject ResultadoNEM {
-            Double  kcalDiarias
-            Double  gramasDiariasTotais
-            Integer numeroDeRefeicoesDia
-            Date    dataPrevistaAtingirPesoIdeal
+            Double pesoMetabolico                                // P^0.75
+            Double nemBase                                       // 70 * pesoMetabolico
+            Double fatorAtividade
+            Double modificadorComorbidade
+            Double nemTotal                                      // base * fator atividade * modificador comorbidade
+            Double quantidadeRecomendadaGramasPorDia
         }
 
         ValueObject CronogramaTransicao {
-            Integer                 duracaoEmDias
+            - @TipoCronograma       tipo
             - List<@DiaTransicao>   dias
         }
 
         ValueObject DiaTransicao {
-            Integer numeroDia
-            Integer percentualDietaNova
-            Integer percentualDietaAntiga
+            String  faixaDias                                    // "Dias 1-2", "Dia 7", etc
+            Integer percentualRacaoAtual
+            Integer percentualRacaoNova
         }
 
-        ValueObject Comorbidade {
-            - @TipoComorbidade  tipo
-            Double              modificadorMetabolico
+        ValueObject ObservacaoNutricional {
+            String texto                                         // maximo 500 caracteres
         }
 
-        ValueObject AlertaManejoCritico {
-            Boolean             ativo
-            - @TipoAlertaManejo tipo
-            String              mensagem
+        ValueObject AvaliacaoCorporal {
+            - @ClassificacaoCorporal  classificacao              // RN 6 — alerta visual quando divergencia > 15%%
+            Double                    divergenciaPercentual
+            Boolean                   exigeAlerta
         }
-        enum TipoComorbidade            { NENHUMA, GESTACAO, NEFROPATIA, HEPATOPATIA, DIABETES, OBESIDADE, CARDIOPATIA }
-        enum NivelAtividade             { SEDENTARIO, POUCO_ATIVO, MODERADAMENTE_ATIVO, MUITO_ATIVO, ATLETA }
-        enum TipoAlertaManejo           { NENHUM, OBESIDADE, CAQUEXIA }
+
+        ValueObject EvolucaoNutricional {                        // delta entre dois planos finalizados sequenciais
+            DateTime          planoAnteriorEm
+            DateTime          planoAtualEm
+            Double            pesoAtualAnteriorKg
+            Double            pesoAtualNovoKg
+            Double            deltaPesoKg
+            Double            deltaPesoPercentual
+            Double            nemAnteriorKcal
+            Double            nemNovoKcal
+            Double            deltaNemPercentual
+            - @TendenciaPeso  tendenciaPeso                      // GANHO, PERDA, ESTAVEL (limiar 2%)
+        }
+
+        ValueObject AssinaturaDigital {
+            - @MedicoId  medicoResponsavel
+            String       imagemBase64
+            DateTime     assinadoEm
+            String       hashConteudo                            // SHA-256 do resumo do plano para deteccao de adulteracao
+        }
+
+        enum NivelAtividade         { SEDENTARIO, POUCO_ATIVO, MODERADAMENTE_ATIVO, MUITO_ATIVO, ATLETA }
+        enum Comorbidade            { NENHUMA, OBESIDADE, DIABETES, DOENCA_RENAL }
+        enum TipoCronograma         { PADRAO_7_DIAS, PADRAO_10_DIAS, PADRAO_14_DIAS, PERSONALIZADO }
+        enum ClassificacaoCorporal  { ADEQUADO, OBESIDADE, CAQUEXIA }
+        enum TendenciaPeso          { GANHO, PERDA, ESTAVEL }
+        enum StatusPlanoNutricional { RASCUNHO, FINALIZADO, SUBSTITUIDO }
         ValueObject PlanoNutricionalId  { String id }
 
-        Service CalculoNEMService {
-            @ResultadoNEM calcularNEM(@PesoIdeal pesoIdeal, @NivelAtividade nivelAtividade, List<@Comorbidade> comorbidades, Double kcalPorGramaRacao);
+        // Padrão Decorator (GoF): CalculadoraNEM define a interface comum
+        // (calcular() devolve BigDecimal). NEMBase calcula 70 * pesoIdeal^0.75
+        // (peso metabolico). CalculadoraNEMDecorator e o decorator abstrato.
+        // Implementacoes concretas: NivelAtividadeDecorator (multiplica pelo
+        // fator de atividade — Sedentario 1.2, Atleta 2.0) e ComorbidadeDecorator
+        // (aplica o modificador da comorbidade — Obesidade x0.8, Diabetes x0.85,
+        // Doenca Renal x0.85). A ordem NEMBase -> NivelAtividade -> Comorbidade
+        // produz o NEM total em kcal/dia.
+        Service CalculadoraNEM {
+            BigDecimal calcular();
         }
 
-        Service AnaliseComparativaPesoService {
-            Double sugerirAjustePercentual(@PacienteId pacienteId, @PesoIdeal atual);
-            @AlertaManejoCritico avaliarAlertaCritico(@PesoIdeal pesoIdeal);
+        Service AvaliacaoCorporalService {
+            @AvaliacaoCorporal avaliar(@ParametrosPaciente parametros);
         }
 
-        Service GeracaoCronogramaTransicaoService {
-            @CronogramaTransicao gerarCronograma7Dias();
+        Service ComparacaoEvolutivaNutricionalService {          // aceita planos FINALIZADO e SUBSTITUIDO; rejeita RASCUNHO
+            @EvolucaoNutricional comparar(@PlanoNutricional anterior, @PlanoNutricional atual);
         }
 
         DomainEvent PlanoNutricionalEmitidoEvent {
@@ -1443,10 +1492,71 @@ BoundedContext ContextoAtendimentoClinico implements AtendimentoClinicoSubdomain
             - @TutorId tutorId
         }
 
-        Repository PlanoNutricionalRepository {
-            @PlanoNutricional findByAtendimento(@AtendimentoId atendimentoId);
-            List<@PlanoNutricional> findByPacienteHistorico(@PacienteId pacienteId);
-            @PlanoNutricional save(@PlanoNutricional planoNutricional);
+        Repository IPlanoNutricionalRepositorio {
+            void salvar(@PlanoNutricional plano);
+            Optional<@PlanoNutricional> buscarPorId(@PlanoNutricionalId id);
+            Optional<@PlanoNutricional> buscarRascunhoDoPaciente(@PacienteId pacienteId);
+            Optional<@PlanoNutricional> buscarFinalizadoAtivoDoPaciente(@PacienteId pacienteId);   // no maximo 1 vigente por paciente
+            List<@PlanoNutricional> listarFinalizadosDoPaciente(@PacienteId pacienteId);          // historico para evolucao (inclui SUBSTITUIDO)
+            List<@PlanoNutricional> listarAtivosDoTutor(@TutorId tutorId);
+            Long contarPlanosComRacao(@RacaoId racaoId);                                          // usado pelo admin antes de desativar racao
+        }
+    }
+
+    Aggregate Racao {                                            // catalogo administrado pelo Admin
+
+        Entity Racao {
+            aggregateRoot
+            - @RacaoId              racaoId
+            String                  fabricante
+            String                  linha
+            Double                  densidadeCaloricaKcalPorKg
+            - List<@FaixaEtaria>    faixasIndicadas              // FILHOTE, ADULTO, SENIOR
+            - List<@Porte>          portesIndicados              // PEQUENO (<10kg), MEDIO (10-25kg), GRANDE (>25kg)
+            - List<@Comorbidade>    comorbidadesIndicadas
+            Boolean                 desativada                   // soft-delete — preserva integridade historica dos planos
+        }
+
+        enum FaixaEtaria      { FILHOTE, ADULTO, SENIOR }
+        enum Porte            { PEQUENO, MEDIO, GRANDE }
+        ValueObject RacaoId   { String id }
+
+        ValueObject PerfilNutricional {                          // input das Strategies
+            - @Porte         porte
+            - @FaixaEtaria   faixaEtaria
+            - @Comorbidade   comorbidade
+        }
+
+        ValueObject RacaoRecomendada {
+            - @Racao  racao
+            Integer   pontuacao
+            // detalhes : Map<String, Integer> (pontuacao por Strategy)
+            // motivosFortes : List<String>
+        }
+
+        // Padrão Strategy (GoF): EstrategiaRecomendacaoRacao define a interface
+        // (pontuar(Racao, PerfilNutricional) devolve int >= 0). Implementacoes:
+        // RecomendacaoPorComorbidadeStrategy (50pts se cobre a comorbidade),
+        // RecomendacaoPorFaixaEtariaStrategy (20pts se adequada a idade) e
+        // RecomendacaoPorPorteStrategy (15pts se adequada ao porte).
+        // RecomendacaoRacaoService recebe a List<EstrategiaRecomendacaoRacao>
+        // (wiring no Config), aplica todas sobre cada racao ativa, soma e
+        // devolve as top-N ranqueadas.
+        Service EstrategiaRecomendacaoRacao {
+            String nome();
+            Integer pontuar(@Racao racao, @PerfilNutricional perfil);
+        }
+
+        Service RecomendacaoRacaoService {
+            List<@RacaoRecomendada> recomendarTop(@PerfilNutricional perfil, Integer n);
+        }
+
+        Repository IRacaoRepositorio {
+            void salvar(@Racao racao);
+            Optional<@Racao> buscarPorId(@RacaoId id);
+            List<@Racao> listarAtivas();                         // usado pelo medico e tutor
+            List<@Racao> listarTodas();                          // usado pelo admin no CRUD
+            Long contar();
         }
     }
 }
@@ -1458,52 +1568,71 @@ BoundedContext ContextoFarmacovigilancia implements AtendimentoClinicoSubdomain 
 
         Entity Medicamento {
             aggregateRoot
-            - @MedicamentoId   medicamentoId
-            String             nomeComercial
-            String             principioAtivo
-            Double             concentracaoMgPorMl
-            Double             doseMinimaSeguraMgPorKg
-            Double             doseMaximaSeguraMgPorKg
-            - @RestricaoManejo restricaoManejo
+            - @MedicamentoId        medicamentoId
+            String                  nome                         // ex: "Amoxicilina + Clavulanato"
+            Double                  doseMaximaMgPorKg            // teto de seguranca por kg
+            Double                  concentracaoMgPorMl          // converte mg em ml (RN 6)
+            - List<@ViaAdministracao> viasPermitidas
+            - List<String>          componentes                  // bate com lista de alergias do paciente (ex: "penicilina", "aine")
+            - @ManejoAlimentar      manejoAlimentar              // detecta conflitos no escalonamento horario (RN 7)
+            String                  notaCuidado                  // injetada automaticamente no cronograma do tutor (RN 8)
         }
 
-        enum RestricaoManejo      { NENHUMA, ESTOMAGO_VAZIO, COM_ALIMENTO, EVITAR_LACTICINIOS }
+        enum ViaAdministracao     { ORAL, SUBCUTANEA, INTRAMUSCULAR, INTRAVENOSA, TOPICA, OFTALMICA, OTOLOGICA }
+        enum ManejoAlimentar      { JEJUM, COM_ALIMENTO, INDIFERENTE }
         ValueObject MedicamentoId { String id }
 
-        Repository MedicamentoRepository {
-            @Medicamento findByPrincipioAtivo(String principioAtivo);
-            List<@Medicamento> findAll();
-            @Medicamento save(@Medicamento medicamento);
+        Repository IMedicamentoRepositorio {
+            void salvar(@Medicamento medicamento);
+            Optional<@Medicamento> buscarPorId(@MedicamentoId id);
+            List<@Medicamento> listarTodos();
+            Long contar();
+            void registrarInteracao(@InteracaoMedicamentosa interacao);
+            List<@InteracaoMedicamentosa> buscarInteracoesEntre(List<@MedicamentoId> medicamentos);
         }
     }
 
     Aggregate MatrizInteracaoMedicamentosa {
 
-        Entity MatrizInteracao {
-            aggregateRoot
-            - @MatrizInteracaoId    matrizId
-            - List<@RegraInteracao> regras
-            DateTime                atualizadaEm
-        }
-
-        ValueObject RegraInteracao {
+        // A matriz e armazenada como pares de medicamentos (entradas idempotentes —
+        // (A,B) e (B,A) representam o mesmo par). Nao ha "MatrizInteracao" como
+        // agregado raiz separado; cada InteracaoMedicamentosa e uma linha
+        // independente do IMedicamentoRepositorio. Mantida aqui como Aggregate
+        // logico para destacar a regra de validacao cruzada (RN 4).
+        ValueObject InteracaoMedicamentosa {
             - @MedicamentoId        medicamentoA
             - @MedicamentoId        medicamentoB
-            - @GravidadeInteracao   gravidade
-            String                  descricaoClinica
-            Boolean                 bloqueante
+            - @GravidadeInteracao   gravidade                    // GRAVE = bloqueia; MODERADA/LEVE = apenas alerta
+            String                  descricao
         }
-        enum GravidadeInteracao       { LEVE, MODERADA, GRAVE, CRITICA }
-        ValueObject MatrizInteracaoId { String id }
+        enum GravidadeInteracao { GRAVE, MODERADA, LEVE }
+    }
 
-        Service ConsultaInteracoesService {
-            List<@RegraInteracao> verificarInteracoesEntre(List<@MedicamentoId> medicamentos);
-            Boolean possuiInteracaoBloqueante(List<@MedicamentoId> medicamentos);
+    Aggregate TemplatePrescricao {                               // conjuntos pre-configurados aplicaveis com 1 clique
+
+        Entity TemplatePrescricao {
+            aggregateRoot
+            - @TemplatePrescricaoId  templateId
+            String                   nome                        // "Gastroprotecao Basica", "Antiemetico Padrao", "Antibiotico Amplo Espectro"
+            String                   descricao
+            - List<@ItemTemplate>    itens
         }
 
-        Repository MatrizInteracaoRepository {
-            @MatrizInteracao findAtual();
-            @MatrizInteracao save(@MatrizInteracao matriz);
+        ValueObject ItemTemplate {
+            - @MedicamentoId      medicamentoId
+            Double                doseMgPorKg
+            Integer               duracaoDias
+            - @Frequencia         frequencia
+            - @ViaAdministracao   via
+        }
+
+        ValueObject TemplatePrescricaoId { String id }
+
+        Repository ITemplatePrescricaoRepositorio {
+            void salvar(@TemplatePrescricao template);
+            Optional<@TemplatePrescricao> buscarPorId(@TemplatePrescricaoId id);
+            List<@TemplatePrescricao> listarTodos();
+            Long contar();
         }
     }
 
@@ -1511,81 +1640,107 @@ BoundedContext ContextoFarmacovigilancia implements AtendimentoClinicoSubdomain 
 
         Entity Prescricao {
             aggregateRoot
-            - @PrescricaoId            prescricaoId
-            - @AtendimentoId           atendimentoId
-            - @PacienteId              pacienteId
-            Double                     pesoPacienteAtualKg
-            - List<@TipoTagClinica>    tagsClinicasAtivas
-            - List<@ItemPrescricao>    itens
-            - @CronogramaAdministracao cronograma
-            DateTime                   emitidaEm
-            DateTime                   dataFimTratamento
-            - @StatusPrescricao        status
-            Boolean                    imutavel
+            - @PrescricaoId               prescricaoId
+            - @PacienteId                 pacienteId
+            - @TutorId                    tutorId
+            - @MedicoId                   medicoResponsavel
+            Double                        pesoPacienteKg
+            - List<@ItemPrescricao>       itens
+            - List<String>                instrucoesGerais        // injetadas no cronograma do tutor
+            - List<@TagClinica>           tagsClinicas            // alimentam o Decorator de reducao
+            - List<String>                alergiasConsideradas    // alimentam o Decorator de bloqueio
+            - @StatusPrescricao           status                  // FINALIZADA -> SUBSTITUIDA (nasce sempre FINALIZADA, sem rascunho persistido)
+            - @AssinaturaDigitalPrescricao assinatura
+            Date                          dataInicio
+            Date                          dataFim                 // = dataInicio + maior(duracaoDias dos itens) — RN 3
+            DateTime                      criadoEm
+            DateTime                      atualizadoEm
         }
 
-        Entity ItemPrescricao {
-            - @ItemPrescricaoId itemId
-            - @MedicamentoId    medicamentoId
-            String              nomeComercial
-            Double              doseInformadaMgPorKg
-            Double              doseCalculadaMg
-            Double              volumeFinalMl
-            String              posologia
-            Integer             duracaoDias
-            DateTime            dataInicioUso
-            DateTime            dataFimUso
-            - @StatusDosagem    statusDosagem
-            String              notaCuidadoEspecifico
+        ValueObject ItemPrescricao {
+            - @MedicamentoId               medicamentoId
+            String                         nomeMedicamento
+            Double                         doseMgPorKg
+            Double                         doseTotalMg                  // = doseMgPorKg * pesoPacienteKg
+            Double                         volumeFinalMl                // = doseTotalMg / concentracaoMgPorMl (RN 6)
+            Integer                        duracaoDias
+            - @Frequencia                  frequencia
+            - @ViaAdministracao            via
+            - List<@HorarioAdministracao>  horarios
+            String                         notaCuidado
         }
 
-        ValueObject CronogramaAdministracao {
-            - List<@SlotHorario>    slotsDiarios
-            String                  conflitosResolvidos
+        ValueObject HorarioAdministracao {
+            String valor                                          // formato HH:mm, validado no construtor
         }
 
-        ValueObject SlotHorario {
-            DateTime                horario
-            - @ItemPrescricaoId     itemId
-            Double                  volumeAdministrar
-            String                  notaCuidado
-        }
-        enum TipoTagClinica          { INSUFICIENCIA_RENAL, INSUFICIENCIA_HEPATICA, GERIATRICO, FILHOTE, GESTACAO, CARDIOPATIA }
-        enum StatusDosagem           { DENTRO_DO_LIMITE, PROXIMO_DO_LIMITE, TRAVADO_POR_DOSE, TRAVADO_POR_INTERACAO }
-        enum StatusPrescricao        { RASCUNHO, VALIDADA, TRAVADA_AGUARDANDO_REVISAO, EMITIDA, CANCELADA }
-        ValueObject PrescricaoId     { String id }
-        ValueObject ItemPrescricaoId { String id }
-
-        Service CalculadoraDosagemSeguraService {
-            @StatusDosagem validarDosagem(Double doseInformadaMgPorKg, Double pesoAnimalKg, @Medicamento medicamento);
-            Boolean deveTravarPrescricao(List<@ItemPrescricao> itens);
+        ValueObject AssinaturaDigitalPrescricao {
+            - @MedicoId  medicoResponsavel
+            String       imagemBase64
+            DateTime     assinadoEm
+            String       hashConteudo                             // SHA-256 do resumo da prescricao
         }
 
-        Service AjusteContextualPorTagsService {
-            Double calcularFatorReducao(List<@TipoTagClinica> tags);
-            Double converterMgParaVolume(Double doseMg, @Medicamento medicamento);
+        enum TagClinica            { GERIATRICO, INSUFICIENCIA_RENAL, INSUFICIENCIA_HEPATICA, CARDIOPATA }
+        enum Frequencia            { UMA_VEZ_DIA, DUAS_VEZES_DIA, TRES_VEZES_DIA, QUATRO_VEZES_DIA, A_CADA_8H, A_CADA_12H }
+        enum StatusPrescricao      { FINALIZADA, SUBSTITUIDA }
+        ValueObject PrescricaoId   { String id }
+
+        // Padrão Decorator (GoF): CalculadoraDoseMaximaSegura define a interface
+        // comum (calcular() devolve BigDecimal). DoseMaximaBase devolve o teto
+        // cadastrado do medicamento (mg/kg). CalculadoraDoseDecorator e o
+        // decorator abstrato. Implementacoes concretas: RedutorPorTagClinica
+        // (multiplica por 0.75 se paciente tem GERIATRICO/INSUFICIENCIA_RENAL/
+        // INSUFICIENCIA_HEPATICA — RN 5) e RedutorPorAlergia (colapsa para zero
+        // se paciente e alergico a qualquer componente do medicamento — defesa
+        // final contra prescrever principio ativo declarado como alergia).
+        // A ordem Base -> Tag -> Alergia produz o teto efetivo por paciente.
+        Service CalculadoraDoseMaximaSegura {
+            BigDecimal calcular();
         }
 
-        Service CronogramaAdministracaoService {
-            DateTime calcularDataFimTratamento(DateTime dataConsulta, List<@ItemPrescricao> itens);
-            @CronogramaAdministracao gerarCronograma(List<@ItemPrescricao> itens, List<@Medicamento> referencias);
+        // Orquestra todas as camadas de validacao: empilha o Decorator de
+        // dose maxima por item, compara dose proposta vs maxima, confere via
+        // permitida, consulta a matriz de interacoes entre os itens e detecta
+        // conflitos de manejo alimentar (RN 1+2+4+7). Devolve ResultadoValidacao
+        // com violacoes (BLOQUEIO impede assinatura; ALERTA apenas informa).
+        Service ValidadorPrescricao {
+            @ResultadoValidacao validar(Double pesoPacienteKg, List<@TagClinica> tags, List<String> alergias, List<@RascunhoItem> itens);
         }
 
-        Service EmissaoReceitaService {
-            String gerarPdfImutavel(@PrescricaoId prescricaoId);
+        ValueObject RascunhoItem {                                // input cru do medico antes de virar ItemPrescricao
+            - @MedicamentoId      medicamentoId
+            Double                doseMgPorKg
+            Integer               duracaoDias
+            - @Frequencia         frequencia
+            - @ViaAdministracao   via
+        }
+
+        ValueObject Violacao {
+            - @NivelViolacao  nivel
+            String            codigo                              // "SUPERDOSAGEM", "ALERGIA", "INTERACAO_GRAVE", "VIA_INVALIDA", "CONFLITO_MANEJO"
+            String            mensagem
+        }
+        enum NivelViolacao { BLOQUEIO, ALERTA }
+
+        ValueObject ResultadoValidacao {
+            Boolean             podeFinalizar
+            - List<@Violacao>   violacoes
+            // detalhePorItem: Map<MedicamentoId, DetalheItem> (dose max segura calculada, dose total proposta, volume, flags tag/alergia aplicada)
         }
 
         DomainEvent PrescricaoEmitidaEvent {
             - @PrescricaoId prescricaoId
             - @PacienteId pacienteId
-            - @AtendimentoId atendimentoId
             DateTime emitidaEm
         }
 
-        Repository PrescricaoRepository {
-            @Prescricao findByAtendimento(@AtendimentoId atendimentoId);
-            List<@Prescricao> findByPaciente(@PacienteId pacienteId);
-            @Prescricao save(@Prescricao prescricao);
+        Repository IPrescricaoRepositorio {
+            void salvar(@Prescricao prescricao);
+            Optional<@Prescricao> buscarPorId(@PrescricaoId id);
+            Optional<@Prescricao> buscarVigenteDoPaciente(@PacienteId pacienteId);   // no maximo 1 vigente
+            List<@Prescricao> listarHistoricoDoPaciente(@PacienteId pacienteId);     // FINALIZADA + SUBSTITUIDA
+            List<@Prescricao> listarAtivasDoTutor(@TutorId tutorId);                 // apenas FINALIZADA
         }
     }
 }
