@@ -60,110 +60,65 @@ O petCollar é uma plataforma de gestão veterinária de alta complexidade, dese
 
 ## ▶️ **Como rodar o projeto**
 
-O sistema é dividido em **dois módulos** que sobem separadamente:
+O jeito mais simples de subir o petCollar é via **Docker Compose**, que sobe o banco de dados (PostgreSQL), o backend (Spring Boot) e o frontend (React/Nginx) com um único comando.
 
-| Módulo | Tecnologia | Porta | Pasta |
-|---|---|---|---|
-| **Backend (API)** | Java 17+ · Spring Boot · Spring Security · JWT | `8080` | `Projeto/apresentacao-backend` |
-| **Frontend (SPA)** | React · Vite · TypeScript · Tailwind | `5173` | `Projeto/apresentacao-frontend/web` |
-
-> O frontend faz proxy de `/api/**` → `http://localhost:8080`, então **suba primeiro o backend** e depois o frontend.
+| Serviço | URL de acesso |
+|---|---|
+| **Frontend** | <http://localhost:3000> |
+| **Backend (API)** | <http://localhost:8080> |
+| **Banco de dados** | `localhost:5433` (usuário/senha/banco: `petcollar`) |
 
 ---
 
-### 1) 📋 Pré-requisitos
+### 1) 📋 Pré-requisito
 
-Antes de começar, instale na sua máquina:
+Instale o **Docker Desktop** (inclui o Docker Compose):
 
-| Ferramenta | Versão | Verificar | Onde obter |
-|---|---|---|---|
-| **Git** | qualquer | `git --version` | <https://git-scm.com/downloads> |
-| **JDK** | **17 ou superior** (21 LTS recomendado) | `java -version` | <https://adoptium.net/> |
-| **Node.js** | **18 ou superior** (inclui `npm`) | `node -v` e `npm -v` | <https://nodejs.org/> (LTS) |
+| SO | Link |
+|---|---|
+| Windows / macOS | <https://www.docker.com/products/docker-desktop/> |
+| Linux | <https://docs.docker.com/engine/install/> |
 
-> ⚡ **Você NÃO precisa instalar o Maven.** O projeto inclui o **Maven Wrapper** (`mvnw` / `mvnw.cmd`) — basta usar `.\mvnw.cmd` em vez de `mvn` e ele baixa a versão correta do Maven automaticamente na primeira execução.
+Verifique a instalação:
 
-> 💡 **Windows (atalho):** com [winget](https://learn.microsoft.com/windows/package-manager/winget/) (já vem no Windows 10+), instale tudo numa linha:
-> ```powershell
-> winget install -e EclipseAdoptium.Temurin.21.JDK OpenJS.NodeJS.LTS Git.Git
-> ```
-> Feche e reabra o terminal para o `PATH` atualizar.
-
-> ⚠️ **Verifique se `JAVA_HOME` está definido.** No PowerShell: `echo $env:JAVA_HOME`. Se vier vazio, defina (substitua o caminho pelo seu JDK):
-> ```powershell
-> [Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Java\jdk-21", "User")
-> ```
-> e reabra o terminal.
+```bash
+docker --version
+docker compose version
+```
 
 ---
 
 ### 2) 📥 Clonar o repositório
-
-Abra um terminal **na pasta onde você quer guardar o projeto** (ex.: `Documents`) e execute:
 
 ```bash
 git clone https://github.com/Carlosesposito22/petCollar.git
 cd petCollar
 ```
 
-A partir deste ponto, **todos os caminhos abaixo são relativos à raiz `petCollar/`**.
-
 ---
 
-### 3) 🟦 Subir o backend (porta 8080)
+### 3) 🚀 Subir a stack completa
 
-Abra um terminal **na raiz do repositório**. São dois passos: instalar todos os módulos no repositório local do Maven e depois subir só o backend.
-
-**Windows (PowerShell):** — atenção às **aspas** em volta do `-D` (obrigatórias no PowerShell)
-```powershell
-cd Projeto
-
-# 1) Compila e instala todos os módulos (só precisa rodar a primeira vez
-#    ou depois de mexer em algum dominio-*/aplicacao/infraestrutura)
-.\mvnw.cmd "-Dmaven.test.skip=true" install
-
-# 2) Sobe o Spring Boot apenas no módulo de apresentação
-.\mvnw.cmd -pl apresentacao-backend spring-boot:run
-```
-
-**Linux / macOS:**
-```bash
-cd Projeto
-chmod +x mvnw     # apenas na primeira vez
-.\mvnw.cmd "-Dmaven.test.skip=true" install
-.\mvnw.cmd -pl apresentacao-backend spring-boot:run
-```
-
-> **Primeira execução:** o wrapper baixa o Maven 3.9.9 (~10 MB) em `~/.m2/wrapper`, depois o Maven baixa todas as dependências — pode levar alguns minutos. Da segunda vez em diante é instantâneo.
->
-> ⚠️ **Por que dois comandos?** O Spring Boot Maven Plugin (`spring-boot:run`) é executado em todos os módulos do reactor quando usado com `-am`, e falha nos POMs intermediários. Rodar `install` primeiro popula o `~/.m2` local; depois `-pl apresentacao-backend` (sem `-am`) sobe só o módulo de apresentação.
->
-> ⚠️ **Use `-Dmaven.test.skip=true` (com aspas no PowerShell), NÃO `-DskipTests`.** Existem testes BDD ainda em desenvolvimento que não compilam; `-DskipTests` tenta compilá-los e falha, enquanto `-Dmaven.test.skip=true` pula a compilação dos testes. As aspas evitam que o PowerShell quebre o argumento no ponto (erro "Unknown lifecycle phase").
-
-Quando aparecer no log algo como `Started PetCollarApplication in X seconds`, o backend está pronto em **<http://localhost:8080>**.
-
-**Deixe este terminal aberto** e abra outro para o passo seguinte.
-
----
-
-### 4) 🟩 Subir o frontend (porta 5173)
-
-Em um **novo terminal**, partindo da raiz do repositório:
+Na **raiz do repositório** (onde está o `docker-compose.yml`), execute:
 
 ```bash
-cd Projeto/apresentacao-frontend/web
-npm install
-npm run dev
+docker compose up --build
 ```
 
-- `npm install` baixa as dependências do frontend (só precisa rodar uma vez, ou quando o `package.json` mudar).
-- `npm run dev` sobe o Vite com hot-reload.
+> Na primeira execução o Docker faz o build das imagens — pode levar alguns minutos. Das próximas vezes, sem o `--build`, a inicialização é quase imediata.
 
-Acesse no navegador: **<http://localhost:5173>** (se a porta estiver ocupada, o Vite usa a próxima — `5174` — e o backend já aceita qualquer porta local em dev).
+Quando o log do backend exibir `Started PetCollarApplication`, acesse o frontend em **<http://localhost:3000>**.
+
+Para derrubar a stack:
+
+```bash
+docker compose down          # para os containers, preserva o banco
+docker compose down -v       # para os containers e apaga o volume do banco
+```
 
 ---
 
-### 5) 🔐 Credenciais de demonstração
+### 4) 🔐 Credenciais de demonstração
 
 A senha de **todos** os usuários de exemplo é: `petcollar123`
 
@@ -175,65 +130,10 @@ A senha de **todos** os usuários de exemplo é: `petcollar123`
 | **Recepcionista** | card "Recepcionista" | `100001` | matrícula de 6 dígitos |
 | **Médico Veterinário** | card "Médico Veterinário" | `200001` | matrícula de 6 dígitos |
 
-> Os usuários ficam em memória ([UsuarioRepositorioEmMemoria.java](Projeto/apresentacao-backend/src/main/java/br/com/cesar/petCollar/apresentacao/IdentidadeAcesso/UsuarioRepositorioEmMemoria.java)) enquanto o agregado de IdentidadeAcesso não estiver pronto.
-
 **Fluxos para experimentar:**
 1. **Contratar plano** (link na tela do Tutor) → preencher dados → ver QR Code → **"Já paguei (simular)"** → voltar e logar como o novo tutor.
 2. **Login admin** → aba **Funcionários** → **+ Cadastrar funcionário** → criar recepcionista/médico (matrícula gerada automaticamente) → logar com a matrícula nova.
 3. Como admin, na aba **Tutores**, **suspender** um tutor → tentar logar como ele (banner vermelho).
-
----
-
-### 6) 🛠️ Comandos úteis
-
-Todos relativos à raiz do repositório.
-
-**Backend** (use `.\mvnw.cmd` no PowerShell ou `./mvnw` no Linux/macOS)
-```powershell
-# compilar e instalar tudo sem rodar testes
-cd Projeto; .\mvnw.cmd "-Dmaven.test.skip=true" install
-
-# rodar apenas os testes
-cd Projeto; .\mvnw.cmd test
-
-# subir só o backend (pressuponha que o install já foi feito)
-cd Projeto; .\mvnw.cmd -pl apresentacao-backend spring-boot:run
-
-# limpar tudo (target/)
-cd Projeto; .\mvnw.cmd clean
-```
-
-**Frontend**
-```bash
-cd Projeto/apresentacao-frontend/web
-
-npm run dev      # servidor de desenvolvimento (hot-reload)
-npm run build    # build de produção em dist/
-npm run preview  # serve o build de produção localmente
-```
-
----
-
-### 7) 🐛 Resolução de problemas
-
-| Sintoma | Causa provável | Solução |
-|---|---|---|
-| `mvn` não é reconhecido | Você está usando `mvn` em vez do wrapper | Use `.\mvnw.cmd` (PowerShell) ou `./mvnw` (bash) — não precisa instalar Maven |
-| `JAVA_HOME not found in your environment` | Variável de ambiente faltando | Defina `JAVA_HOME` conforme nota em [§1](#1--pré-requisitos) e reabra o terminal |
-| `Unknown lifecycle phase ".test.skip=true"` | PowerShell quebrou o argumento no ponto | Envolva em aspas: `.\mvnw.cmd "-Dmaven.test.skip=true" install` |
-| `cannot find symbol` em `*/src/test/java/.../bdd/ContextoCenario.java` | Testes BDD em desenvolvimento não compilam | Use `"-Dmaven.test.skip=true"` (pula compilação dos testes), **não** `-DskipTests` |
-| `Unable to find a suitable main class` (no `petCollar-pai`) | `spring-boot:run` rodou no POM-pai em vez do módulo | Use **dois comandos** como em [§3](#3--subir-o-backend-porta-8080): primeiro `install`, depois `-pl apresentacao-backend spring-boot:run` |
-| `Failed to determine a suitable driver class` | Spring tentou ligar JPA/DataSource | Confirme que [application.yml](Projeto/apresentacao-backend/src/main/resources/application.yml) tem as quatro entradas em `spring.autoconfigure.exclude` |
-| Login retorna `403` no navegador | Vite numa porta não liberada no CORS | Já corrigido: o backend aceita `http://localhost:*`. Recompile o backend se ainda estiver na versão antiga |
-| `Failed to delete ...\target\classes\...` | Arquivo travado por IDE/Java em execução | Feche a IDE/processo Java e rode novamente, ou apague os `target/` manualmente |
-| `cannot find symbol: class PacienteId / MedicoId / AtendimentoId` | Os IDs do agregado de relatório ainda não existem na forma final | Mantidos como `record` placeholder em [Projeto/dominio-AtendimentoClinico/.../relatorio/](Projeto/dominio-AtendimentoClinico/src/main/java/petCollar/dominio/AtendimentoClinico/relatorio/) — substituir pelo tipo real do domínio quando ele for criado |
-| `port 8080 already in use` | Outro processo na 8080 | `netstat -ano \| findstr :8080` e finalize o PID, ou mude a porta em [application.yml](Projeto/apresentacao-backend/src/main/resources/application.yml) |
-| `port 5173 already in use` | Vite já rodando | Feche a outra instância ou rode `npm run dev -- --port 5174` |
-| `EACCES`/`EPERM` no `npm install` | Permissões do `node_modules` | Apague `node_modules` e `package-lock.json` e rode `npm install` de novo |
-| Login retorna `401` | Senha errada — confira em [§5](#5--credenciais-de-demonstração) | Use `petcollar123` |
-| Login retorna `402` | Tutor com pagamento pendente | Use o botão "Ver QR Code de Pagamento" e simule a confirmação |
-| Login retorna `423` | Conta marcada como suspensa | Use outro tutor (`tutor@petcollar.com`) — esse banner é proposital |
-| Tela em branco no `:5173` | Backend offline; chamadas `/api` falham | Confirme que o backend está no ar em `:8080` |
 
 ---
 <!--
@@ -294,6 +194,145 @@ Executa o atendimento médico-veterinário com foco em segurança do paciente. V
 **Repositories:** `AtendimentoRepository` · `MedicoRepository` · `ConsultorioRepository` · `PlanoNutricionalRepository` · `PrescricaoRepository` · `MedicamentoRepository`
 ---
   -->
+
+## 🧩 **Padrões de Projeto Implementados**
+
+O projeto aplica cinco padrões GoF, um por membro do grupo, cada um escolhido pelo problema de domínio que resolve melhor. A tabela abaixo mostra o padrão, quem implementou, em qual funcionalidade e quais arquivos `.java` compõem a implementação.
+
+---
+
+### Iterator — Artur Sales · F-01 e F-02
+
+**Problema:** a fila de atendimento precisa ser percorrida de duas formas distintas — por prioridade clínica (Cor de Risco) e por risco epidemiológico — sem expor a estrutura interna da coleção nem duplicar a lógica de ordenação.
+
+**Solução:** dois iteradores concretos que encapsulam cada estratégia de percurso, permitindo ao serviço iterar sobre a fila de forma uniforme independentemente da ordem escolhida.
+
+| Arquivo | Papel no padrão |
+|---|---|
+| [FilaPorPrioridadeIterator.java](Projeto/dominio-RecepcaoTriagem/src/main/java/petcollar/dominio/recepcaotriagem/triagem/FilaPorPrioridadeIterator.java) | Iterador concreto — percorre a fila ordenada por Cor de Risco (VERMELHO → AMARELO → VERDE) |
+| [FilaEpidemiologicaIterator.java](Projeto/dominio-RecepcaoTriagem/src/main/java/petcollar/dominio/recepcaotriagem/prontuario/FilaEpidemiologicaIterator.java) | Iterador concreto — percorre priorizando pacientes com alerta epidemiológico ativo |
+
+---
+
+### Strategy — Mateus Ribeiro · F-06 e F-10
+
+**Problema:** o cálculo da próxima dose vacinal varia conforme o protocolo clínico (filhote, reforço anual, viagem, personalizado); de forma análoga, a validação de um relatório clínico segue regras diferentes dependendo do tipo de relatório (rotineiro, preventivo, cirúrgico).
+
+**Solução:** uma interface de estratégia para cada contexto e implementações intercambiáveis em tempo de execução, com fábricas que selecionam a estratégia correta.
+
+**F-06 · Ciclo Vacinal**
+
+| Arquivo | Papel no padrão |
+|---|---|
+| [ICalculoProximaDoseStrategy.java](Projeto/dominio-SaudePreventiva/src/main/java/br/com/cesar/petCollar/dominio/SaudePreventiva/estrategia/ICalculoProximaDoseStrategy.java) | Interface da estratégia |
+| [ProtocoloFilhoteStrategy.java](Projeto/dominio-SaudePreventiva/src/main/java/br/com/cesar/petCollar/dominio/SaudePreventiva/estrategia/ProtocoloFilhoteStrategy.java) | Estratégia concreta — protocolo de filhote |
+| [ProtocoloReforcoAnualStrategy.java](Projeto/dominio-SaudePreventiva/src/main/java/br/com/cesar/petCollar/dominio/SaudePreventiva/estrategia/ProtocoloReforcoAnualStrategy.java) | Estratégia concreta — reforço anual |
+| [ProtocoloViagemStrategy.java](Projeto/dominio-SaudePreventiva/src/main/java/br/com/cesar/petCollar/dominio/SaudePreventiva/estrategia/ProtocoloViagemStrategy.java) | Estratégia concreta — protocolo de viagem |
+| [ProtocoloPersonalizadoStrategy.java](Projeto/dominio-SaudePreventiva/src/main/java/br/com/cesar/petCollar/dominio/SaudePreventiva/estrategia/ProtocoloPersonalizadoStrategy.java) | Estratégia concreta — protocolo personalizado |
+| [FabricaDeProtocolo.java](Projeto/dominio-SaudePreventiva/src/main/java/br/com/cesar/petCollar/dominio/SaudePreventiva/estrategia/FabricaDeProtocolo.java) | Fábrica que seleciona a estratégia pelo tipo de protocolo |
+
+**F-10 · Relatório Clínico**
+
+| Arquivo | Papel no padrão |
+|---|---|
+| [IValidadorRelatorioStrategy.java](Projeto/dominio-AtendimentoClinico/src/main/java/petCollar/dominio/AtendimentoClinico/estrategia/IValidadorRelatorioStrategy.java) | Interface da estratégia |
+| [ValidadorRelatorioRotineiroStrategy.java](Projeto/dominio-AtendimentoClinico/src/main/java/petCollar/dominio/AtendimentoClinico/estrategia/ValidadorRelatorioRotineiroStrategy.java) | Estratégia concreta — relatório de rotina |
+| [ValidadorRelatorioPreventivStrategy.java](Projeto/dominio-AtendimentoClinico/src/main/java/petCollar/dominio/AtendimentoClinico/estrategia/ValidadorRelatorioPreventivStrategy.java) | Estratégia concreta — relatório preventivo |
+| [ValidadorRelatorioCirurgicoStrategy.java](Projeto/dominio-AtendimentoClinico/src/main/java/petCollar/dominio/AtendimentoClinico/estrategia/ValidadorRelatorioCirurgicoStrategy.java) | Estratégia concreta — relatório cirúrgico |
+| [FabricaDeValidadorRelatorio.java](Projeto/dominio-AtendimentoClinico/src/main/java/petCollar/dominio/AtendimentoClinico/estrategia/FabricaDeValidadorRelatorio.java) | Fábrica que seleciona o validador pelo tipo do relatório |
+
+---
+
+### Decorator — Felipe Marques · F-07, F-11 e F-12
+
+**Problema:** o cálculo do valor de uma cobrança, da NEM (Necessidade Energética de Manutenção) e da dose máxima segura de um medicamento precisam de camadas opcionais e combináveis de modificação (juros, desconto, comorbidade, nível de atividade, tag clínica) sem proliferação de subclasses.
+
+**Solução:** uma interface/componente base e decoradores concretos que se encadeiam em tempo de execução, cada um adicionando ou reduzindo o valor calculado.
+
+**F-07 · Assinatura e Financeiro**
+
+| Arquivo | Papel no padrão |
+|---|---|
+| [CalculadoraValor.java](Projeto/dominio-AssinaturaFaturamento/src/main/java/br/com/cesar/petCollar/dominio/AssinaturaFaturamento/cobranca/calculo/CalculadoraValor.java) | Interface componente |
+| [ValorBase.java](Projeto/dominio-AssinaturaFaturamento/src/main/java/br/com/cesar/petCollar/dominio/AssinaturaFaturamento/cobranca/calculo/ValorBase.java) | Componente concreto — valor original da mensalidade |
+| [CalculadoraValorDecorator.java](Projeto/dominio-AssinaturaFaturamento/src/main/java/br/com/cesar/petCollar/dominio/AssinaturaFaturamento/cobranca/calculo/CalculadoraValorDecorator.java) | Decorator abstrato |
+| [JurosSimplesDecorator.java](Projeto/dominio-AssinaturaFaturamento/src/main/java/br/com/cesar/petCollar/dominio/AssinaturaFaturamento/cobranca/calculo/JurosSimplesDecorator.java) | Decorator concreto — aplica juros simples de 0,033% ao dia |
+| [DescontoIndicacaoDecorator.java](Projeto/dominio-AssinaturaFaturamento/src/main/java/br/com/cesar/petCollar/dominio/AssinaturaFaturamento/cobranca/calculo/DescontoIndicacaoDecorator.java) | Decorator concreto — aplica desconto de 15% por indicação |
+
+**F-11 · Gestão Nutricional (NEM)**
+
+| Arquivo | Papel no padrão |
+|---|---|
+| [CalculadoraNEM.java](Projeto/dominio-AtendimentoClinico/src/main/java/br/com/cesar/petCollar/dominio/AtendimentoClinico/nutricao/nem/CalculadoraNEM.java) | Interface componente |
+| [NEMBase.java](Projeto/dominio-AtendimentoClinico/src/main/java/br/com/cesar/petCollar/dominio/AtendimentoClinico/nutricao/nem/NEMBase.java) | Componente concreto — NEM pelo peso metabólico (P^0,75) |
+| [CalculadoraNEMDecorator.java](Projeto/dominio-AtendimentoClinico/src/main/java/br/com/cesar/petCollar/dominio/AtendimentoClinico/nutricao/nem/CalculadoraNEMDecorator.java) | Decorator abstrato |
+| [NivelAtividadeDecorator.java](Projeto/dominio-AtendimentoClinico/src/main/java/br/com/cesar/petCollar/dominio/AtendimentoClinico/nutricao/nem/NivelAtividadeDecorator.java) | Decorator concreto — multiplica pelo coeficiente de atividade |
+| [ComorbidadeDecorator.java](Projeto/dominio-AtendimentoClinico/src/main/java/br/com/cesar/petCollar/dominio/AtendimentoClinico/nutricao/nem/ComorbidadeDecorator.java) | Decorator concreto — aplica modificador metabólico por comorbidade |
+
+**F-12 · Farmacovigilância**
+
+| Arquivo | Papel no padrão |
+|---|---|
+| [CalculadoraDoseMaximaSegura.java](Projeto/dominio-Farmacovigilancia/src/main/java/br/com/cesar/petCollar/dominio/Farmacovigilancia/seguranca/CalculadoraDoseMaximaSegura.java) | Interface componente |
+| [CalculadoraDoseDecorator.java](Projeto/dominio-Farmacovigilancia/src/main/java/br/com/cesar/petCollar/dominio/Farmacovigilancia/seguranca/CalculadoraDoseDecorator.java) | Decorator abstrato |
+| [RedutorPorTagClinicaDecorator.java](Projeto/dominio-Farmacovigilancia/src/main/java/br/com/cesar/petCollar/dominio/Farmacovigilancia/seguranca/RedutorPorTagClinicaDecorator.java) | Decorator concreto — reduz 25% do teto para tags como Insuficiência Renal, Hepática ou Geriátrico |
+| [RedutorPorAlergiaDecorator.java](Projeto/dominio-Farmacovigilancia/src/main/java/br/com/cesar/petCollar/dominio/Farmacovigilancia/seguranca/RedutorPorAlergiaDecorator.java) | Decorator concreto — reduz o teto para pacientes com alergias conhecidas |
+
+---
+
+### Template Method — Carlos Eduardo · F-03, F-04 e F-05
+
+**Problema:** a execução de cada etapa do Protocolo de Tutor Inacessível (contato com tutor, acionamento de responsáveis secundários, escalonamento) segue sempre o mesmo esqueleto de passos, mas cada etapa tem destinatários, canais e critérios de conclusão diferentes. De forma análoga, o agendamento de uma consulta (inicial ou retorno) compartilha os mesmos passos fixos — validar prontuário, checar disponibilidade, salvar e notificar — mas cada tipo exige pré-condições e criação de consulta distintas; e o processamento do webhook de confirmação de pagamento de uma indicação possui fluxos automático e manual com passos distintos.
+
+**Solução:** uma classe abstrata define o algoritmo como método `final` e delega os passos variáveis a métodos abstratos implementados pelas subclasses concretas.
+
+**F-03 · Protocolo de Tutor Inacessível**
+
+| Arquivo | Papel no padrão |
+|---|---|
+| [EtapaProtocoloService.java](Projeto/dominio-ProtocoloInacessibilidade/src/main/java/br/com/cesar/petCollar/dominio/ProtocoloInacessibilidade/etapa/EtapaProtocoloService.java) | Classe abstrata — define o template `executar()` como `final` e declara os métodos abstratos de cada passo |
+| [EtapaContatoTutorService.java](Projeto/dominio-ProtocoloInacessibilidade/src/main/java/br/com/cesar/petCollar/dominio/ProtocoloInacessibilidade/etapa/EtapaContatoTutorService.java) | Subclasse concreta — etapa de contato com o tutor principal |
+| [EtapaContatoResponsaveisSecundariosService.java](Projeto/dominio-ProtocoloInacessibilidade/src/main/java/br/com/cesar/petCollar/dominio/ProtocoloInacessibilidade/etapa/EtapaContatoResponsaveisSecundariosService.java) | Subclasse concreta — etapa de acionamento dos responsáveis secundários |
+| [EtapaEscalonamentoService.java](Projeto/dominio-ProtocoloInacessibilidade/src/main/java/br/com/cesar/petCollar/dominio/ProtocoloInacessibilidade/etapa/EtapaEscalonamentoService.java) | Subclasse concreta — etapa de escalonamento para decisão clínica/administrativa |
+| [OrquestradorEtapasProtocolo.java](Projeto/dominio-ProtocoloInacessibilidade/src/main/java/br/com/cesar/petCollar/dominio/ProtocoloInacessibilidade/etapa/OrquestradorEtapasProtocolo.java) | Orquestrador que encadeia as etapas em sequência |
+
+**F-04 · Programa de Indicação**
+
+| Arquivo | Papel no padrão |
+|---|---|
+| [ProcessamentoWebhookTemplate.java](Projeto/dominio-RelacaoTutor/src/main/java/br/com/cesar/petCollar/dominio/RelacaoTutor/indicacao/ProcessamentoWebhookTemplate.java) | Classe abstrata — define o template de processamento do webhook de confirmação de pagamento |
+| [ProcessamentoWebhookAutomatico.java](Projeto/dominio-RelacaoTutor/src/main/java/br/com/cesar/petCollar/dominio/RelacaoTutor/indicacao/ProcessamentoWebhookAutomatico.java) | Subclasse concreta — processamento automático via gateway |
+| [ProcessamentoWebhookManual.java](Projeto/dominio-RelacaoTutor/src/main/java/br/com/cesar/petCollar/dominio/RelacaoTutor/indicacao/ProcessamentoWebhookManual.java) | Subclasse concreta — processamento manual (simulação/testes) |
+
+**F-05 · Agendamento de Retorno**
+
+| Arquivo | Papel no padrão |
+|---|---|
+| [AgendamentoService.java](Projeto/dominio-AgendamentoClinico/src/main/java/br/com/cesar/petCollar/dominio/AgendamentoClinico/agendamento/AgendamentoService.java) | Classe abstrata — define o template `agendar()` como `final`, com os passos fixos (validar prontuário, verificar agenda, checar conflito, salvar, notificar) e três métodos abstratos para os passos variáveis |
+| [AgendamentoConsultaInicialService.java](Projeto/dominio-AgendamentoClinico/src/main/java/br/com/cesar/petCollar/dominio/AgendamentoClinico/agendamento/AgendamentoConsultaInicialService.java) | Subclasse concreta — implementa os passos específicos de uma consulta inicial |
+| [AgendamentoRetornoService.java](Projeto/dominio-AgendamentoClinico/src/main/java/br/com/cesar/petCollar/dominio/AgendamentoClinico/agendamento/AgendamentoRetornoService.java) | Subclasse concreta — implementa os passos específicos do retorno, validando exames concluídos e vinculando à consulta de origem |
+
+---
+
+### Observer — Bruno Assunção · F-08 e F-09
+
+**Problema:** quando o estado de um benefício do plano é alterado (carência expirada, uso registrado, ticket gerado) ou quando uma badge de gamificação é conquistada, múltiplos componentes precisam ser notificados sem que o agregado publicador conheça seus observadores.
+
+**Solução:** os agregados publicadores mantêm uma lista de observadores registrados via interface, notificando-os automaticamente a cada mudança relevante de estado.
+
+| Arquivo | Papel no padrão |
+|---|---|
+| [IObservadorDeEventoTutor.java](Projeto/dominio-compartilhado/src/main/java/br/com/cesar/petCollar/dominio/compartilhado/eventos/IObservadorDeEventoTutor.java) | Interface do observador — contrato base compartilhado entre contextos |
+| [PublicadorDeEventosDoTutor.java](Projeto/dominio-compartilhado/src/main/java/br/com/cesar/petCollar/dominio/compartilhado/eventos/PublicadorDeEventosDoTutor.java) | Publicador genérico do Shared Kernel |
+| [IObservadorDeAlteracaoBeneficio.java](Projeto/dominio-BeneficiosPlano/src/main/java/br/com/cesar/petCollar/dominio/BeneficiosPlano/beneficio/IObservadorDeAlteracaoBeneficio.java) | Interface do observador — eventos de benefício (F-08) |
+| [PublicadorDeAlteracoesBeneficio.java](Projeto/dominio-BeneficiosPlano/src/main/java/br/com/cesar/petCollar/dominio/BeneficiosPlano/beneficio/PublicadorDeAlteracoesBeneficio.java) | Sujeito/publicador concreto — gerencia e notifica os observadores de benefício |
+| [SincronizacaoBeneficioTutorObservador.java](Projeto/dominio-BeneficiosPlano/src/main/java/br/com/cesar/petCollar/dominio/BeneficiosPlano/beneficio/SincronizacaoBeneficioTutorObservador.java) | Observador concreto — sincroniza o estado do benefício do tutor após cada alteração |
+| [ConcessaoBadgeObservador.java](Projeto/dominio-Gamificacao/src/main/java/br/com/cesar/petCollar/dominio/Gamificacao/conquista/ConcessaoBadgeObservador.java) | Observador concreto — reage a eventos de conquista e concede a badge ao tutor (F-09) |
+| [IObservadorDeAlteracaoPlano.java](Projeto/dominio-AssinaturaFaturamento/src/main/java/br/com/cesar/petCollar/dominio/AssinaturaFaturamento/plano/IObservadorDeAlteracaoPlano.java) | Interface do observador — eventos de alteração de plano |
+| [PublicadorDeAlteracoesPlano.java](Projeto/dominio-AssinaturaFaturamento/src/main/java/br/com/cesar/petCollar/dominio/AssinaturaFaturamento/plano/PublicadorDeAlteracoesPlano.java) | Sujeito/publicador concreto — notifica observadores quando um plano é alterado |
+| [NotificacaoAlteracaoPlanoObservador.java](Projeto/dominio-AssinaturaFaturamento/src/main/java/br/com/cesar/petCollar/dominio/AssinaturaFaturamento/plano/NotificacaoAlteracaoPlanoObservador.java) | Observador concreto — envia notificação ao tutor quando seu plano é modificado |
+
+---
 
 ## 📋 **Distribuição de Tarefas**
 
