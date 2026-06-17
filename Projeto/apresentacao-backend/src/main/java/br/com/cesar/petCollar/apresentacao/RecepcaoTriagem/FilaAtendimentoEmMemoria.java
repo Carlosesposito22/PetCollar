@@ -1,74 +1,88 @@
 package br.com.cesar.petCollar.apresentacao.RecepcaoTriagem;
 
 import org.springframework.stereotype.Component;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Fila de atendimento dinâmica persistida no banco de dados (tabela
+ * {@code fila_atendimento}). Mantém a mesma API pública da implementação
+ * anterior em memória para não alterar os callers (BuscaTutorController,
+ * FilaAtendimentoController, AtendimentoConsultaComFila).
+ */
 @Component
 public class FilaAtendimentoEmMemoria {
 
-    private final CopyOnWriteArrayList<ItemFila> fila = new CopyOnWriteArrayList<>();
+    private static final Map<String, Integer> PRIORIDADE =
+        Map.of("VERMELHO", 0, "AMARELO", 1, "VERDE", 2);
 
-    private static final Map<String, Integer> PRIORIDADE = Map.of(
-        "VERMELHO", 0, "AMARELO", 1, "VERDE", 2);
+    private final ItemFilaJpaRepository repo;
 
+    public FilaAtendimentoEmMemoria(ItemFilaJpaRepository repo) {
+        this.repo = repo;
+    }
+
+    @Transactional
     public List<ItemFilaDTO> inserir(ItemFila item) {
-        fila.removeIf(i -> i.pacienteId().equals(item.pacienteId()));
-        fila.add(item);
-        reordenar();
+        repo.deleteByPacienteId(item.pacienteId());
+        repo.save(toJpa(item));
         return listar();
     }
 
-    /** Encaminha um item já existente na fila para um médico específico. */
+    @Transactional
     public boolean encaminhar(String triagemId, String medicoId, String nomeMedico) {
-        for (int i = 0; i < fila.size(); i++) {
-            ItemFila atual = fila.get(i);
-            if (atual.triagemId().equals(triagemId)) {
-                fila.set(i, new ItemFila(
-                    atual.pacienteId(), atual.triagemId(), atual.corDeRisco(),
-                    atual.finalizadaEm(), atual.nomePaciente(), atual.tutorId(),
-                    medicoId, nomeMedico, atual.aplicacaoVacina()));
-                return true;
-            }
-        }
-        return false;
+        return repo.findById(triagemId).map(jpa -> {
+            jpa.setMedicoId(medicoId);
+            jpa.setNomeMedico(nomeMedico);
+            repo.save(jpa);
+            return true;
+        }).orElse(false);
     }
 
+    @Transactional
     public void remover(String triagemId) {
-        fila.removeIf(i -> i.triagemId().equals(triagemId));
+        repo.deleteById(triagemId);
     }
 
-    /** Remove todos os itens de um paciente — usado ao finalizar o atendimento. */
+    @Transactional
     public void removerPorPaciente(String pacienteId) {
-        fila.removeIf(i -> i.pacienteId().equals(pacienteId));
+        repo.deleteByPacienteId(pacienteId);
     }
 
-    /** Indica se o paciente já possui um item ativo na fila de espera. */
     public boolean contemPaciente(String pacienteId) {
-        return fila.stream().anyMatch(i -> i.pacienteId().equals(pacienteId));
+        return repo.existsByPacienteId(pacienteId);
     }
 
-    /** Fila completa (usada pela recepcionista). */
     public List<ItemFilaDTO> listar() {
-        return fila.stream().map(ItemFilaDTO::de).toList();
-    }
-
-    /** Apenas itens encaminhados para um médico específico. */
-    public List<ItemFilaDTO> listarPorMedico(String medicoId) {
-        return fila.stream()
-            .filter(i -> medicoId.equals(i.medicoId()))
-            .map(ItemFilaDTO::de)
+        return repo.findAll().stream()
+            .sorted(Comparator
+                .comparing(ItemFilaJpa::isAplicacaoVacina)
+                .thenComparingInt(i -> PRIORIDADE.getOrDefault(i.getCorDeRisco(), 3))
+                .thenComparing(ItemFilaJpa::getFinalizadaEm))
+            .map(this::toDTO)
             .toList();
     }
 
-    private void reordenar() {
-        // Prioridade por cor de risco; aplicações de vacina vão sempre por último
-        // (menor prioridade), independentemente da cor, e então por ordem de chegada.
-        fila.sort(Comparator
-            .comparing((ItemFila i) -> i.aplicacaoVacina())
-            .thenComparingInt(i -> PRIORIDADE.getOrDefault(i.corDeRisco(), 3))
-            .thenComparing(ItemFila::finalizadaEm));
+    public List<ItemFilaDTO> listarPorMedico(String medicoId) {
+        return repo.findByMedicoId(medicoId).stream().map(this::toDTO).toList();
+    }
+
+    private ItemFilaJpa toJpa(ItemFila i) {
+        return new ItemFilaJpa(
+            i.triagemId(), i.pacienteId(), i.corDeRisco(), i.finalizadaEm(),
+            i.nomePaciente(), i.tutorId(), i.medicoId(), i.nomeMedico(),
+            i.aplicacaoVacina());
+    }
+
+    private ItemFilaDTO toDTO(ItemFilaJpa j) {
+        return new ItemFilaDTO(
+            j.getPacienteId(), j.getTriagemId(), j.getCorDeRisco(),
+            j.getFinalizadaEm(), j.getNomePaciente(), j.getTutorId(),
+            j.getMedicoId(), j.getNomeMedico(), j.isAplicacaoVacina());
     }
 
     public record ItemFila(
@@ -78,11 +92,10 @@ public class FilaAtendimentoEmMemoria {
         LocalDateTime finalizadaEm,
         String nomePaciente,
         String tutorId,
-        String medicoId,      // null enquanto não encaminhado
+        String medicoId,
         String nomeMedico,
         boolean aplicacaoVacina
     ) {
-        /** Construtor de criação — ainda sem médico atribuído. */
         public ItemFila(String pacienteId, String triagemId, String corDeRisco,
                         LocalDateTime finalizadaEm, String nomePaciente, String tutorId,
                         boolean aplicacaoVacina) {

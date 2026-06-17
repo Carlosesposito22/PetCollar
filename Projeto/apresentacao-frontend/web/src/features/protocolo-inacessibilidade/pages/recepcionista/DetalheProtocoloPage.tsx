@@ -40,7 +40,7 @@ function DetalheInterno() {
   const toast = useToast();
   const { dados, carregando, atualizando, erro, ultimaAtualizacao, recarregar } =
     useDetalheProtocolo(protocoloId);
-  const { encerrar, executando } = useAcoesProtocolo();
+  const { encerrar, avancarEtapa, executando } = useAcoesProtocolo();
 
   const [aba, setAba] = useState<AbaId>("geral");
   const [modalEncerrar, setModalEncerrar] = useState(false);
@@ -73,6 +73,17 @@ function DetalheInterno() {
 
   const { resumo, tentativas, escalonamentos, notificacoes, diretivas } = dados;
   const ativo = resumo != null;
+
+  async function handleAvancarEtapa() {
+    setErroAcao(null);
+    try {
+      await avancarEtapa(protocoloId);
+      toast.sucesso("Próxima tentativa acionada.");
+      recarregar();
+    } catch (e) {
+      setErroAcao(e instanceof ApiError ? e.message : "Falha ao acionar a próxima tentativa.");
+    }
+  }
 
   async function confirmarEncerramento(detalhes: string) {
     setErroAcao(null);
@@ -160,14 +171,25 @@ function DetalheInterno() {
                   <Linha rotulo="Ativado em" valor={formatarDataHora(resumo.ativadoEm)} />
                 </dl>
                 <button
+                  onClick={handleAvancarEtapa}
+                  disabled={executando}
+                  className="btn-primary w-full"
+                >
+                  {executando ? "Acionando..." : "Acionar próxima tentativa"}
+                </button>
+                <button
                   onClick={() => {
                     setErroAcao(null);
                     setModalEncerrar(true);
                   }}
+                  disabled={executando}
                   className="btn-primary w-full bg-paw-500 hover:bg-paw-600"
                 >
                   Encerrar manualmente
                 </button>
+                {erroAcao && (
+                  <p className="text-xs text-red-600">{erroAcao}</p>
+                )}
               </>
             )}
           </aside>

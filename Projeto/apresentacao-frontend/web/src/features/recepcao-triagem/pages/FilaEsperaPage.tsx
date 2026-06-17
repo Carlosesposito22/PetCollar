@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRecepcao, type FilaItemDTO } from "../hooks/useRecepcao";
+import { useAcoesProtocolo } from "../../protocolo-inacessibilidade/hooks/useAcoesProtocolo";
 
 function CorBadge({ cor }: { cor: "VERMELHO" | "AMARELO" | "VERDE" }) {
   const map = {
@@ -14,6 +15,77 @@ function CorBadge({ cor }: { cor: "VERMELHO" | "AMARELO" | "VERDE" }) {
       <span className={`h-2 w-2 rounded-full ${m.dot}`} />
       {m.label}
     </span>
+  );
+}
+
+function ModalPresencaTutor({
+  item,
+  ativando,
+  onPresente,
+  onAusente,
+  onClose,
+}: {
+  item: FilaItemDTO;
+  ativando: boolean;
+  onPresente: () => void;
+  onAusente: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget && !ativando) onClose(); }}
+    >
+      <div className="w-full max-w-sm rounded-3xl bg-white shadow-xl p-8">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-ink-900">Chamada do Paciente</h2>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-sm text-ink-500">
+                {item.nomePaciente || `Paciente ${item.pacienteId.slice(-6)}`}
+              </span>
+              <CorBadge cor={item.corDeRisco} />
+            </div>
+          </div>
+          {!ativando && (
+            <button
+              onClick={onClose}
+              className="flex-shrink-0 rounded-full p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-700 transition"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        <p className="mb-6 text-sm text-ink-700 font-medium">
+          O tutor responsável está presente na clínica?
+        </p>
+
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={onPresente}
+            disabled={ativando}
+            className="w-full rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+          >
+            ✓ Presente — prosseguir com atendimento
+          </button>
+          <button
+            onClick={onAusente}
+            disabled={ativando}
+            className="w-full rounded-xl border-2 border-red-200 bg-red-50 px-6 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {ativando ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent inline-block" />
+                Ativando protocolo...
+              </>
+            ) : (
+              "✗ Ausente — iniciar protocolo de inacessibilidade"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -159,12 +231,15 @@ function ModalEscolherMedico({
 export function FilaEsperaPage() {
   const navigate = useNavigate();
   const recepcao = useRecepcao();
+  const { ativarManualmente } = useAcoesProtocolo();
 
   const [fila, setFila]                           = useState<FilaItemDTO[]>([]);
   const [carregando, setCarregando]               = useState(true);
   const [medicos, setMedicos]                     = useState<MedicoDTO[]>([]);
   const [carregandoMedicos, setCarregandoMedicos] = useState(false);
+  const [modalPresenca, setModalPresenca]         = useState<FilaItemDTO | null>(null);
   const [modalItem, setModalItem]                 = useState<FilaItemDTO | null>(null);
+  const [ativandoProtocolo, setAtivandoProtocolo] = useState(false);
   const [toastMsg, setToastMsg]                   = useState<string | null>(null);
 
   function toast(msg: string) {
@@ -184,13 +259,38 @@ export function FilaEsperaPage() {
     return () => clearInterval(intervalo);
   }, []);
 
-  async function abrirModalChamar(item: FilaItemDTO) {
+  function abrirModalChamar(item: FilaItemDTO) {
+    setModalPresenca(item);
+  }
+
+  function handleTutorPresente() {
+    const item = modalPresenca;
+    setModalPresenca(null);
+    if (!item) return;
     setModalItem(item);
     if (medicos.length === 0) {
       setCarregandoMedicos(true);
-      const lista = await recepcao.listarMedicos();
-      setMedicos(lista);
-      setCarregandoMedicos(false);
+      recepcao.listarMedicos().then((lista) => {
+        setMedicos(lista);
+        setCarregandoMedicos(false);
+      });
+    }
+  }
+
+  async function handleTutorAusente() {
+    const item = modalPresenca;
+    if (!item) return;
+    setAtivandoProtocolo(true);
+    try {
+      const protocolo = await ativarManualmente(item.triagemId);
+      setModalPresenca(null);
+      navigate(`/recepcao/protocolos/${protocolo.id}`);
+    } catch {
+      setModalPresenca(null);
+      toast("Protocolo registrado. Prossiga pelo painel de protocolos.");
+      navigate("/recepcao/protocolos");
+    } finally {
+      setAtivandoProtocolo(false);
     }
   }
 
@@ -224,6 +324,16 @@ export function FilaEsperaPage() {
         <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-ink-900 px-6 py-3 text-sm text-white shadow-lg">
           {toastMsg}
         </div>
+      )}
+
+      {modalPresenca && (
+        <ModalPresencaTutor
+          item={modalPresenca}
+          ativando={ativandoProtocolo}
+          onPresente={handleTutorPresente}
+          onAusente={handleTutorAusente}
+          onClose={() => setModalPresenca(null)}
+        />
       )}
 
       {modalItem && (

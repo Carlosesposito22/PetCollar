@@ -34,5 +34,17 @@ export function useAcoesProtocolo() {
     [service],
   );
 
-  return { ativarManualmente, encerrar, executando };
+  const avancarEtapa = useCallback(
+    async (protocoloId: string): Promise<ProtocoloDTO> => {
+      setExecutando(true);
+      try {
+        return await service.avancarEtapa(protocoloId);
+      } finally {
+        setExecutando(false);
+      }
+    },
+    [service],
+  );
+
+  return { ativarManualmente, encerrar, avancarEtapa, executando };
 }

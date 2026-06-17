@@ -75,9 +75,10 @@ public class SeedInicial {
                                                UsuarioRepositorio usuarios,
                                                PasswordEncoder encoder) {
         return args -> {
-            log.info("[SEED] Verificando dados iniciais (especialidades e médicos)…");
+            log.info("[SEED] Verificando dados iniciais (especialidades, médicos e recepcionista)…");
             criarEspecialidadesSeNecessario(especialidades);
             garantirMedicosPorEspecialidade(especialidades, usuarios, encoder);
+            garantirRecepcionistaPadrao(usuarios, encoder);
             log.info("[SEED] Verificação concluída.");
         };
     }
@@ -140,5 +141,14 @@ public class SeedInicial {
         } else {
             log.info("[SEED] {} médico(s) criados/vinculados.", criados);
         }
+    }
+
+    private void garantirRecepcionistaPadrao(UsuarioRepositorio usuarios, PasswordEncoder encoder) {
+        if (!usuarios.listarPorPerfil(Perfil.RECEPCIONISTA).isEmpty()) return;
+        String matricula = usuarios.proximaMatricula(Perfil.RECEPCIONISTA);
+        String senha = encoder.encode(SENHA_PADRAO);
+        usuarios.salvar(new UsuarioAutenticavel(
+            matricula, "Recepcionista Padrão", Perfil.RECEPCIONISTA, senha, StatusConta.ATIVA));
+        log.info("[SEED] Recepcionista criada — login: {} / {}", matricula, SENHA_PADRAO);
     }
 }

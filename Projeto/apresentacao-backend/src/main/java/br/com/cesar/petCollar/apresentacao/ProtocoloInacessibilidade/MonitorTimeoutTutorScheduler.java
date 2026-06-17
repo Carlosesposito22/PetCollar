@@ -3,7 +3,9 @@ package br.com.cesar.petCollar.apresentacao.ProtocoloInacessibilidade;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.etapa.OrquestradorEtapasProtocolo;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.IProtocoloInacessibilidadeRepositorio;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade;
+import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.StatusProtocolo;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.AtivacaoProtocoloService;
+import br.com.cesar.petCollar.apresentacao.RecepcaoTriagem.FilaAtendimentoEmMemoria;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,13 +34,16 @@ public class MonitorTimeoutTutorScheduler {
     private final AtivacaoProtocoloService ativacaoService;
     private final OrquestradorEtapasProtocolo orquestrador;
     private final IProtocoloInacessibilidadeRepositorio protocoloRepositorio;
+    private final FilaAtendimentoEmMemoria fila;
 
     public MonitorTimeoutTutorScheduler(AtivacaoProtocoloService ativacaoService,
                                         OrquestradorEtapasProtocolo orquestrador,
-                                        IProtocoloInacessibilidadeRepositorio protocoloRepositorio) {
+                                        IProtocoloInacessibilidadeRepositorio protocoloRepositorio,
+                                        FilaAtendimentoEmMemoria fila) {
         this.ativacaoService = ativacaoService;
         this.orquestrador = orquestrador;
         this.protocoloRepositorio = protocoloRepositorio;
+        this.fila = fila;
     }
 
     @Scheduled(fixedDelay = 60_000)
@@ -55,6 +60,15 @@ public class MonitorTimeoutTutorScheduler {
         for (ProtocoloInacessibilidade protocolo : ativos) {
             try {
                 orquestrador.executarProximaEtapa(protocolo);
+                // O serviço de etapa recarrega o agregado internamente; relemos do banco
+                // para verificar se o protocolo foi encerrado por esgotamento.
+                protocoloRepositorio.buscarPorId(protocolo.getId()).ifPresent(atualizado -> {
+                    if (atualizado.getStatus() == StatusProtocolo.ENCERRADO_POR_ESGOTAMENTO) {
+                        fila.removerPorPaciente(atualizado.getPacienteId().getValor());
+                        log.info("[MONITOR F-03] paciente {} removido da fila por esgotamento do protocolo {}.",
+                            atualizado.getPacienteId().getValor(), atualizado.getId().getValor());
+                    }
+                });
             } catch (Exception e) {
                 log.warn("[MONITOR F-03] falha ao avançar o protocolo {}: {}",
                     protocolo.getId().getValor(), e.getMessage());

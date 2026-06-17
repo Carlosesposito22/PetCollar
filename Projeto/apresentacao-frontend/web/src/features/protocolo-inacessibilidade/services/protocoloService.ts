@@ -110,6 +110,20 @@ export function criarProtocoloService(apiFetch: ApiFetch) {
         }),
       ),
 
+    avancarEtapa: (protocoloId: string) =>
+      json<ProtocoloDTO>(
+        apiFetch(`/api/protocolos/${encodeURIComponent(protocoloId)}/avancar-etapa`, {
+          method: "POST",
+        }),
+      ),
+
+    confirmarPresenca: (protocoloId: string) =>
+      json<ProtocoloDTO>(
+        apiFetch(`/api/protocolos/${encodeURIComponent(protocoloId)}/confirmar-presenca`, {
+          method: "POST",
+        }),
+      ),
+
     // ── Configuração (administrador) ─────────────────────────────────────────
     configuracaoVigente: () =>
       json<ConfiguracaoProtocoloDTO>(apiFetch("/api/configuracoes-protocolo/vigente")),

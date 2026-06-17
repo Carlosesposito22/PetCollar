@@ -140,21 +140,35 @@ public class ProtocoloInacessibilidadeConfig {
         return new ConsultarDiretivasConsentimentoUseCase(consultaService);
     }
 
-    /** Seed operacional: cria a configuração padrão (RN 1/2/6) se não existir. */
+    /** Seed operacional: cria a configuração padrão (RN 1/2/6) se não existir, ou corrige
+     *  quantidadeMaximaTentativasPorCanal para 1 se estiver acima desse valor. */
     @Bean
     public CommandLineRunner seedConfiguracaoProtocolo(
             IConfiguracaoProtocoloRepositorio configuracaoRepositorio) {
         return args -> {
-            if (configuracaoRepositorio.buscarVigente().isEmpty()) {
+            var vigente = configuracaoRepositorio.buscarVigente();
+            if (vigente.isEmpty()) {
                 configuracaoRepositorio.salvar(new ConfiguracaoProtocolo(
                         ConfiguracaoProtocoloId.gerar(), 15,
                         List.of(CanalContato.TELEFONE, CanalContato.SMS, CanalContato.EMAIL),
-                        5, 2,
+                        5, 1,
                         List.of(NivelEscalonamento.NIVEL_1_ADMINISTRATIVO,
                                 NivelEscalonamento.NIVEL_2_COORDENACAO,
                                 NivelEscalonamento.NIVEL_3_CLINICO,
                                 NivelEscalonamento.NIVEL_4_DIRECAO)));
                 log.info("[SEED] Configuração padrão do ProtocoloInacessibilidade criada.");
+            } else {
+                ConfiguracaoProtocolo config = vigente.get();
+                if (config.getQuantidadeMaximaTentativasPorCanal() > 1) {
+                    config.atualizar(
+                        config.getTempoLimiteEsperaMinutos(),
+                        config.getCanaisHabilitados(),
+                        config.getIntervaloEntreTentativasMinutos(),
+                        1,
+                        config.getNiveisEscalonamento());
+                    configuracaoRepositorio.salvar(config);
+                    log.info("[SEED] quantidadeMaximaTentativasPorCanal corrigida para 1.");
+                }
             }
         };
     }

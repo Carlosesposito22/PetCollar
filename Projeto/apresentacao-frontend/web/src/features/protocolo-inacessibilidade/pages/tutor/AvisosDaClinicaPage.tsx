@@ -9,7 +9,7 @@ import { ListaNotificacoesProtocolo } from "../../components/compartilhados/List
 import { useMeuProtocoloAtivo } from "../../hooks/useMeuProtocoloAtivo";
 import { useProtocoloService } from "../../services/useProtocoloService";
 import { isProtocoloAtivo } from "../../tipos";
-import type { NotificacaoProtocoloDTO } from "../../tipos";
+import type { NotificacaoProtocoloDTO, VisaoProtocoloDTO } from "../../tipos";
 
 /**
  * Área do tutor para acompanhamento do protocolo de inacessibilidade ativo (RN 15).
@@ -23,6 +23,8 @@ export function AvisosDaClinicaPage() {
   const service = useProtocoloService();
   const [notificacoes, setNotificacoes] = useState<NotificacaoProtocoloDTO[]>([]);
   const [carregandoNotif, setCarregandoNotif] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+  const [erroConfirmacao, setErroConfirmacao] = useState<string | null>(null);
 
   const carregarNotificacoes = useCallback(async (protocoloId: string) => {
     setCarregandoNotif(true);
@@ -43,6 +45,19 @@ export function AvisosDaClinicaPage() {
       setNotificacoes([]);
     }
   }, [dados?.protocoloId, carregarNotificacoes]);
+
+  async function confirmarPresenca(protocoloId: string) {
+    setErroConfirmacao(null);
+    setConfirmando(true);
+    try {
+      await service.confirmarPresenca(protocoloId);
+      recarregar();
+    } catch (e) {
+      setErroConfirmacao((e as Error).message ?? "Falha ao confirmar presença.");
+    } finally {
+      setConfirmando(false);
+    }
+  }
 
   if (carregando) {
     return (
@@ -80,6 +95,15 @@ export function AvisosDaClinicaPage() {
       </div>
 
       {ativo && <BannerAlertaProtocolo status={dados.status} />}
+
+      {ativo && (
+        <CardConfirmarPresenca
+          visao={dados}
+          confirmando={confirmando}
+          erro={erroConfirmacao}
+          onConfirmar={() => confirmarPresenca(dados.protocoloId)}
+        />
+      )}
 
       {dados.status === "ENCERRADO_COM_SUCESSO" && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-900">
@@ -130,6 +154,49 @@ export function AvisosDaClinicaPage() {
           modo="compacto"
         />
       </section>
+    </div>
+  );
+}
+
+type CardProps = {
+  visao: VisaoProtocoloDTO;
+  confirmando: boolean;
+  erro: string | null;
+  onConfirmar: () => void;
+};
+
+function CardConfirmarPresenca({ visao, confirmando, erro, onConfirmar }: CardProps) {
+  return (
+    <div className="rounded-2xl border-2 border-brand-300 bg-white p-6 shadow-sm">
+      <div className="flex items-start gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-100 text-2xl">
+          📍
+        </div>
+        <div className="flex-1">
+          <h2 className="text-base font-bold text-ink-900">
+            A clínica está tentando entrar em contato com você
+          </h2>
+          <p className="mt-1 text-sm text-ink-600">
+            Se você está presente na clínica ou conseguiu receber o recado, confirme sua
+            presença para que o atendimento do seu pet prossiga normalmente.
+          </p>
+          <p className="mt-1 text-xs text-ink-400">
+            Atendimento: <span className="font-mono">{visao.atendimentoId}</span>
+          </p>
+
+          {erro && (
+            <p className="mt-3 text-sm font-medium text-red-600">{erro}</p>
+          )}
+
+          <button
+            onClick={onConfirmar}
+            disabled={confirmando}
+            className="btn-primary mt-4 w-full sm:w-auto"
+          >
+            {confirmando ? "Confirmando..." : "✓ Confirmar que estou presente"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
