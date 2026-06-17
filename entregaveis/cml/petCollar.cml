@@ -607,6 +607,12 @@ BoundedContext ContextoRecepcaoTriagem implements RecepcaoTriagemSubdomain {
             @ResultadoBusca buscarPorCpfComConsolidacao(@CPF cpf);
             @ResultadoBusca cadastrarTutorEContinuarBusca(@CPF cpf, String nome, String telefone, String email);
         }
+        
+        Service FilaEpidemiologicaIterator {
+            Boolean hasNext();
+            @PacienteId next();
+            Boolean possuiInfectante();
+        }
 
         Repository ResultadoBuscaRepository {
             List<@ResultadoBusca> findUltimosPorCpf(@CPF cpf, Integer limite);
@@ -659,6 +665,12 @@ BoundedContext ContextoRecepcaoTriagem implements RecepcaoTriagemSubdomain {
         Service FinalizacaoTriagemService {
             @Triagem finalizar(@TriagemId triagemId);
             @Triagem criarNovaTriagemAtualizando(@TriagemId triagemAnteriorId);
+        }
+
+        Service FilaPorPrioridadeIterator {
+            @PosicaoFila next();
+            Boolean hasNext();
+            List<@PosicaoFila> listarRestantes();
         }
 
         DomainEvent TriagemFinalizadaEvent {

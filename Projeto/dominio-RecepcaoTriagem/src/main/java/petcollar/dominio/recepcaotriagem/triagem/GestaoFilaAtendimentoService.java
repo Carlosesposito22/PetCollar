@@ -1,16 +1,10 @@
 package petcollar.dominio.recepcaotriagem.triagem;
 
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 
+
 public class GestaoFilaAtendimentoService {
-
-    private static final Comparator<PosicaoFila> ORDENACAO_FILA =
-        Comparator
-
-            .comparingInt(GestaoFilaAtendimentoService::prioridadeNumerica)
-
-            .thenComparing(PosicaoFila::getFinalizadaEm);
 
     private final IFilaAtendimentoRepositorio repositorio;
 
@@ -41,24 +35,33 @@ public class GestaoFilaAtendimentoService {
         return listarFila();
     }
 
+    /**
+     * Retorna todas as posições da fila ordenadas por prioridade,
+     * percorrendo via FilaPorPrioridadeIterator.
+     */
     public List<PosicaoFila> listarFila() {
-        return repositorio.listarOrdenada()
-            .stream()
-            .sorted(ORDENACAO_FILA)
-            .toList();
+        List<PosicaoFila> todas = repositorio.listarOrdenada();
+
+        FilaPorPrioridadeIterator iterator = new FilaPorPrioridadeIterator(todas);
+
+        List<PosicaoFila> ordenadas = new ArrayList<>();
+        while (iterator.hasNext()) {
+            ordenadas.add(iterator.next());
+        }
+
+        return ordenadas;
     }
 
+ 
     public void removerDaFila(TriagemId triagemId) {
         if (triagemId == null)
             throw new IllegalArgumentException("TriagemId não pode ser nulo.");
         repositorio.remover(triagemId);
     }
 
-    private static int prioridadeNumerica(PosicaoFila p) {
-        return switch (p.getCorDeRisco()) {
-            case VERMELHO -> 0;
-            case AMARELO  -> 1;
-            case VERDE    -> 2;
-        };
+    public List<PosicaoFila> visualizarFilaOrdenada() {
+        FilaPorPrioridadeIterator iterator =
+            new FilaPorPrioridadeIterator(repositorio.listarOrdenada());
+        return iterator.listarRestantes();
     }
 }
