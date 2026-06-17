@@ -777,52 +777,28 @@ BoundedContext ContextoGestaoFluxo implements GestaoFluxoSubdomain {
 BoundedContext ContextoProtocoloContingencia implements GestaoFluxoSubdomain {
     type = APPLICATION
 
-    Aggregate ResponsavelSecundario {
+    Aggregate ConfiguracaoProtocolo {
 
-        Entity ResponsavelSecundario {
+        Entity ConfiguracaoProtocolo {
             aggregateRoot
-            - @ResponsavelSecId id
-            - @PacienteId       pacienteId
-            - @TutorId          tutorPrincipalId
-            String              nomeCompleto
-            String              telefone
-            String              email
-            Integer             ordemPrioridade
+            - @ConfiguracaoProtocoloId      id
+            Integer                         tempoLimiteEsperaMinutos
+            - List<@CanalContato>           canaisHabilitados
+            Integer                         intervaloEntreTentativasMinutos
+            Integer                         quantidadeMaximaTentativasPorCanal
+            - List<@NivelEscalonamento>     niveisEscalonamento
+            Integer                         versao
+            DateTime                        criadaEm
+            DateTime                        atualizadaEm
         }
 
-        ValueObject ResponsavelSecId { String id }
+        ValueObject ConfiguracaoProtocoloId { String id }
 
-        Repository ResponsavelSecundarioRepository {
-            List<@ResponsavelSecundario> findByPacienteOrdenados(@PacienteId pacienteId);
-            @ResponsavelSecundario save(@ResponsavelSecundario responsavel);
-        }
-    }
-
-    Aggregate DiretivaConsentimento {
-
-        Entity DiretivaConsentimento {
-            aggregateRoot
-            - @DiretivaId diretivaId
-            - @PacienteId pacienteId
-            - @TutorId    tutorId
-            Boolean       autorizaProcedimentoEmergencial
-            Boolean       autorizaInternacao
-            Boolean       autorizaCirurgia
-            Double        limiteFinanceiroAutorizado
-            DateTime      assinadaEm
-            DateTime      expiraEm
-        }
-
-        ValueObject DiretivaId { String id }
-
-        Service ValidacaoDiretivaService {
-            Boolean autorizaConduta(@PacienteId pacienteId, String tipoConduta);
-            @DiretivaConsentimento obterAtual(@PacienteId pacienteId);
-        }
-
-        Repository DiretivaConsentimentoRepository {
-            @DiretivaConsentimento findAtualByPaciente(@PacienteId pacienteId);
-            @DiretivaConsentimento save(@DiretivaConsentimento diretiva);
+        Repository IConfiguracaoProtocoloRepositorio {
+            void salvar(@ConfiguracaoProtocolo config);
+            Optional<@ConfiguracaoProtocolo> buscarVigente();
+            Optional<@ConfiguracaoProtocolo> buscarPorId(@ConfiguracaoProtocoloId id);
+            List<@ConfiguracaoProtocolo> listarHistorico();
         }
     }
 
@@ -830,56 +806,132 @@ BoundedContext ContextoProtocoloContingencia implements GestaoFluxoSubdomain {
 
         Entity ProtocoloInacessibilidade {
             aggregateRoot
-            - @ProtocoloId            protocoloId
-            - @PacienteId             pacienteId
-            - @TutorId                tutorPrincipalId
-            - @AtendimentoId          atendimentoVinculado
-            DateTime                  iniciadoEm
-            DateTime                  encerradoEm
-            - @StatusProtocolo        status
-            - @NivelEscalonamento     nivelAtual
-            - List<@TentativaContato> tentativas
+            - @ProtocoloId                  id
+            - @AtendimentoId                atendimentoId
+            - @PacienteId                   pacienteId
+            - @TutorId                      tutorPrincipalId
+            - @ConfiguracaoProtocoloId      configuracaoId
+            - @StatusProtocolo              status
+            - @NivelEscalonamento           nivelEscalonamentoAtual
+            Boolean                         secundariosAcionados
+            - List<@TentativaContato>       tentativas
+            - List<@EventoEscalonamento>    eventosEscalonamento
+            DateTime                        ativadoEm
+            DateTime                        encerradoEm
+            - @MotivoEncerramento           motivoEncerramento
         }
 
-        ValueObject TentativaContato {
-            - @CanalContato     canal
-            - @AlvoContato      alvo
-            DateTime            executadaEm
-            - @StatusTentativa  status
+        Entity TentativaContato {
+            - @TentativaId          id
+            - @TipoDestinatario     tipoDestinatario
+            String                  destinatarioId
+            - @CanalContato         canal
+            - @StatusTentativa      status
+            String                  mensagemRetorno
+            DateTime                executadaEm
         }
 
-        enum CanalContato        { TELEFONE, SMS, EMAIL, WHATSAPP, APP_PUSH }
-        enum AlvoContato         { TUTOR_PRINCIPAL, RESPONSAVEL_SECUNDARIO }
-        enum StatusTentativa     { ENTREGUE_SEM_RESPOSTA, RESPONDIDA, FALHA_ENTREGA }
-        enum StatusProtocolo     { ATIVO, EM_ESCALONAMENTO, RESOLVIDO_TUTOR_RESPONDEU, RESOLVIDO_RESPONSAVEL_SECUNDARIO, FINALIZADO_POR_DIRETIVA }
-        enum NivelEscalonamento  { NIVEL_0_TUTOR, NIVEL_1_RESPONSAVEL_SECUNDARIO, NIVEL_2_DECISAO_CLINICA, NIVEL_3_DECISAO_ADMINISTRATIVA }
-        ValueObject ProtocoloId  { String id }
+        Entity EventoEscalonamento {
+            - @EventoEscalonamentoId    id
+            - @NivelEscalonamento       nivel
+            String                      motivo
+            String                      responsavelAcionadoId
+            DateTime                    ocorridoEm
+        }
+
+        ValueObject MotivoEncerramento {
+            - @TipoEncerramento tipo
+            String              detalhes
+        }
+
+        enum StatusProtocolo {
+            INATIVO, ATIVADO, EM_TENTATIVA_TUTOR, EM_TENTATIVA_SECUNDARIOS,
+            EM_ESCALONAMENTO, ENCERRADO_COM_SUCESSO, ENCERRADO_POR_ESGOTAMENTO
+        }
+        enum StatusTentativa    { EXECUTADA_COM_SUCESSO, SEM_RESPOSTA, FALHA_TECNICA }
+        enum TipoDestinatario   { TUTOR_PRINCIPAL, RESPONSAVEL_SECUNDARIO }
+        enum TipoEncerramento   { SUCESSO_TUTOR, SUCESSO_SECUNDARIO, ESGOTAMENTO, INTERVENCAO_MANUAL }
+        enum CanalContato       { TELEFONE, WHATSAPP, SMS, EMAIL }
+        enum NivelEscalonamento {
+            NIVEL_1_ADMINISTRATIVO, NIVEL_2_COORDENACAO, NIVEL_3_CLINICO, NIVEL_4_DIRECAO
+        }
+        enum NivelCriticidade   { BAIXA, MEDIA, ALTA, CRITICA }
+        enum TipoConduta {
+            PROCEDIMENTO_INVASIVO, MEDICACAO_CONTROLADA, INTERNACAO,
+            PROCEDIMENTO_ELETIVO, EUTANASIA
+        }
+
+        ValueObject ProtocoloId           { String id }
+        ValueObject TentativaId           { String id }
+        ValueObject EventoEscalonamentoId { String id }
+
+        // Padrão Template Method (GoF): EtapaProtocoloService é classe abstrata com
+        // método executar() final; subclasses concretas definem os ganchos por etapa.
+        Service EtapaContatoTutorService {
+            void executar(@ProtocoloId protocoloId);
+        }
+
+        Service EtapaContatoResponsaveisSecundariosService {
+            void executar(@ProtocoloId protocoloId);
+        }
+
+        Service EtapaEscalonamentoService {
+            void executar(@ProtocoloId protocoloId);
+        }
+
+        Service OrquestradorEtapasProtocolo {
+            void executarProximaEtapa(@ProtocoloInacessibilidade protocolo);
+        }
 
         Service AtivacaoProtocoloService {
-            @ProtocoloInacessibilidade ativar(@AtendimentoId atendimentoId, @PacienteId pacienteId);
-            Boolean deveAtivarPorTimeout(@AtendimentoId atendimentoId, Integer timeoutMinutos);
+            void criarEAtivar(@AtendimentoId atendimentoId, @TutorId tutorId, @PacienteId pacienteId, @ConfiguracaoProtocoloId configuracaoId);
+            Integer verificarTodosAtendimentosAtivos();
         }
 
-        Service TentativaContatoService {
-            @TentativaContato executarTentativa(@ProtocoloId protocoloId, @CanalContato canal, @AlvoContato alvo);
-            Boolean esgotouTentativasNivelAtual(@ProtocoloId protocoloId);
+        Service ConsultaStatusProtocoloService {
+            @VisaoProtocolo executar(@AtendimentoId atendimentoId);
         }
 
-        Service EscalonamentoProgressivoService {
-            void escalonarParaProximoNivel(@ProtocoloId protocoloId);
+        Service ConsultaDiretivaConsentimentoService {
+            Boolean autorizaConduta(@PacienteId pacienteId, @TipoConduta conduta);
+            List<String> listarCondutasAutorizadas(@PacienteId pacienteId);
         }
 
-        DomainEvent NivelEscalonadoEvent {
-            - @ProtocoloId protocoloId
-            - @TutorId tutorId
-            - @NivelEscalonamento nivelNovo
-            DateTime ocorridoEm
+        // Portas ACL — interfaces de saída para contextos externos (Anti-Corruption Layer)
+        Service IConsultaAtendimento {
+            @ResumoAtendimento buscarResumo(@AtendimentoId atendimentoId);
+            List<@ResumoAtendimento> listarEmAndamento();
         }
 
-        Repository ProtocoloInacessibilidadeRepository {
-            @ProtocoloInacessibilidade findAtivoPorAtendimento(@AtendimentoId atendimentoId);
-            List<@ProtocoloInacessibilidade> findAtivos();
-            @ProtocoloInacessibilidade save(@ProtocoloInacessibilidade protocolo);
+        Service IServicoCanalContato {
+            @ResultadoContato contatar(@CanalContato canal, String destinatarioId, String titulo, String corpo, @NivelCriticidade criticidade);
+        }
+
+        Service IServicoNotificacao {
+            void notificar(String destinatarioId, String titulo, String corpo, @NivelCriticidade criticidade, String protocoloId);
+        }
+
+        Service IConsultaNotificacaoProtocolo {
+            List<@RegistroNotificacaoProtocolo> listarPorProtocolo(String protocoloId);
+        }
+
+        Service IResponsavelSecundarioRepositorio {
+            List<@ResponsavelSecundarioRef> listarPorPaciente(@PacienteId pacienteId);
+        }
+
+        Service IDiretivaConsentimentoRepositorio {
+            List<String> listarCondutasAutorizadas(@PacienteId pacienteId);
+            Boolean verificarAutorizacao(@PacienteId pacienteId, @TipoConduta conduta);
+        }
+
+        Repository IProtocoloInacessibilidadeRepositorio {
+            void salvar(@ProtocoloInacessibilidade protocolo);
+            Optional<@ProtocoloInacessibilidade> buscarPorId(@ProtocoloId id);
+            Optional<@ProtocoloInacessibilidade> buscarAtivoPorAtendimento(@AtendimentoId atendimentoId);
+            Optional<@ProtocoloInacessibilidade> buscarAtivoPorTutor(@TutorId tutorId);
+            List<@ProtocoloInacessibilidade> listarPorPaciente(@PacienteId pacienteId);
+            List<@ProtocoloInacessibilidade> listarAtivos();
+            List<@ProtocoloInacessibilidade> listarPorStatus(@StatusProtocolo status);
         }
     }
 }
