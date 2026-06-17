@@ -951,122 +951,67 @@ BoundedContext ContextoProtocoloContingencia implements GestaoFluxoSubdomain {
 BoundedContext ContextoImunizacao implements SaudePreventivaSubdomain {
     type = FEATURE
 
-    Aggregate Vacina {
+    Aggregate CicloVacinal {
 
-        Entity Vacina {
+        Entity CicloVacinal {
             aggregateRoot
-            - @VacinaId   vacinaId
-            String        nomeComercial
-            String        laboratorio
-            - @TipoVacina tipo
-            Integer       intervaloEntreDosesDias
-            Integer       intervaloMinimoSegurancaDias
-            Integer       intervaloRevacinacaoDias
+            - @VacinaId          cicloId
+            - @PacienteId        pacienteId
+            String               nomeCiclo
+            Integer              totalDoses
+            - @TipoProtocolo     tipoProtocolo
+            Integer              intervaloDias          // obrigatorio quando tipoProtocolo = PERSONALIZADO
+            Integer              diasLembrete           // nullable: antecedencia do lembrete da proxima dose
+            - List<@DoseVacinal> doses
         }
 
-        enum TipoVacina      { POLIVALENTE_FILHOTE, ANTIRRABICA, GRIPE_CANINA, GIARDIA, FELINA_TRIPLICE, OUTRA }
-        ValueObject VacinaId { String id }
-
-        Repository VacinaRepository {
-            List<@Vacina> findByTipo(@TipoVacina tipo);
-            List<@Vacina> findAtivas();
-            @Vacina save(@Vacina vacina);
-        }
-    }
-
-    Aggregate ProtocoloVacinal {
-
-        Entity ProtocoloVacinal {
-            aggregateRoot
-            - @ProtocoloVacinalId   protocoloId
-            String                  nome
-            - @TipoProtocoloVacinal tipo
-            - @Especie              especieAlvo
-            - List<@DoseProtocolo>  doses
+        Entity DoseVacinal {
+            - @VacinaId          doseId
+            Integer              doseNumero
+            Date                 dataAgendada
+            Date                 dataAplicacao          // nullable ate a aplicacao ser confirmada
+            String               medicoResponsavel
+            String               loteSeloDigital
+            - @StatusDoseVacinal status                 // derivado: APLICADA | EM_ATRASO | PENDENTE
         }
 
-        ValueObject DoseProtocolo {
-            - @VacinaId vacinaId
-            Integer     numeroDose
-            Integer     idadeMinimaDias
-            Integer     intervaloDaDoseAnteriorDias
-        }
-        enum TipoProtocoloVacinal { CICLO_FILHOTE, REFORCO_ANUAL, PROTOCOLO_VIAGEM, PROTOCOLO_PERSONALIZADO }
-        ValueObject ProtocoloVacinalId { String id }
+        enum TipoProtocolo     { FILHOTE, REFORCO_ANUAL, VIAGEM, PERSONALIZADO }
+        enum StatusDoseVacinal { APLICADA, PENDENTE, EM_ATRASO }
+        ValueObject VacinaId   { String id }
 
-        Repository ProtocoloVacinalRepository {
-            List<@ProtocoloVacinal> findPorEspecie(@Especie especie);
-            @ProtocoloVacinal save(@ProtocoloVacinal protocolo);
-        }
-    }
-
-    Aggregate CarteiraVacinacao {
-
-        Entity CarteiraVacinacao {
-            aggregateRoot
-            - @CarteiraId               carteiraId
-            - @PacienteId               pacienteId
-            - @TutorId                  tutorId
-            - List<@RegistroVacinacao>  registros
-            - List<@PrevisaoDoseFutura> previsoes
+        // Padrão Strategy (GoF): ICalculoProximaDoseStrategy encapsula o calculo da
+        // data da proxima dose por protocolo. Implementacoes concretas:
+        // ProtocoloFilhoteStrategy (21 dias), ProtocoloReforcoAnualStrategy (12 meses),
+        // ProtocoloViagemStrategy (30 dias) e ProtocoloPersonalizadoStrategy (intervalo
+        // configuravel). FabricaDeProtocolo.criar(TipoProtocolo, intervaloDias) seleciona
+        // a estrategia a partir do tipo de protocolo do ciclo.
+        Service ICalculoProximaDoseStrategy {
+            Date calcularProximaData(Date dataReferencia);
+            String descricao();
+            Integer intervaloDias();
         }
 
-        Entity RegistroVacinacao {
-            - @RegistroVacinacaoId registroId
-            - @VacinaId            vacinaId
-            Integer                numeroDose
-            Date                   dataAplicacao
-            - @MedicoId            medicoResponsavel
-            String                 loteSeloDigital
-            Boolean                aplicadaForaDaClinica
-            Boolean                validadaPorMedicoClinica
+        Service CicloVacinalService {
+            @CicloVacinal criarCicloComPrimeiraDose(@PacienteId pacienteId, String nomeCiclo, @TipoProtocolo protocolo, Integer totalDoses, Integer intervaloDias, Date primeiraData);
+            @CicloVacinal agendarProximaDose(@VacinaId cicloId, Date dataOverride);
+            void aplicarDose(@VacinaId cicloId, @VacinaId doseId, Date dataAplicacao, String medico, String lote);
+            void reagendarDose(@VacinaId cicloId, @VacinaId doseId, Date novaData);
+            List<@CicloVacinal> listarPorPaciente(@PacienteId pacienteId);
+            Date calcularProximaDataSugerida(@CicloVacinal ciclo);
+            void configurarLembrete(@VacinaId cicloId, Integer diasLembrete);
+            Boolean possuiVacinaEmAtraso(@PacienteId pacienteId);
+            void removerCiclo(@VacinaId cicloId);
+            void removerPorPaciente(@PacienteId pacienteId);
+            @CicloVacinal buscarCicloPorNome(@PacienteId pacienteId, String nomeCiclo);
         }
 
-        ValueObject PrevisaoDoseFutura {
-            - @VacinaId      vacinaId
-            Integer          numeroProximaDose
-            Date             dataPrevistaProximaDose
-            - @StatusVacina  status
-            Integer          diasEmAtraso
-        }
-        enum StatusVacina               { APLICADA, PENDENTE_AGENDADA, EM_ATRASO }
-        ValueObject CarteiraId          { String id }
-        ValueObject RegistroVacinacaoId { String id }
-
-        Service CalculoProximaDoseService {
-            @PrevisaoDoseFutura calcularProximaDose(@VacinaId vacinaId, @RegistroVacinacao ultimaAplicacao);
-            List<@PrevisaoDoseFutura> recalcularTodasPrevisoes(@CarteiraId carteiraId);
-        }
-
-        Service RegistroAplicacaoService {
-            @RegistroVacinacao registrarAplicacaoOficial(@CarteiraId carteiraId, @VacinaId vacinaId, @MedicoId medicoId, String lote);
-            @RegistroVacinacao registrarAplicacaoExternaValidada(@CarteiraId carteiraId, @VacinaId vacinaId, @MedicoId medicoValidador);
-        }
-
-        Service GeracaoCertificadoService {
-            String gerarCertificadoPDF(@CarteiraId carteiraId);
-        }
-
-        DomainEvent VacinaAplicadaEvent {
-            - @CarteiraId carteiraId
-            - @PacienteId pacienteId
-            - @TutorId tutorId
-            - @VacinaId vacinaId
-            Integer numeroDose
-        }
-
-        DomainEvent VacinaEmAtrasoEvent {
-            - @CarteiraId carteiraId
-            - @PacienteId pacienteId
-            - @TutorId tutorId
-            - @VacinaId vacinaId
-            Integer diasEmAtraso
-        }
-
-        Repository CarteiraVacinacaoRepository {
-            @CarteiraVacinacao findByPaciente(@PacienteId pacienteId);
-            List<@CarteiraVacinacao> findComVacinasEmAtraso();
-            @CarteiraVacinacao save(@CarteiraVacinacao carteira);
+        Repository ICicloVacinalRepositorio {
+            void salvar(@CicloVacinal ciclo);
+            Optional<@CicloVacinal> buscarPorId(@VacinaId id);
+            List<@CicloVacinal> listarPorPaciente(@PacienteId pacienteId);
+            Optional<@CicloVacinal> buscarPorPacienteENomeCiclo(@PacienteId pacienteId, String nomeCiclo);
+            void remover(@VacinaId id);
+            void removerPorPaciente(@PacienteId pacienteId);
         }
     }
 }
@@ -1331,21 +1276,23 @@ BoundedContext ContextoAtendimentoClinico implements AtendimentoClinicoSubdomain
 
         Entity RelatorioClinico {
             aggregateRoot
-            - @RelatorioClinicoId  relatorioId
-            - @AtendimentoId       atendimentoId
-            - @PacienteId          pacienteId
-            - @MedicoId            medicoResponsavel
-            - @SinaisVitais        sinaisVitaisAtuais
-            - @EvolucaoComparativa evolucaoComparativa
-            String                 diagnosticoTecnico
-            String                 orientacoesManejo
-            String                 resumoParaTutor
-            - List<@AnexoRelatorio> anexos
-            - List<String>         medicamentosPrescritos
-            - List<String>         alergiasDestaque
-            DateTime               geradoEm
-            DateTime               assinadoEm
-            Boolean                imutavel
+            - @RelatorioClinicoId   relatorioId
+            - @AtendimentoId        atendimentoId
+            - @PacienteId           pacienteId
+            - @MedicoId             medicoResponsavel
+            - @TipoRelatorio        tipoRelatorio
+            - @SinaisVitais         sinaisVitaisAtuais
+            - @EvolucaoComparativa  evolucaoComparativa
+            String                  diagnosticoTecnico
+            String                  orientacoesManejo
+            String                  resumoParaTutor
+            String                  cuidadosPosOperatorios     // obrigatorio em relatorio CIRURGICO (RN-124)
+            String                  tempoRecuperacaoEstimado   // obrigatorio em relatorio CIRURGICO (RN-124)
+            - List<@AnexoRelatorio> anexos                     // limite de 4 anexos (RN-119)
+            - List<String>          medicamentosPrescritos
+            Boolean                 imutavel                   // true apos assinatura (RN-120)
+            DateTime                criadoEm
+            DateTime                assinadoEm
         }
 
         ValueObject SinaisVitais {
@@ -1356,39 +1303,68 @@ BoundedContext ContextoAtendimentoClinico implements AtendimentoClinicoSubdomain
         }
 
         ValueObject EvolucaoComparativa {
-            Double variacaoPesoKg
-            String resumoTextual
+            Double                          variacaoPesoKg
+            Double                          variacaoTemperaturaCelsius
+            String                          resumoTextual
+            - List<@RegistroHistoricoVital> registrosHistorico   // ate os 3 ultimos atendimentos (RN-116)
+        }
+
+        ValueObject RegistroHistoricoVital {
+            String data
+            Double pesoKg
+            Double temperaturaCelsius
         }
 
         ValueObject AnexoRelatorio {
-            String      nomeArquivo
+            String       nomeArquivo
             - @TipoAnexo tipo
-            String      url
+            String       url
         }
+        enum TipoRelatorio              { ROTINEIRO, CIRURGICO, PREVENTIVO }
         enum TipoAnexo                  { FOTO_LESAO, LAUDO_PDF, EXAME_IMAGEM }
         ValueObject RelatorioClinicoId  { String id }
 
+        Service RelatorioClinicoService {
+            @RelatorioClinico iniciarRelatorio(@AtendimentoId atendimentoId, @PacienteId pacienteId, @MedicoId medicoId, @TipoRelatorio tipoRelatorio);
+            @RelatorioClinico atualizarConteudo(@RelatorioClinicoId id, String diagnostico, String resumoParaTutor, String orientacoesManejo, String cuidadosPosOp, String tempoRecuperacao);
+            @RelatorioClinico adicionarMedicamento(@RelatorioClinicoId id, String medicamento);
+            @RelatorioClinico assinarRelatorio(@RelatorioClinicoId relatorioId);
+            @RelatorioClinico buscarPorId(@RelatorioClinicoId relatorioId);
+            List<@RelatorioClinico> listarPorPaciente(@PacienteId pacienteId);
+            List<@RelatorioClinico> buscarHistoricoComparativo(@PacienteId pacienteId);
+        }
+
         Service GeracaoEvolucaoComparativaService {
-            @SinaisVitais consolidarDaConsulta(@AtendimentoId atendimentoId);
-            @EvolucaoComparativa gerar(@PacienteId pacienteId, @SinaisVitais atual);
+            @RelatorioClinico consolidarSinaisVitais(@RelatorioClinicoId relatorioId, @SinaisVitais sinaisVitais);
+            @RelatorioClinico gerarEvolucaoComparativa(@RelatorioClinicoId relatorioId, Double pesoAnteriorKg);
+            @EvolucaoComparativa calcularEvolucao(Double pesoAtualKg, Double pesoAnteriorKg);
+        }
+
+        // Padrão Strategy (GoF): IValidadorRelatorioStrategy define a validacao exigida
+        // para assinar o relatorio conforme o TipoRelatorio. Implementacoes concretas:
+        // ValidadorRelatorioRotineiroStrategy (diagnostico + resumo ao tutor),
+        // ValidadorRelatorioCirurgicoStrategy (+ cuidados pos-operatorios + tempo de
+        // recuperacao) e ValidadorRelatorioPreventivStrategy (somente resumo ao tutor).
+        // FabricaDeValidadorRelatorio.criar(TipoRelatorio) seleciona a estrategia.
+        Service IValidadorRelatorioStrategy {
+            void validarParaAssinatura(@RelatorioClinico relatorio);
+            String descricao();
+            @TipoRelatorio tipo();
         }
 
         Service AssinaturaDigitalService {
-            @RelatorioClinico assinarDigitalmente(@RelatorioClinicoId id, @MedicoId medicoId);
-            String exportarParaPDF(@RelatorioClinicoId id);
+            @RelatorioClinico assinarRelatorio(@RelatorioClinicoId relatorioId);
+            @RelatorioClinico atualizarDiagnostico(@RelatorioClinicoId relatorioId, String diagnosticoTecnico);
+            @RelatorioClinico adicionarAnexo(@RelatorioClinicoId relatorioId, @AnexoRelatorio anexo);
         }
 
-        DomainEvent RelatorioPublicadoParaTutorEvent {
-            - @RelatorioClinicoId relatorioId
-            - @PacienteId pacienteId
-            - @TutorId tutorId
-            DateTime publicadoEm
-        }
-
-        Repository RelatorioClinicoRepository {
-            @RelatorioClinico findByAtendimento(@AtendimentoId atendimentoId);
-            List<@RelatorioClinico> findByPacienteOrdenadoPorMaisRecente(@PacienteId pacienteId);
-            @RelatorioClinico save(@RelatorioClinico relatorio);
+        Repository IRelatorioClinicoRepositorio {
+            void salvar(@RelatorioClinico relatorio);
+            Optional<@RelatorioClinico> buscarPorId(@RelatorioClinicoId id);
+            List<@RelatorioClinico> listarPorPaciente(@PacienteId pacienteId);
+            List<@RelatorioClinico> listarPorAtendimento(@AtendimentoId atendimentoId);
+            Boolean existePorAtendimento(@AtendimentoId atendimentoId);
+            List<@RelatorioClinico> buscarUltimos3PorPaciente(@PacienteId pacienteId);
         }
     }
 
