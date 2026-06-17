@@ -90,6 +90,6 @@ public class PassosResponsaveisSecundarios {
     @Entao("o responsável secundário deve ser notificado com criticidade {string}")
     public void responsavelNotificadoComCriticidade(String criticidade) {
         verify(contexto.notificacao, atLeastOnce())
-            .notificar(any(), any(), eq(NivelCriticidade.valueOf(criticidade)));
+            .notificar(any(), any(), eq(NivelCriticidade.valueOf(criticidade)), any());
     }
 }

@@ -2,6 +2,7 @@ package br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.bdd;
 
 import br.com.cesar.petCollar.dominio.compartilhado.AtendimentoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
+import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.IProtocoloInacessibilidadeRepositorio;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade;
@@ -30,6 +31,14 @@ class ProtocoloRepositorioFake implements IProtocoloInacessibilidadeRepositorio 
     public Optional<ProtocoloInacessibilidade> buscarAtivoPorAtendimento(AtendimentoId atendimentoId) {
         return dados.values().stream()
             .filter(p -> p.getAtendimentoId().equals(atendimentoId))
+            .filter(ProtocoloInacessibilidade::isAtivo)
+            .findFirst();
+    }
+
+    @Override
+    public Optional<ProtocoloInacessibilidade> buscarAtivoPorTutor(TutorId tutorId) {
+        return dados.values().stream()
+            .filter(p -> p.getTutorPrincipalId().equals(tutorId))
             .filter(ProtocoloInacessibilidade::isAtivo)
             .findFirst();
     }

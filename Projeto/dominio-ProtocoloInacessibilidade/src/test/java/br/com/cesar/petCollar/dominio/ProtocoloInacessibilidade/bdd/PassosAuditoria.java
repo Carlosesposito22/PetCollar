@@ -17,6 +17,6 @@ public class PassosAuditoria {
     @Entao("o serviço de notificação deve ter sido acionado {int} vezes")
     public void notificacaoAcionada(int vezes) {
 
-        verify(contexto.notificacao, times(vezes)).notificar(any(), any(), any());
+        verify(contexto.notificacao, times(vezes)).notificar(any(), any(), any(), any());
     }
 }
