@@ -93,7 +93,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const headers = new Headers(init.headers);
     if (session?.token) headers.set("Authorization", `Bearer ${session.token}`);
     if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
-    return fetch(input, { ...init, headers });
+    const res = await fetch(input, { ...init, headers });
+    // Token expirado ou inválido: desloga para forçar novo login.
+    if (res.status === 401 && session?.token) {
+      setSession(null);
+    }
+    return res;
   }, [session]);
 
   const value = useMemo(

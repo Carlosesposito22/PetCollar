@@ -22,6 +22,11 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.contato.NivelEsc
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResponsavelSecundario;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResponsavelSecundarioId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.TipoConduta;
+import br.com.cesar.petCollar.aplicacao.ProtocoloInacessibilidade.AtivarProtocoloUseCase;
+import br.com.cesar.petCollar.aplicacao.ProtocoloInacessibilidade.ConsultarDiretivasConsentimentoUseCase;
+import br.com.cesar.petCollar.aplicacao.ProtocoloInacessibilidade.ConsultarStatusProtocoloUseCase;
+import br.com.cesar.petCollar.aplicacao.ProtocoloInacessibilidade.EncerrarProtocoloUseCase;
+import br.com.cesar.petCollar.aplicacao.ProtocoloInacessibilidade.ExecutarEtapaProtocoloUseCase;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +106,38 @@ public class ProtocoloInacessibilidadeConfig {
     public ConsultaStatusProtocoloService consultaStatusProtocoloService(
             IProtocoloInacessibilidadeRepositorio protocoloRepositorio) {
         return new ConsultaStatusProtocoloService(protocoloRepositorio);
+    }
+
+    // ── Casos de uso (camada aplicacao) ─────────────────────────────────────────
+
+    @Bean
+    public AtivarProtocoloUseCase ativarProtocoloUseCase(AtivacaoProtocoloService ativacaoService) {
+        return new AtivarProtocoloUseCase(ativacaoService);
+    }
+
+    @Bean
+    public EncerrarProtocoloUseCase encerrarProtocoloUseCase(
+            IProtocoloInacessibilidadeRepositorio protocoloRepositorio) {
+        return new EncerrarProtocoloUseCase(protocoloRepositorio);
+    }
+
+    @Bean
+    public ConsultarStatusProtocoloUseCase consultarStatusProtocoloUseCase(
+            ConsultaStatusProtocoloService statusService) {
+        return new ConsultarStatusProtocoloUseCase(statusService);
+    }
+
+    @Bean
+    public ExecutarEtapaProtocoloUseCase executarEtapaProtocoloUseCase(
+            IProtocoloInacessibilidadeRepositorio protocoloRepositorio,
+            OrquestradorEtapasProtocolo orquestrador) {
+        return new ExecutarEtapaProtocoloUseCase(protocoloRepositorio, orquestrador);
+    }
+
+    @Bean
+    public ConsultarDiretivasConsentimentoUseCase consultarDiretivasConsentimentoUseCase(
+            ConsultaDiretivaConsentimentoService consultaService) {
+        return new ConsultarDiretivasConsentimentoUseCase(consultaService);
     }
 
     /** Seed operacional: cria a configuração padrão (RN 1/2/6) se não existir. */

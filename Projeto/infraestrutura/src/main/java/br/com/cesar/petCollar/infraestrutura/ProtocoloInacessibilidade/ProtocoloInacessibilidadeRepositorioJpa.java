@@ -2,6 +2,7 @@ package br.com.cesar.petCollar.infraestrutura.ProtocoloInacessibilidade;
 
 import br.com.cesar.petCollar.dominio.compartilhado.AtendimentoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
+import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.IProtocoloInacessibilidadeRepositorio;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade;
@@ -39,11 +40,13 @@ public class ProtocoloInacessibilidadeRepositorioJpa implements IProtocoloInaces
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ProtocoloInacessibilidade> buscarPorId(ProtocoloId id) {
         return jpa.findById(id.getValor()).map(ProtocoloInacessibilidadeJpa::toDomain);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ProtocoloInacessibilidade> buscarAtivoPorAtendimento(AtendimentoId atendimentoId) {
         return jpa.findByAtendimentoIdAndStatusNotIn(atendimentoId.getValor(), STATUS_ENCERRADOS).stream()
             .map(ProtocoloInacessibilidadeJpa::toDomain)
@@ -51,6 +54,7 @@ public class ProtocoloInacessibilidadeRepositorioJpa implements IProtocoloInaces
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProtocoloInacessibilidade> listarPorPaciente(PacienteId pacienteId) {
         return jpa.findByPacienteId(pacienteId.getValor()).stream()
             .map(ProtocoloInacessibilidadeJpa::toDomain)
@@ -58,6 +62,7 @@ public class ProtocoloInacessibilidadeRepositorioJpa implements IProtocoloInaces
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProtocoloInacessibilidade> listarAtivos() {
         return jpa.findByStatusNotIn(STATUS_ENCERRADOS).stream()
             .map(ProtocoloInacessibilidadeJpa::toDomain)
@@ -65,9 +70,19 @@ public class ProtocoloInacessibilidadeRepositorioJpa implements IProtocoloInaces
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProtocoloInacessibilidade> listarPorStatus(StatusProtocolo status) {
         return jpa.findByStatus(status.name()).stream()
             .map(ProtocoloInacessibilidadeJpa::toDomain)
             .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ProtocoloInacessibilidade> buscarAtivoPorTutor(TutorId tutorId) {
+        return jpa.findByTutorPrincipalIdAndStatusNotIn(tutorId.getValor(), STATUS_ENCERRADOS)
+            .stream()
+            .map(ProtocoloInacessibilidadeJpa::toDomain)
+            .findFirst();
     }
 }

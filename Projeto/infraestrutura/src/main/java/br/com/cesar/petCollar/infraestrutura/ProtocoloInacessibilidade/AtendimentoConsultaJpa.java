@@ -6,7 +6,6 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.ResumoAten
 import br.com.cesar.petCollar.infraestrutura.AgendamentoClinico.ConsultaJpa;
 import br.com.cesar.petCollar.infraestrutura.AgendamentoClinico.ConsultaJpaRepository;
 
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -17,7 +16,6 @@ import java.util.Optional;
  * AgendamentoClinico). Substituí o stand-in em memória; anotado com {@code @Primary}
  * para que o Spring prefira esta implementação.
  */
-@Primary
 @Component
 public class AtendimentoConsultaJpa implements IConsultaAtendimento {
 

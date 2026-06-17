@@ -35,6 +35,7 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { BuscaTutorPage } from "./features/recepcao-triagem/pages/BuscaTutorPage";
 import { FilaEsperaPage } from "./features/recepcao-triagem/pages/FilaEsperaPage";
 import { AcompanhamentoProtocoloPage } from "./features/protocolo-inacessibilidade/pages/tutor/AcompanhamentoProtocoloPage";
+import { AvisosDaClinicaPage } from "./features/protocolo-inacessibilidade/pages/tutor/AvisosDaClinicaPage";
 import { PainelProtocolosAtivosPage } from "./features/protocolo-inacessibilidade/pages/recepcionista/PainelProtocolosAtivosPage";
 import { DetalheProtocoloPage } from "./features/protocolo-inacessibilidade/pages/recepcionista/DetalheProtocoloPage";
 import { ConfiguracaoProtocoloPage } from "./features/protocolo-inacessibilidade/pages/administrador/ConfiguracaoProtocoloPage";
@@ -73,7 +74,9 @@ export function App() {
         <Route path="agendamentos/retorno" element={<AgendamentoRetornoPage />} />
         <Route path="conquistas" element={<TutorConquistas />} />
         <Route path="indicacoes" element={<TutorIndicacoes />} />
-        {/* F-03 — acompanhamento do protocolo pelo tutor (RN 15) */}
+        {/* F-03 — avisos da clínica: protocolo ativo do tutor logado (RN 15/16) */}
+        <Route path="avisos" element={<AvisosDaClinicaPage />} />
+        {/* Rota legada: acesso direto pelo atendimentoId (link via SMS/email) */}
         <Route path="protocolos/:atendimentoId" element={<AcompanhamentoProtocoloPage />} />
       </Route>
 

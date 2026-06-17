@@ -12,6 +12,7 @@ const abas = [
   { to: "/app/agendamentos", label: "Consultas" },
   { to: "/app/conquistas", label: "Conquistas" },
   { to: "/app/indicacoes", label: "Indicações" },
+  { to: "/app/avisos", label: "📣 Avisos" },
 ];
 
 export function TutorLayout() {

@@ -59,6 +59,15 @@ export type VisaoProtocoloDTO = {
   eventosEscalonamento: EventoEscalonamentoDTO[];
 };
 
+/** GET /api/protocolos/atendimentos-em-andamento — atendimentos disponíveis para ativação manual. */
+export type ResumoAtendimentoDTO = {
+  atendimentoId: string;
+  pacienteId: string;
+  tutorPrincipalId: string;
+  ultimaInteracaoTutorEm: string;
+  nomePaciente: string | null;
+};
+
 /** GET /api/protocolos/ativos — resumo compacto por protocolo. */
 export type StatusProtocoloDTO = {
   id: string;

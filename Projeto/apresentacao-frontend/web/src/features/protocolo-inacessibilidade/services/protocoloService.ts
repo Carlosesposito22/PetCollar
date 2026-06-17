@@ -5,6 +5,7 @@ import type {
   NotificacaoProtocoloDTO,
   ProtocoloDTO,
   RequisicaoConfigurarProtocolo,
+  ResumoAtendimentoDTO,
   StatusProtocoloDTO,
   TentativaContatoDTO,
   VisaoProtocoloDTO,
@@ -60,6 +61,13 @@ export function criarProtocoloService(apiFetch: ApiFetch) {
     /** RN 15 — visão do protocolo ativo de um atendimento (tutor). */
     visaoDoAtendimento: (atendimentoId: string) =>
       json<VisaoProtocoloDTO>(apiFetch(`/api/protocolos/${encodeURIComponent(atendimentoId)}`)),
+
+    /** RN 15 — protocolo ativo do tutor autenticado (sem precisar do atendimentoId). */
+    meuProtocoloAtivo: () =>
+      json<VisaoProtocoloDTO>(apiFetch("/api/protocolos/meu-protocolo-ativo")),
+
+    listarAtendimentosEmAndamento: () =>
+      json<ResumoAtendimentoDTO[]>(apiFetch("/api/protocolos/atendimentos-em-andamento")),
 
     listarAtivos: () => json<StatusProtocoloDTO[]>(apiFetch("/api/protocolos/ativos")),
 

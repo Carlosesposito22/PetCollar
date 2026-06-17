@@ -21,10 +21,17 @@ public final class ResumoAtendimento {
     private final TutorId tutorPrincipalId;
     private final LocalDateTime ultimaInteracaoTutorEm;
     private final boolean emAndamento;
+    private final String nomePaciente;
 
     public ResumoAtendimento(AtendimentoId atendimentoId, PacienteId pacienteId,
                              TutorId tutorPrincipalId, LocalDateTime ultimaInteracaoTutorEm,
                              boolean emAndamento) {
+        this(atendimentoId, pacienteId, tutorPrincipalId, ultimaInteracaoTutorEm, emAndamento, null);
+    }
+
+    public ResumoAtendimento(AtendimentoId atendimentoId, PacienteId pacienteId,
+                             TutorId tutorPrincipalId, LocalDateTime ultimaInteracaoTutorEm,
+                             boolean emAndamento, String nomePaciente) {
         if (atendimentoId == null)
             throw new IllegalArgumentException("Id do atendimento não pode ser nulo.");
         if (pacienteId == null)
@@ -38,6 +45,7 @@ public final class ResumoAtendimento {
         this.tutorPrincipalId = tutorPrincipalId;
         this.ultimaInteracaoTutorEm = ultimaInteracaoTutorEm;
         this.emAndamento = emAndamento;
+        this.nomePaciente = nomePaciente;
     }
 
     public AtendimentoId getAtendimentoId()         { return atendimentoId; }
@@ -45,4 +53,5 @@ public final class ResumoAtendimento {
     public TutorId getTutorPrincipalId()            { return tutorPrincipalId; }
     public LocalDateTime getUltimaInteracaoTutorEm(){ return ultimaInteracaoTutorEm; }
     public boolean isEmAndamento()                  { return emAndamento; }
+    public String getNomePaciente()                 { return nomePaciente; }
 }

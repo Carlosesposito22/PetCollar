@@ -20,4 +20,7 @@ public interface ProtocoloInacessibilidadeJpaRepository
     List<ProtocoloInacessibilidadeJpa> findByStatusNotIn(List<String> statusEncerrados);
 
     List<ProtocoloInacessibilidadeJpa> findByStatus(String status);
+
+    List<ProtocoloInacessibilidadeJpa> findByTutorPrincipalIdAndStatusNotIn(
+        String tutorPrincipalId, List<String> statusEncerrados);
 }

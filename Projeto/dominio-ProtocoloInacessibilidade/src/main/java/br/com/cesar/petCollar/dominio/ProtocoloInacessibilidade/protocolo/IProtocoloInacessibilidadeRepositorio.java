@@ -2,6 +2,7 @@ package br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo;
 
 import br.com.cesar.petCollar.dominio.compartilhado.AtendimentoId;
 import br.com.cesar.petCollar.dominio.compartilhado.PacienteId;
+import br.com.cesar.petCollar.dominio.compartilhado.TutorId;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +20,9 @@ public interface IProtocoloInacessibilidadeRepositorio {
 
     /** Protocolo ainda em andamento para o atendimento, se houver (idempotência da RN 1). */
     Optional<ProtocoloInacessibilidade> buscarAtivoPorAtendimento(AtendimentoId atendimentoId);
+
+    /** Protocolo ativo para o tutor logado, se houver. */
+    Optional<ProtocoloInacessibilidade> buscarAtivoPorTutor(TutorId tutorId);
 
     List<ProtocoloInacessibilidade> listarPorPaciente(PacienteId pacienteId);
 

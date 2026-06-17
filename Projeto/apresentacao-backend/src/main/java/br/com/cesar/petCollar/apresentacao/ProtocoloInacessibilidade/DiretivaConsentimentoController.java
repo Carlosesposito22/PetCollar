@@ -5,7 +5,7 @@ import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.porta.TipoCondut
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.IProtocoloInacessibilidadeRepositorio;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloId;
 import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.protocolo.ProtocoloInacessibilidade;
-import br.com.cesar.petCollar.dominio.ProtocoloInacessibilidade.servico.ConsultaDiretivaConsentimentoService;
+import br.com.cesar.petCollar.aplicacao.ProtocoloInacessibilidade.ConsultarDiretivasConsentimentoUseCase;
 import br.com.cesar.petCollar.apresentacao.ProtocoloInacessibilidade.dto.DiretivaConsentimentoDTO;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,12 +27,12 @@ import java.util.Set;
 public class DiretivaConsentimentoController {
 
     private final IProtocoloInacessibilidadeRepositorio protocoloRepositorio;
-    private final ConsultaDiretivaConsentimentoService consultaDiretivas;
+    private final ConsultarDiretivasConsentimentoUseCase consultarDiretivasUseCase;
 
     public DiretivaConsentimentoController(IProtocoloInacessibilidadeRepositorio protocoloRepositorio,
-                                           ConsultaDiretivaConsentimentoService consultaDiretivas) {
+                                           ConsultarDiretivasConsentimentoUseCase consultarDiretivasUseCase) {
         this.protocoloRepositorio = protocoloRepositorio;
-        this.consultaDiretivas = consultaDiretivas;
+        this.consultarDiretivasUseCase = consultarDiretivasUseCase;
     }
 
     /**
@@ -45,7 +45,7 @@ public class DiretivaConsentimentoController {
             .orElseThrow(() -> new IllegalArgumentException("Protocolo não encontrado."));
 
         PacienteId pacienteId = protocolo.getPacienteId();
-        Set<TipoConduta> autorizadas = Set.copyOf(consultaDiretivas.listarCondutasAutorizadas(pacienteId));
+        Set<TipoConduta> autorizadas = Set.copyOf(consultarDiretivasUseCase.executar(pacienteId));
 
         return Arrays.stream(TipoConduta.values())
             .map(c -> autorizadas.contains(c)
