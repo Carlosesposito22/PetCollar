@@ -8,10 +8,13 @@ let pdfjsLib: typeof import("pdfjs-dist") | null = null;
 async function carregarPdfjs() {
   if (pdfjsLib) return pdfjsLib;
   const mod = await import("pdfjs-dist");
-  mod.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url,
-  ).href;
+  // O Vite empacota e instancia o worker via `?worker`; usar `workerPort`
+  // evita que o pdf.js tente buscar o worker por URL (causa do erro
+  // "Setting up fake worker failed: Failed to fetch dynamically imported module").
+  const { default: PdfWorker } = await import(
+    "pdfjs-dist/build/pdf.worker.min.mjs?worker"
+  );
+  mod.GlobalWorkerOptions.workerPort = new PdfWorker();
   pdfjsLib = mod;
   return mod;
 }
